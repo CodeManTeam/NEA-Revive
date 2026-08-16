@@ -123,8 +123,8 @@ fn fs_main(in: VsOut) {
     fresnel * reflection_color +
     extinction * in.fog.rgb;
   let mapped = aces_tone_map(globals.eye_exposure.w * color);
-  let corrected = pow(mapped, vec3f(1.0 / globals.light_direction_gamma.w));
-  oit_store(vec4f(corrected, extinction), in.position);
+  // sRGB surface 自动编码：输出 pow(A, 2.2) 让 GPU 编码还原（与地形/人物一致）
+  oit_store(vec4f(pow(mapped, vec3f(2.2)), extinction), in.position);
 }
 "#;
 
@@ -300,8 +300,13 @@ impl NeaFluidPipeline {
         &self.oit
     }
 
-    pub fn resolve(&self, encoder: &mut wgpu::CommandEncoder, output: &wgpu::TextureView) {
-        self.oit.resolve(encoder, output);
+    pub fn resolve(
+        &self,
+        encoder: &mut wgpu::CommandEncoder,
+        output: &wgpu::TextureView,
+        depth_view: &wgpu::TextureView,
+    ) {
+        self.oit.resolve(encoder, output, depth_view);
     }
 }
 

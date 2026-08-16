@@ -169,8 +169,8 @@ fn sample_shadows(world_pos: vec3f, face_normal: vec3f, frag_coord: vec4f) -> f3
   let mapped = aces_tone_map(globals.eye_exposure.w * fogged);
   // 还原显示值 → sRGB surface 自动编码：输出 pow(A,2.2) 让 GPU 编码还原 A。
   // 已移除原恢复版的调试残留分支（忽略 fog + 错误 gamma 1.3）。
-  // Debug view（与地形 F1-F6 同步，存 atlas_params.z）：人物也响应
-  let dbg = globals.atlas_params.z;
+  // Debug view（与地形 F1-F6 同步，存 atlas_params.w）：人物也响应
+  let dbg = globals.atlas_params.w;
   if (dbg > 3.5) {
     // F4+: 纯 shadow map 采样（不含 face_shadow/ambient.a），区分阴影来源
     let sm = sample_shadows(input.world_position, normal, input.clip_position);

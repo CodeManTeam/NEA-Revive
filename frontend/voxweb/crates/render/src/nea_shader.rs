@@ -343,8 +343,8 @@ fn fs_main(in: VsOut) -> @location(0) vec4f {
   let uniform_extinction = clamp(exp(-fog_distance * globals.fog_params.w), 0.0, 1.0);
   let fog_amount = min(1.0 - height_extinction * uniform_extinction, globals.fog_params2.z);
   let mapped = aces_tone_map(globals.eye_exposure.w * albedo * (direct + irradiance));
-  // Debug view（F1-F6，存 atlas_params.z）：Albedo / Direct / Ambient / Shadow / Fog / Final
-  let dbg = globals.atlas_params.z;
+  // Debug view（F1-F6，存 atlas_params.w）：Albedo / Direct / Ambient / Shadow / Fog / Final
+  let dbg = globals.atlas_params.w;
   if (dbg > 5.5) { return vec4f(decode_display(mapped), 1.0); }
   if (dbg > 4.5) { return vec4f(vec3f(fog_amount), 1.0); }
   if (dbg > 3.5) { return vec4f(vec3f(shadow), 1.0); }

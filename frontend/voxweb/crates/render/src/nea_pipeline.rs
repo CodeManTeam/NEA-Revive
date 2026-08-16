@@ -25,8 +25,8 @@ pub const GLOBALS_SKY_BOTTOM_OFFSET: usize = 52;
 pub const GLOBALS_SKY_FRONT_OFFSET: usize = 56;
 pub const GLOBALS_SKY_BACK_OFFSET: usize = 60;
 pub const GLOBALS_ATLAS_OFFSET: usize = 64;
-/// Debug view 模式（F1-F6）：存 atlas_params.z（原恢复布局里 z/w 空闲）。
-pub const GLOBALS_DEBUG_MODE_OFFSET: usize = GLOBALS_ATLAS_OFFSET + 2;
+/// Debug view 模式（F1-F6）：存 atlas_params.w（fluid 用 z 作水波时间，避免冲突）。
+pub const GLOBALS_DEBUG_MODE_OFFSET: usize = GLOBALS_ATLAS_OFFSET + 3;
 
 /// A full NEA terrain pipeline: atlas texture + mesh buffers + pipeline.
 pub struct NeaTerrainPipeline {
