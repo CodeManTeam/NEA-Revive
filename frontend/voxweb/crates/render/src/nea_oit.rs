@@ -15,6 +15,7 @@ struct OitUniform {
 }
 
 pub struct NeaOit {
+    device: wgpu::Device,
     width: u32,
     height: u32,
     opaque_texture: wgpu::Texture,
@@ -24,7 +25,7 @@ pub struct NeaOit {
     layout: wgpu::BindGroupLayout,
     group: wgpu::BindGroup,
     resolve_pipeline: wgpu::RenderPipeline,
-    resolve_background_group: wgpu::BindGroup,
+    background_layout: wgpu::BindGroupLayout,
 }
 
 impl NeaOit {
@@ -99,24 +100,28 @@ impl NeaOit {
         });
         let background_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("nea.oit.background-layout"),
-            entries: &[wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Texture {
-                    sample_type: wgpu::TextureSampleType::Float { filterable: false },
-                    view_dimension: wgpu::TextureViewDimension::D2,
-                    multisampled: false,
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        multisampled: false,
+                    },
+                    count: None,
                 },
-                count: None,
-            }],
-        });
-        let resolve_background_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("nea.oit.background-group"),
-            layout: &background_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: wgpu::BindingResource::TextureView(&opaque_view),
-            }],
+                wgpu::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Texture {
+                        sample_type: wgpu::TextureSampleType::Depth,
+                        view_dimension: wgpu::TextureViewDimension::D2,
+                        multisampled: false,
+                    },
+                    count: None,
+                },
+            ],
         });
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("nea.oit.resolve-shader"),
@@ -153,6 +158,7 @@ impl NeaOit {
             cache: None,
         });
         Self {
+            device: device.clone(),
             width,
             height,
             opaque_texture,
@@ -162,7 +168,7 @@ impl NeaOit {
             layout,
             group,
             resolve_pipeline,
-            resolve_background_group,
+            background_layout,
         }
     }
 
@@ -176,7 +182,26 @@ impl NeaOit {
         &self.opaque_view
     }
 
-    pub fn resolve(&self, encoder: &mut wgpu::CommandEncoder, output: &wgpu::TextureView) {
+    pub fn resolve(
+        &self,
+        encoder: &mut wgpu::CommandEncoder,
+        output: &wgpu::TextureView,
+        depth: &wgpu::TextureView,
+    ) {
+        let background = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("nea.oit.background-depth-group"),
+            layout: &self.background_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::TextureView(&self.opaque_view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(depth),
+                },
+            ],
+        });
         {
             let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("nea.oit.resolve"),
@@ -195,7 +220,7 @@ impl NeaOit {
                 multiview_mask: None,
             });
             pass.set_pipeline(&self.resolve_pipeline);
-            pass.set_bind_group(0, &self.resolve_background_group, &[]);
+            pass.set_bind_group(0, &background, &[]);
             pass.set_bind_group(1, &self.group, &[]);
             pass.draw(0..3, 0..1);
         }
@@ -261,17 +286,18 @@ fn oit_store(color: vec4f, position: vec4f) {
   let per_h = u32(oit.viewport.y) / 3u;
   let max_nodes = u32(oit.node_buffer_bytes) / 12u;
   if (u32(position.y) < per_h) {
-    let index = atomicAdd(&offsets0[0], 1u);
+    // Index zero is the linked-list null sentinel.
+    let index = atomicAdd(&offsets0[0], 1u) + 1u;
     if (index >= max_nodes) { return; }
     let pointer = u32(position.x) + u32(oit.viewport.x) * u32(position.y);
     nodes0[index] = StaticNode(FragmentData(pack_color(color), position.z), atomicExchange(&offsets0[pointer + 1u], index));
   } else if (u32(position.y) < per_h * 2u) {
-    let index = atomicAdd(&offsets1[0], 1u);
+    let index = atomicAdd(&offsets1[0], 1u) + 1u;
     if (index >= max_nodes) { return; }
     let pointer = u32(position.x) + u32(oit.viewport.x) * (u32(position.y) - per_h);
     nodes1[index] = StaticNode(FragmentData(pack_color(color), position.z), atomicExchange(&offsets1[pointer + 1u], index));
   } else {
-    let index = atomicAdd(&offsets2[0], 1u);
+    let index = atomicAdd(&offsets2[0], 1u) + 1u;
     if (index >= max_nodes) { return; }
     let pointer = u32(position.x) + u32(oit.viewport.x) * (u32(position.y) - per_h * 2u);
     nodes2[index] = StaticNode(FragmentData(pack_color(color), position.z), atomicExchange(&offsets2[pointer + 1u], index));
@@ -284,6 +310,7 @@ struct OitUniform { viewport: vec2f, node_buffer_bytes: f32, padding: f32 }
 struct FragmentData { color: u32, depth: f32 }
 struct StaticNode { data: FragmentData, next: u32 }
 @group(0) @binding(0) var background: texture_2d<f32>;
+@group(0) @binding(1) var background_depth: texture_depth_2d;
 @group(1) @binding(0) var<uniform> oit: OitUniform;
 @group(1) @binding(1) var<storage, read_write> nodes0: array<StaticNode>;
 @group(1) @binding(2) var<storage, read_write> offsets0: array<atomic<u32>>;
@@ -301,6 +328,7 @@ fn unpack_color(value: u32) -> vec4f {
 @fragment fn fs_main(@builtin(position) position: vec4f) -> @location(0) vec4f {
   let pixel = vec2u(position.xy);
   var color = textureLoad(background, pixel, 0);
+  let opaque_depth = textureLoad(background_depth, pixel, 0);
   let per_h = u32(oit.viewport.y) / 3u;
   let band = min(u32(position.y) / max(per_h, 1u), 2u);
   let local_y = u32(position.y) - band * per_h;
@@ -330,8 +358,12 @@ fn unpack_color(value: u32) -> vec4f {
     let index = indices[i];
     var packed = select(nodes0[index].data.color, nodes1[index].data.color, band == 1u);
     packed = select(packed, nodes2[index].data.color, band == 2u);
-    let rgba = unpack_color(packed);
-    color = vec4f(color.rgb * (1.0 - rgba.a) + rgba.rgb * rgba.a, color.a);
+    var fragment_depth = select(nodes0[index].data.depth, nodes1[index].data.depth, band == 1u);
+    fragment_depth = select(fragment_depth, nodes2[index].data.depth, band == 2u);
+    if (fragment_depth <= opaque_depth) {
+      let rgba = unpack_color(packed);
+      color = vec4f(color.rgb * (1.0 - rgba.a) + rgba.rgb * rgba.a, color.a);
+    }
   }
   return color;
 }
@@ -351,5 +383,17 @@ mod tests {
     fn recovered_allocation_uses_ten_twelve_byte_nodes_per_band_pixel() {
         assert_eq!(NODE_BYTES * NODES_PER_PIXEL, 120);
         assert_eq!(1080u32.div_ceil(3), 360);
+    }
+
+    #[test]
+    fn oit_reserves_zero_as_the_null_node() {
+        assert_eq!(OIT_STORAGE_WGSL.matches("atomicAdd(&offsets").count(), 3);
+        assert_eq!(OIT_STORAGE_WGSL.matches("1u) + 1u").count(), 3);
+    }
+
+    #[test]
+    fn resolve_rejects_transparency_behind_opaque_depth() {
+        assert!(OIT_RESOLVE_WGSL.contains("texture_depth_2d"));
+        assert!(OIT_RESOLVE_WGSL.contains("fragment_depth <= opaque_depth"));
     }
 }

@@ -436,7 +436,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
         sample_count: 1,
         dimension: wgpu::TextureDimension::D2,
         format: wgpu::TextureFormat::Depth32Float,
-        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
         view_formats: &[],
     });
     let depth_view = depth_tex.create_view(&wgpu::TextureViewDescriptor::default());
@@ -1481,7 +1481,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     t.fluid_pipeline.draw(&mut pass);
                 }
             }
-            t.fluid_pipeline.resolve(&mut encoder, &view);
+            t.fluid_pipeline.resolve(&mut encoder, &view, &depth_view);
             dc.queue.submit(Some(encoder.finish()));
             frame.present();
             fps_overlay.record_frame(now_ms() as f64);
