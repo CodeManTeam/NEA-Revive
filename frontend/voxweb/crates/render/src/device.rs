@@ -83,14 +83,30 @@ pub async fn init_device(_canvas: &web_sys::HtmlCanvasElement) -> Result<DeviceC
 fn select_format(caps: &SurfaceCapabilities) -> TextureFormat {
     let preferred = &caps.formats;
     for fmt in [
-        wgpu::TextureFormat::Bgra8UnormSrgb,
         wgpu::TextureFormat::Bgra8Unorm,
+        wgpu::TextureFormat::Bgra8UnormSrgb,
     ] {
         if preferred.contains(&fmt) {
             return fmt;
         }
     }
     preferred[0]
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn explicit_shader_gamma_prefers_linear_surface() {
+        let caps = SurfaceCapabilities {
+            formats: vec![TextureFormat::Bgra8UnormSrgb, TextureFormat::Bgra8Unorm],
+            present_modes: vec![],
+            alpha_modes: vec![],
+            usages: TextureUsages::RENDER_ATTACHMENT,
+        };
+        assert_eq!(select_format(&caps), TextureFormat::Bgra8Unorm);
+    }
 }
 
 /// 配置 Surface（尺寸、格式、呈现模式）。
