@@ -122,8 +122,9 @@ fn sample_shadows(world_pos: vec3f, face_normal: vec3f, frag_coord: vec4f) -> f3
     var depth = textureSampleLevel(shadow_map, shadow_sampler, vec2f(uv.x, 1.0 - uv.y), 0);
     depth += bias - (bias_x * duv.x + bias_y * duv.y);
     depth += abs(depth) * 0.0009765625;
-    // 人物小、表面曲率大：固定偏移抑制自阴影（人物表面采样到自身深度的 acne）
-    depth += 0.002;
+    // 人物表面曲率大（小部件），固定偏移需足够大才能压掉自阴影：
+    // 人物写入 shadow map 后主 pass 表面采样到自身深度 → 无 bias 必自阴影。
+    depth += 0.008;
     total += step(sample_depth, depth);
   }
   return total / 16.0;
@@ -166,9 +167,15 @@ fn sample_shadows(world_pos: vec3f, face_normal: vec3f, frag_coord: vec4f) -> f3
   let shaded = rgbe.rgb * (direct + irradiance + 400.0 * emissive);
   let fogged = apply_fog(shaded, input.world_position);
   let mapped = aces_tone_map(globals.eye_exposure.w * fogged);
-  // 还原显示值 → sRGB surface 自动编码（decode 1/2.2 + encode 2.2 = 正确显示）。
+  // 还原显示值 → sRGB surface 自动编码：输出 pow(A,2.2) 让 GPU 编码还原 A。
   // 已移除原恢复版的调试残留分支（忽略 fog + 错误 gamma 1.3）。
-  return vec4f(pow(mapped, vec3f(1.0 / 2.2)), 1.0);
+  // Debug view（与地形 F1-F6 同步，存 atlas_params.z）：人物也响应
+  let dbg = globals.atlas_params.z;
+  if (dbg > 3.5) { return vec4f(vec3f(shadow), 1.0); }        // F4+: Shadow Factor
+  if (dbg > 2.5) { return vec4f(irradiance / 400.0, 1.0); }   // F3: Ambient/Sky
+  if (dbg > 1.5) { return vec4f(direct / 500.0, 1.0); }       // F2: Direct
+  if (dbg > 0.5) { return vec4f(rgbe.rgb, 1.0); }             // F1: Albedo
+  return vec4f(pow(mapped, vec3f(2.2)), 1.0);                  // F6: Final
 }
 "#;
 
@@ -208,8 +215,8 @@ mod tests {
         assert!(NEA_AVATAR_WGSL.contains("input.ambient.a"));
         assert!(NEA_AVATAR_WGSL.contains("aces_tone_map"));
         assert!(NEA_AVATAR_WGSL.contains("fn sample_shadows"));
-        // sRGB surface：decode 1/2.2 还原显示值
-        assert!(NEA_AVATAR_WGSL.contains("1.0 / 2.2"));
+        // sRGB surface：输出 pow(A, 2.2) 让 GPU 编码还原显示值
+        assert!(NEA_AVATAR_WGSL.contains("pow(mapped, vec3f(2.2))"));
         let module = wgpu::naga::front::wgsl::parse_str(NEA_AVATAR_WGSL)
             .unwrap_or_else(|error| panic!("avatar WGSL parse failed: {error}"));
         wgpu::naga::valid::Validator::new(

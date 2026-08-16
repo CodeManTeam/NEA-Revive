@@ -1471,7 +1471,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     .set_camera(&dc.queue, &mvp, &eye, eye_fluid, exposure, inp_debug_view);
                 t.pipeline.draw(&mut pass);
                 if let Some(renderer) = avatar_renderer.as_ref() {
-                    renderer.set_environment(&dc.queue, &mvp, &eye, eye_fluid, exposure);
+                    renderer.set_environment(&dc.queue, &mvp, &eye, eye_fluid, exposure, inp_debug_view);
                     renderer.draw(&mut pass);
                 }
                 t.alpha_pipeline.draw(&mut pass, t.fluid_pipeline.oit());

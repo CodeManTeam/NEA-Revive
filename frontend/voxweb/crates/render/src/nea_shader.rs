@@ -106,10 +106,11 @@ fn aces_tone_map(color: vec3f) -> vec3f {
   return clamp(mapped, vec3f(0.0), vec3f(1.0));
 }
 
-/// 把 tone-mapped 显示值还原为 linear，交给 sRGB surface 的自动编码
-/// （decode 1/2.2 + GPU encode 2.2 = 还原显示值，避免 aces 值被再次提亮）。
+/// 把 tone-mapped 显示值（sRGB 空间）解码回 linear，交给 sRGB surface 的
+/// 自动编码：输出 pow(A, 2.2) → GPU 编码 sRGB_encode(pow(A,2.2)) = A。
+/// （此前误用 1/2.2，反而把显示值再压暗 → 画面更糟。）
 fn decode_display(value: vec3f) -> vec3f {
-  return pow(value, vec3f(1.0 / 2.2));
+  return pow(value, vec3f(2.2));
 }
 
 fn sample_shadows(world_pos: vec3f, face_normal: vec3f, frag_coord: vec4f) -> f32 {
@@ -152,6 +153,8 @@ fn sample_shadows(world_pos: vec3f, face_normal: vec3f, frag_coord: vec4f) -> f3
     var depth = textureSampleLevel(shadow_map, shadow_sampler, vec2f(uv.x, 1.0 - uv.y), 0);
     depth += bias - (bias_x * duv.x + bias_y * duv.y);
     depth += abs(depth) * 0.0009765625;
+    // 固定偏移抑制地形表面自阴影（acne）
+    depth += 0.002;
     total += step(sample_depth, depth);
   }
   return total / 16.0;

@@ -299,9 +299,9 @@ fn ndc_depth(near: f32, far: f32, z: f32) -> f32 {
     (far * (z - near) / (z * (far - near))).clamp(0.0, 1.0)
 }
 
-/// 以 `center` 为中心的固定正交级联：shadow_view 空间 XZ 正方形
-/// `[-extent/2, extent/2]`，深度覆盖 shadow 相机范围（shadow_view 的 eye 在
-/// center + sun*512，玩家深度≈512，故深度固定 [0.5, 700] 覆盖 ±200 余量）。
+/// 以 `center` 为中心的固定正交级联：取玩家周围世界**立方体**（边长 extent）
+/// 的 8 个角点在 shadow_view 空间的投影范围——覆盖垂直方向。此前只按水平 XZ
+/// 取范围，太阳斜射时玩家脚下/头顶的方块投影出级联范围 → 阴影渲染/采样失配。
 const SHADOW_DEPTH_NEAR: f32 = 0.5;
 const SHADOW_DEPTH_FAR: f32 = 700.0;
 
@@ -314,21 +314,49 @@ fn fit_cascade_fixed(
     uv_bounds: [f32; 4],
     resolution: u32,
 ) -> ShadowCascade {
-    let center_shadow = shadow_view.transform_point3(center);
-    let width_scale = 2.0 / extent;
-    let height_scale = 2.0 / extent;
-    // 深度：[SHADOW_DEPTH_NEAR, SHADOW_DEPTH_FAR]（shadow_view 空间 -z）→ NDC [-1,1]
-    let depth_scale = -2.0 / (SHADOW_DEPTH_FAR - SHADOW_DEPTH_NEAR);
+    let h = 0.5 * extent;
+    let world_corners = [
+        center + Vec3::new(-h, -h, -h),
+        center + Vec3::new(h, -h, -h),
+        center + Vec3::new(-h, h, -h),
+        center + Vec3::new(h, h, -h),
+        center + Vec3::new(-h, -h, h),
+        center + Vec3::new(h, -h, h),
+        center + Vec3::new(-h, h, h),
+        center + Vec3::new(h, h, h),
+    ];
+    // shadow_view 空间坐标：x=side（横向1）、y=up（横向2）、z=深度（负值）。
+    // 横向范围必须用 x/y 分量；深度用 -z。
+    let mut min_x = f32::MAX;
+    let mut max_x = f32::MIN;
+    let mut min_y = f32::MAX;
+    let mut max_y = f32::MIN;
+    let mut min_depth = f32::MAX;
+    let mut max_depth = 0.0f32;
+    for corner in world_corners {
+        let c = shadow_view.transform_point3(corner);
+        min_x = min_x.min(c.x);
+        max_x = max_x.max(c.x);
+        min_y = min_y.min(c.y);
+        max_y = max_y.max(c.y);
+        min_depth = min_depth.min(-c.z);
+        max_depth = max_depth.max(-c.z);
+    }
+    let range_x = (max_x - min_x).max(1.0e-4) + 2.0;
+    let range_y = (max_y - min_y).max(1.0e-4) + 2.0;
+    let depth_near = (min_depth - 1.0).max(SHADOW_DEPTH_NEAR);
+    let depth_far = (max_depth + 2.0).min(SHADOW_DEPTH_FAR);
+    let sx = 2.0 / range_x;
+    let sy = 2.0 / range_y;
+    let sz = -2.0 / (depth_far - depth_near);
+    let tx = -sx * 0.5 * (min_x + max_x);
+    let ty = -sy * 0.5 * (min_y + max_y);
+    let tz = -(depth_near + depth_far) / (depth_far - depth_near);
     let columns = [
-        Vec4::new(width_scale, 0.0, 0.0, 0.0),
-        Vec4::new(0.0, height_scale, 0.0, 0.0),
-        Vec4::new(0.0, 0.0, depth_scale, 0.0),
-        Vec4::new(
-            -width_scale * center_shadow.x,
-            -height_scale * center_shadow.z,
-            -(SHADOW_DEPTH_NEAR + SHADOW_DEPTH_FAR) / (SHADOW_DEPTH_FAR - SHADOW_DEPTH_NEAR),
-            1.0,
-        ),
+        Vec4::new(sx, 0.0, 0.0, 0.0),
+        Vec4::new(0.0, sy, 0.0, 0.0),
+        Vec4::new(0.0, 0.0, sz, 0.0),
+        Vec4::new(tx, ty, tz, 1.0),
     ];
     let projection = Mat4::from_cols(columns[0], columns[1], columns[2], columns[3]);
     let depth_to_webgpu = Mat4::from_cols(
@@ -540,5 +568,36 @@ mod tests {
         assert!((uniform[1] - expected[0]).abs() < 1.0e-5);
         assert_eq!(&uniform[132..134], &[0.0, 0.0]);
         assert_eq!(&uniform[144..146], &[0.5, 0.5]);
+    }
+
+    #[test]
+    fn fixed_cascade_ndc_contains_player_surroundings() {
+        // 玩家在 (64, 4, 48)，sun 斜上方：验证第 0 级联（24 范围）的投影
+        // 把玩家脚下/周围世界点映射到 NDC（XZ∈[-1,1]、深度∈[0,1]）——
+        // 若玩家周围点不在 NDC 内，阴影渲染/采样会失配。
+        let sun = Vec3::new(0.5, 0.86, 0.1).normalize();
+        let eye = Vec3::new(64.0, 4.0, 48.0);
+        let shadow_view = Mat4::look_at_rh(eye + sun * 512.0, eye, Vec3::Z);
+        let cascade = fit_cascade_fixed(
+            shadow_view,
+            eye,
+            24.0,
+            16.0,
+            48.0,
+            [0.0, 0.0, 0.5, 0.5],
+            1024,
+        );
+        for world in [
+            Vec3::new(64.0, 3.0, 48.0),   // 玩家脚下地面
+            Vec3::new(52.0, 0.0, 40.0),   // 玩家周围地面
+            Vec3::new(76.0, 10.0, 56.0),  // 玩家周围高处
+            Vec3::new(64.0, 5.0, 48.0),   // 玩家头顶
+        ] {
+            let clip = cascade.view_projection * world.extend(1.0);
+            let ndc = clip.truncate() / clip.w;
+            assert!(ndc.x.abs() <= 1.2, "X out of NDC: {world:?} -> {ndc:?}");
+            assert!(ndc.y.abs() <= 1.2, "Z out of NDC: {world:?} -> {ndc:?}");
+            assert!((0.0..=1.0).contains(&ndc.z), "depth out of [0,1]: {world:?} -> {ndc:?}");
+        }
     }
 }

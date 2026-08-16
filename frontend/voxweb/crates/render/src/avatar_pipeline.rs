@@ -8,7 +8,9 @@ use crate::avatar_shadow::AvatarShadowRenderer;
 use crate::nea_avatar_shader::NEA_AVATAR_WGSL;
 use crate::nea_environment::{apply_underwater_globals, recovered_default_globals};
 use crate::nea_mesh::MeshBuffers;
-use crate::nea_pipeline::{GLOBALS_EYE_EXPOSURE_OFFSET, GLOBALS_MVP_OFFSET};
+use crate::nea_pipeline::{
+    GLOBALS_DEBUG_MODE_OFFSET, GLOBALS_EYE_EXPOSURE_OFFSET, GLOBALS_MVP_OFFSET,
+};
 use crate::nea_shadow::{NeaShadowFrame, NeaShadowMap};
 
 #[repr(C)]
@@ -249,11 +251,13 @@ impl NeaAvatarRenderer {
         eye: &[f32; 3],
         eye_fluid: Option<[f32; 4]>,
         exposure: f32,
+        debug_mode: f32,
     ) {
         let mut globals = recovered_default_globals(512.0, 16.0);
         globals[GLOBALS_MVP_OFFSET..GLOBALS_MVP_OFFSET + 16].copy_from_slice(mvp);
         globals[GLOBALS_EYE_EXPOSURE_OFFSET..GLOBALS_EYE_EXPOSURE_OFFSET + 3].copy_from_slice(eye);
         globals[GLOBALS_EYE_EXPOSURE_OFFSET + 3] = exposure;
+        globals[GLOBALS_DEBUG_MODE_OFFSET] = debug_mode;
         apply_underwater_globals(&mut globals, eye_fluid);
         queue.write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&globals));
     }
