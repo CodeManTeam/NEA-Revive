@@ -21,8 +21,31 @@
     "physics": "world/physics.json"
   },
   "scripts": {
-    "server": "scripts/server.js",
+    "server": "scripts/index.js",
     "client": null,
+    "serverModules": [
+      "scripts/index.js",
+      "scripts/water.js",
+      "scripts/TerrainCopy.js",
+      "scripts/data.js",
+      "scripts/_server_bundle.js",
+      "scripts/teleport.js",
+      "scripts/Hearts.js",
+      "scripts/ban.js",
+      "scripts/chat.js",
+      "scripts/Voxel.js",
+      "scripts/world.js",
+      "scripts/bag.js",
+      "scripts/player.js",
+      "scripts/PlayerOpTool.js",
+      "scripts/biology.js",
+      "scripts/gui.js",
+      "scripts/admin.js",
+      "scripts/crafting.js",
+      "scripts/sql.js",
+      "scripts/月神版兑换码.js",
+      "scripts/末影龙.js"
+    ],
     "serverCapabilities": [
       "server.world.events",
       "server.world.chat",

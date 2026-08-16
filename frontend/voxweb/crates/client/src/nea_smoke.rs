@@ -777,8 +777,19 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                                 gy as f32 + 4.0,
                                                 local_pos[2],
                                             ) {
-                                                local_pos[1] = gy as f32 + 1.1;
+                                                // 玩家脚底应落在「脚下 solid 方块顶面」(gy+1)，
+                                                // center = 顶面 + body 半高。旧公式 gy+1.1 让脚底
+                                                // 落在方块内部 (gy)，物理会把玩家顶出/弹飞（悬空下落）。
+                                                local_pos[1] =
+                                                    gy as f32 + 1.0 + local_body_half_extents[1];
                                                 local_vel[1] = 0.0;
+                                                // 若本地物理已初始化（地形重建等），同步其位置，
+                                                // 避免旧位置继续主导（悬空/下落）。
+                                                if let Some(p) = local_physics.as_mut() {
+                                                    p.position = local_pos;
+                                                    p.velocity = [0.0, 0.0, 0.0];
+                                                    p.grounded = true;
+                                                }
                                                 player_pos = Some(local_pos);
                                                 break;
                                             }
@@ -788,6 +799,17 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                             local_pos[0],
                                             local_pos[1],
                                             local_pos[2]
+                                        );
+                                        let foot_block = block_voxel_at(
+                                            &chunk_cells,
+                                            local_pos[0].floor() as i32,
+                                            (local_pos[1] - local_body_half_extents[1]).floor() as i32,
+                                            local_pos[2].floor() as i32,
+                                        );
+                                        jslog!(
+                                            "[nea] spawn foot block={} half_h={:.2}",
+                                            foot_block,
+                                            local_body_half_extents[1]
                                         );
                                         loading.set_status("地形渲染完成，进入世界…");
                                         loading.set_progress(0.98);
@@ -926,6 +948,24 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
             local_pos = physics.position;
             local_vel = physics.velocity;
             player_pos = Some(physics.position);
+            if now_ms() - last_log_ms > 2000 {
+                last_log_ms = now_ms();
+                let foot = block_voxel_at(
+                    &chunk_cells,
+                    physics.position[0].floor() as i32,
+                    (physics.position[1] - local_body_half_extents[1] - 1.0e-4).floor() as i32,
+                    physics.position[2].floor() as i32,
+                );
+                jslog!(
+                    "[nea] player pos=({:.1},{:.1},{:.1}) vel_y={:.2} grounded={} foot_block={}",
+                    physics.position[0],
+                    physics.position[1],
+                    physics.position[2],
+                    physics.velocity[1],
+                    physics.grounded,
+                    foot
+                );
+            }
             drop(inp);
             // The preserved client submits once when the integer game tick
             // crosses. The local compatibility backend applies N at N+1.

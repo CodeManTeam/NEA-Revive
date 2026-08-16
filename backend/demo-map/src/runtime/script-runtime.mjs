@@ -115,6 +115,7 @@ export class ScriptRuntime {
   #world;
   #worldPhysicsSnapshot;
   #initialWorldPhysics;
+  #seed = 0;
   #now;
   #prevTickMS;
   #signals = {
@@ -291,6 +292,11 @@ export class ScriptRuntime {
   async start() {
     if (this.started) return;
     const globals = this.#createGlobals();
+    // DAO3 脚本常用 `global.foo = ...` 再裸调用 `foo(...)`（index.js 的
+    // playerGo/randa）。`global` 必须指向 context 全局对象本身，裸标识符才能
+    // 解析；getter 写法会在 Node 主 realm 求值 globalThis，因此这里直接
+    // 把 globals 自引用为 `global`（vm.createContext 后 globalThis 即 globals）。
+    Object.defineProperty(globals, "global", { value: globals, enumerable: true, configurable: false, writable: false });
     Object.defineProperty(globals, this.#moduleEnvironmentKey, { value: this.#moduleEnvironment });
     Object.freeze(globals);
     this.#context = vm.createContext(globals, {
@@ -608,6 +614,10 @@ export class ScriptRuntime {
         runtime.#require("server.world.voxels");
         return runtime.voxels.shape;
       },
+      // DAO3 世界随机种子（index.js 用 Math.random(`${world.seed}`) 决定植物/装饰分布）。
+      // 本地确定性：0 表示固定世界；脚本可自行赋值覆盖。
+      get seed() { return runtime.#seed; },
+      set seed(value) { runtime.#seed = Number(value); },
       onTick: handler => this.#listen("server.world.events", this.#signals.tick, handler),
       onPlayerJoin: handler => this.#listen("server.world.events", this.#signals.playerJoin, handler),
       onPlayerLeave: handler => this.#listen("server.world.events", this.#signals.playerLeave, handler),
@@ -774,6 +784,20 @@ export class ScriptRuntime {
       storage,
       gui,
       voxels,
+      // DAO3 worldBlock API：方块读写（getBlock/setBlock/getVoxel/setVoxel）。
+      // getBlock 返回 blockId（不含 rotation），setBlock 支持字符串方块名
+      // （如 "air"/"stone"），与 GameVoxelsRuntime.setVoxel 一致。
+      worldBlock: Object.freeze({
+        getBlock: (x, y, z) => this.voxels.getVoxel(x | 0, y | 0, z | 0),
+        setBlock: (x, y, z, voxel, rotation) => this.voxels.setVoxel(x | 0, y | 0, z | 0, voxel, rotation),
+        getVoxel: (x, y, z) => this.voxels.getVoxel(x | 0, y | 0, z | 0),
+        setVoxel: (x, y, z, voxel, rotation) => this.voxels.setVoxel(x | 0, y | 0, z | 0, voxel, rotation),
+        getVoxelId: (x, y, z) => this.voxels.getVoxelId(x | 0, y | 0, z | 0),
+        setVoxelId: (x, y, z, fullId) => this.voxels.setVoxelId(x | 0, y | 0, z | 0, fullId),
+        name: id => this.voxels.name(id),
+        id: name => this.voxels.id(name),
+        isFluid: id => this.voxels.isFluid(id),
+      }),
       http,
       Vector3,
       GameVector3: Vector3,
@@ -1540,7 +1564,7 @@ function createRuntimePlayer(runtime, input) {
     set position(value) { runtime._writePlayer(this, "position", value); },
     get velocity() { return this._body.velocity; },
     set velocity(value) { runtime._writePlayer(this, "velocity", value); },
-    get bounds() { return this._body.boundsHalfExtents.clone(); },
+    get bounds() { return Vector3.from(this._body.boundsHalfExtents); },
     get walkSpeed() { return this._walkSpeed; },
     set walkSpeed(value) { runtime._writePlayer(this, "walkSpeed", value); },
     get runSpeed() { return this._runSpeed; },
