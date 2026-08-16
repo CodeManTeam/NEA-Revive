@@ -35,7 +35,7 @@ use crate::nea_loading::LoadingOverlay;
 use voxweb_physics::NeaPlayerPhysics;
 use crate::nea_prediction::{PredictionHistory, PredictionInput};
 use crate::nea_voxel_light::StaticVoxelLight;
-use crate::sanitized_assets::{SanitizedAtlasKind, anonymize_avatar_palette};
+use crate::sanitized_assets::SanitizedAtlasKind;
 
 const COLOR_ATLAS_MIP_COUNT: usize = 10;
 const MATERIAL_ATLAS_MIP_COUNT: usize = 10;
@@ -2695,11 +2695,8 @@ async fn load_avatar_renderer(
         let bytes = fetch_bytes(url)
             .await
             .map_err(|_| format!("avatar part fetch failed for {name}"))?;
-        let mut part = voxweb_protocol::decode_avatar_part(&bytes)
+        let part = voxweb_protocol::decode_avatar_part(&bytes)
             .map_err(|error| format!("avatar part {name}: {error}"))?;
-        if overrides.replacement(&slot).is_none() {
-            anonymize_avatar_palette(name, &mut part.texture.palette);
-        }
         parts.push((name.clone(), part));
     }
     NeaAvatarRenderer::new(
