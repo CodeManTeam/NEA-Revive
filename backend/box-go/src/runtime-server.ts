@@ -47,7 +47,7 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   const path = options.path ?? "/ws"
   const log = options.quiet ? () => undefined : console.log
   const logger = options.quiet ? { log() {}, error() {}, exception() {} } : undefined
-  const spawn = options.spawn ?? [16, 12, 32]
+  const spawn = options.spawn ?? [115, 11, 154] // parkour 真实 spawn（256×64×256 世界）
 
   // ---- 1. 加载地图包 → ScriptRuntime（执行地图 server script）----
   const blockCatalog = await loadPreservedBlockCatalog(options.assetRoot, options.worldManifest ?? "world-bedwars.json")
@@ -238,19 +238,23 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   const mudbServer = new MuServer(socketServer, logger, true)
 
   // ---- 地形视图（voxweb 前端契约）----
-  // voxweb 前端硬编码 NEA 世界 256×64×256（8×2×8 chunk 网格，chunkId = i + 8*(j + 2*k)），
-  // spawn 区域 fetch cx 2..=6, cz 2..=6 共 25 chunks。parkour 源世界是 64×32×64，
-  // 平移到视口内：源 spawn [16,12,32] → 视口 [128,44,128]（前端初始镜头位置）。
+  // voxweb 前端硬编码 NEA 世界 256×64×256（8×2×8 chunk 网格，chunkId = i + 8*(j + 2*k)）。
+  // 源世界 shape 从 runtime.voxels.shape 读取（含边界，故 +1）。
+  // 若源世界就是 256×64×256，offset=0 不平移；否则居中嵌入 256 视口。
   const VOXWEB_SHAPE: [number, number, number] = [256, 64, 256]
-  const WORLD_OFFSET: [number, number, number] = [112, 32, 96]
+  const viewShape = runtime.voxels.shape as { x: number; y: number; z: number }
+  const sourceShape: [number, number, number] = [viewShape.x + 1, viewShape.y + 1, viewShape.z + 1]
+  const WORLD_OFFSET: [number, number, number] = [
+    sourceShape[0] === 256 ? 0 : Math.floor((256 - sourceShape[0]) / 2),
+    sourceShape[1] === 64 ? 0 : Math.floor((64 - sourceShape[1]) / 2),
+    sourceShape[2] === 256 ? 0 : Math.floor((256 - sourceShape[2]) / 2),
+  ]
   const SOURCE_SPAWN = spawn
   const VIEW_SPAWN: [number, number, number] = [
     SOURCE_SPAWN[0] + WORLD_OFFSET[0],
     SOURCE_SPAWN[1] + WORLD_OFFSET[1],
     SOURCE_SPAWN[2] + WORLD_OFFSET[2],
   ]
-  const viewShape = runtime.voxels.shape as { x: number; y: number; z: number }
-  const sourceShape: [number, number, number] = [viewShape.x + 1, viewShape.y + 1, viewShape.z + 1]
   const chunkSize = 32
   const gridI = VOXWEB_SHAPE[0] / chunkSize // 8
   const gridJ = VOXWEB_SHAPE[1] / chunkSize // 2

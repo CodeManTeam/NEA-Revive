@@ -1,7 +1,7 @@
 {
   "formatVersion": "nea-map/v1",
-  "id": "parkour-demo",
-  "display": { "name": "Parkour Demo (real captured script)", "description": "Recovered parkour map script running on the local Script Runtime with checkpoint entities and kill blocks." },
+  "id": "parkour",
+  "display": { "name": "跑酷", "description": "从 DAO3 dump 完整还原的跑酷地图（contentId 100203779，256×64×256，831 个地形盒）。" },
   "runtime": {
     "apiVersion": "0.1.0",
     "tickRate": 20,
@@ -10,8 +10,8 @@
     "compatibilityLevel": "experimental"
   },
   "world": {
-    "shape": [64, 32, 64],
-    "spawn": [16, 12, 32],
+    "shape": [256, 64, 256],
+    "spawn": [115, 11, 154],
     "entityLimit": 4000,
     "terrain": "world/terrain.json",
     "entities": "world/entities.json",
