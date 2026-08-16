@@ -153,6 +153,57 @@ fn is_invisible_block(id: u16) -> bool {
     matches!(id, 650)
 }
 
+/// 左上角 FPS 显示控件（DOM 元素，每秒更新一次，避免每帧 DOM 写入）。
+struct FpsOverlay {
+    element: web_sys::Element,
+    frames: u32,
+    last_update_ms: f64,
+}
+
+impl FpsOverlay {
+    fn new(document: &web_sys::Document) -> Result<Self, wasm_bindgen::JsValue> {
+        if let Some(previous) = document.get_element_by_id("nea-fps") {
+            previous.remove();
+        }
+        let element = document.create_element("div")?;
+        element.set_id("nea-fps");
+        element.set_attribute(
+            "style",
+            "position:fixed;left:12px;top:12px;color:#fff;font:600 14px Consolas,monospace;text-shadow:0 1px 3px rgba(0,0,0,.9);z-index:30;pointer-events:none;background:rgba(0,0,0,.25);padding:4px 8px;border-radius:4px",
+        )?;
+        document
+            .document_element()
+            .ok_or_else(|| wasm_bindgen::JsValue::from_str("no document element"))?
+            .append_child(&element)?;
+        element.set_text_content(Some("FPS: --"));
+        Ok(Self {
+            element,
+            frames: 0,
+            last_update_ms: 0.0,
+        })
+    }
+
+    fn record_frame(&mut self, now_ms: f64) {
+        self.frames += 1;
+        let elapsed = now_ms - self.last_update_ms;
+        if elapsed < 1000.0 {
+            return;
+        }
+        let fps = self.frames as f64 * 1000.0 / elapsed;
+        let frame_ms = elapsed / self.frames as f64;
+        self.frames = 0;
+        self.last_update_ms = now_ms;
+        self.element
+            .set_text_content(Some(&format!("FPS: {fps:.0}  ({frame_ms:.1} ms)")));
+    }
+}
+
+impl Drop for FpsOverlay {
+    fn drop(&mut self) {
+        self.element.remove();
+    }
+}
+
 fn recovered_voxel_face_visible(block: u16, neighbour: u16) -> bool {
     let block = block & voxweb_protocol::geometry::BLOCK_ID_MASK;
     let neighbour = neighbour & voxweb_protocol::geometry::BLOCK_ID_MASK;
@@ -265,6 +316,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
         .dyn_into()
         .map_err(|_| JsValue::from_str("#game not a canvas"))?;
     let mut nameplate_overlay = crate::nea_nameplates::NameplateOverlay::new(&document)?;
+    let mut fps_overlay = FpsOverlay::new(&document)?;
     // fill the window so the terrain fills the viewport
     let view_w = window
         .inner_width()
@@ -1349,6 +1401,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
             t.fluid_pipeline.resolve(&mut encoder, &view);
             dc.queue.submit(Some(encoder.finish()));
             frame.present();
+            fps_overlay.record_frame(now_ms() as f64);
             if !loading_finished {
                 loading_finished = true;
                 loading.finish();
