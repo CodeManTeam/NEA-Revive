@@ -153,8 +153,6 @@ fn sample_shadows(world_pos: vec3f, face_normal: vec3f, frag_coord: vec4f) -> f3
     var depth = textureSampleLevel(shadow_map, shadow_sampler, vec2f(uv.x, 1.0 - uv.y), 0);
     depth += bias - (bias_x * duv.x + bias_y * duv.y);
     depth += abs(depth) * 0.0009765625;
-    // 固定偏移抑制地形表面自阴影（acne）
-    depth += 0.002;
     total += step(sample_depth, depth);
   }
   return total / 16.0;
@@ -330,11 +328,16 @@ fn fs_main(in: VsOut) -> @location(0) vec4f {
   if (shadow_data.enabled_splits.x > 0.0) {
     shadow = face_shadow * sample_shadows(in.world_pos, face_normal, in.pos);
   }
-  let direct = global_shade(normal_light * shadow) * globals.light_color_global.rgb;
-  let interpolated_light = 0.25 * (in.light00 + in.light01 + in.light10 + in.light11);
+  let nu = 0.5 * dot(shaded_normal, face_u) + 0.5;
+  let nv = 0.5 * dot(shaded_normal, face_v) + 0.5;
+  let interpolated_light =
+    ((1.0 - nu) * (1.0 - nv)) * in.light00 +
+    (nu * (1.0 - nv)) * in.light01 +
+    ((1.0 - nu) * nv) * in.light10 +
+    (nu * nv) * in.light11;
   let ao = interpolated_light.a * bump.a;
   let irradiance = 100.0 * interpolated_light.rgb +
-    ao * directional_sky(shaded_normal);
+    interpolated_light.a * directional_sky(shaded_normal);
   // 空气透视 fog factor（与 apply_fog 同一计算，供 F5 显示）
   var view_dir = in.world_pos - globals.eye_exposure.xyz;
   let dist = max(length(view_dir), 0.000001);
@@ -351,18 +354,11 @@ fn fs_main(in: VsOut) -> @location(0) vec4f {
   );
   let uniform_extinction = clamp(exp(-fog_distance * globals.fog_params.w), 0.0, 1.0);
   let fog_amount = min(1.0 - height_extinction * uniform_extinction, globals.fog_params2.z);
-  let roughness = 1.0 - material.g;
-  let diffuse = (1.0 - material.r) * albedo;
-  let specular = material.r * (0.04 + 0.96 * albedo);
-  let spec_view_dir = normalize(globals.eye_exposure.xyz - in.world_pos);
-  let half_dir = normalize(spec_view_dir + normalize(globals.light_direction_gamma.xyz));
-  let highlight = pow(saturate(dot(shaded_normal, half_dir)), 8.0 + 56.0 * material.g);
-  // Keep albedo in the diffuse/specular terms exactly once. The previous
-  // port multiplied the complete lit result by albedo a second time, which
-  // flattened the yellow terrain and destroyed its block-level contrast.
-  let lit = diffuse * (direct + irradiance) * ao +
-    specular * highlight * (1.0 - roughness) +
-    material.b * albedo;
+  // Preserved diffuse early-out used by the original terrain shader. Most
+  // demo-map blocks take this path; AO encloses both direct and irradiance,
+  // while globalLight is deliberately not applied in the non-safe shader.
+  let direct = normal_light * shadow * globals.light_color_global.rgb;
+  let lit = albedo * (ao * (direct + irradiance) + 400.0 * material.b);
   let fogged = mix(lit, globals.fog_params3.rgb, fog_amount);
   let mapped = aces_tone_map(globals.eye_exposure.w * fogged);
   // Debug view（F1-F6，存 atlas_params.w）：Albedo / Direct / Ambient / Shadow / Fog / Final
@@ -421,7 +417,7 @@ mod tests {
         assert!(NEA_FRAGMENT_WGSL.contains("textureSample"), "sampling call");
         assert!(NEA_FRAGMENT_WGSL.contains("material_atlas"));
         assert!(NEA_FRAGMENT_WGSL.contains("get_bump_tex_coord"));
-        assert!(NEA_FRAGMENT_WGSL.contains("let roughness = 1.0 - material.g"));
+        assert!(NEA_FRAGMENT_WGSL.contains("let lit = albedo * (ao * (direct + irradiance)"));
         assert!(NEA_FRAGMENT_WGSL.contains("bump_atlas"));
         assert!(NEA_FRAGMENT_WGSL.contains("emissive = material.b"));
         assert!(NEA_FRAGMENT_WGSL.contains("textureSample(bump_atlas"));
@@ -434,7 +430,7 @@ mod tests {
         assert!(NEA_FRAGMENT_WGSL.contains("fn sample_shadows"));
         assert!(NEA_FRAGMENT_WGSL.contains("array<vec2f, 16>"));
         assert!(NEA_FRAGMENT_WGSL.contains("let direct = global_shade(normal_light * shadow)"));
-        assert!(NEA_FRAGMENT_WGSL.contains("let interpolated_light = 0.25"));
+        assert!(NEA_FRAGMENT_WGSL.contains("((1.0 - nu) * (1.0 - nv)) * in.light00"));
         assert!(NEA_FRAGMENT_WGSL.contains("direct + irradiance"));
         assert!(NEA_FRAGMENT_WGSL.contains("shadow = face_shadow * sample_shadows"));
         assert!(NEA_FRAGMENT_WGSL.contains("max(length(view), 0.000001)"));

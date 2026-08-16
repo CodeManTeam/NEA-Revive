@@ -9,9 +9,7 @@ use crate::nea_pipeline::{
 };
 
 const DEFAULT_GAMMA: f32 = 1.3;
-// 环境光强度：原值 0.3 使背光面/阴影内偏黑（原版有半球光兜底）。
-// 提高到 0.38 让暗面保留细节，同时保持阴影对比。
-const DEFAULT_GLOBAL_LIGHT: f32 = 0.38;
+const DEFAULT_GLOBAL_LIGHT: f32 = 0.3;
 const EMISSIVE_SCALE: f32 = 100.0;
 
 /// Natural-sky state at the recovered default phase `4 / 24`.

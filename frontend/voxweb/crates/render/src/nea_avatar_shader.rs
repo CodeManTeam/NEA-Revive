@@ -122,9 +122,6 @@ fn sample_shadows(world_pos: vec3f, face_normal: vec3f, frag_coord: vec4f) -> f3
     var depth = textureSampleLevel(shadow_map, shadow_sampler, vec2f(uv.x, 1.0 - uv.y), 0);
     depth += bias - (bias_x * duv.x + bias_y * duv.y);
     depth += abs(depth) * 0.0009765625;
-    // 人物表面曲率大（小部件），固定偏移需足够大才能压掉自阴影：
-    // 人物写入 shadow map 后主 pass 表面采样到自身深度 → 无 bias 必自阴影。
-    depth += 0.008;
     total += step(sample_depth, depth);
   }
   return total / 16.0;
