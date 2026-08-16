@@ -428,7 +428,8 @@ fn fs_main(in: VsOut) -> @location(0) vec4f {
   if (dbg > 3.5) { return vec4f(vec3f(shadow), 1.0); }
   if (dbg > 2.5) { return vec4f(irradiance / 400.0, 1.0); }
   if (dbg > 1.5) { return vec4f(direct / 500.0, 1.0); }
-  return vec4f(albedo, 1.0);
+  if (dbg > 0.5) { return vec4f(albedo, 1.0); }
+  return vec4f(decode_display(mapped), 1.0);
 }
 "#;
 
