@@ -106,6 +106,12 @@ fn aces_tone_map(color: vec3f) -> vec3f {
   return clamp(mapped, vec3f(0.0), vec3f(1.0));
 }
 
+/// 把 tone-mapped 显示值还原为 linear，交给 sRGB surface 的自动编码
+/// （decode 1/2.2 + GPU encode 2.2 = 还原显示值，避免 aces 值被再次提亮）。
+fn decode_display(value: vec3f) -> vec3f {
+  return pow(value, vec3f(1.0 / 2.2));
+}
+
 fn sample_shadows(world_pos: vec3f, face_normal: vec3f, frag_coord: vec4f) -> f32 {
   let z_depth = frag_coord.z / frag_coord.w;
   let h0 = step(z_depth, shadow_data.enabled_splits.y);
@@ -289,9 +295,8 @@ fn shade_voxel(in: VsOut) -> vec4f {
   );
   let fogged = apply_fog(shaded, in.world_pos);
   let mapped = aces_tone_map(globals.eye_exposure.w * fogged);
-  // surface 是 sRGB（GPU 自动编码），不再手动 pow(1/gamma)——
-  // 双重重编码使有效 gamma≈2.86，导致暗部压黑、颜色失真。
-  return vec4f(mapped, shadow);
+  // 还原显示值 → sRGB surface 自动编码（decode 1/2.2 + encode 2.2 = 正确显示）
+  return vec4f(decode_display(mapped), shadow);
 }
 
 @fragment
@@ -337,7 +342,7 @@ fn fs_main(in: VsOut) -> @location(0) vec4f {
   let mapped = aces_tone_map(globals.eye_exposure.w * albedo * (direct + irradiance));
   // Debug view（F1-F6，存 atlas_params.z）：Albedo / Direct / Ambient / Shadow / Fog / Final
   let dbg = globals.atlas_params.z;
-  if (dbg > 5.5) { return vec4f(mapped, 1.0); }
+  if (dbg > 5.5) { return vec4f(decode_display(mapped), 1.0); }
   if (dbg > 4.5) { return vec4f(vec3f(fog_amount), 1.0); }
   if (dbg > 3.5) { return vec4f(vec3f(shadow), 1.0); }
   if (dbg > 2.5) { return vec4f(irradiance / 400.0, 1.0); }
