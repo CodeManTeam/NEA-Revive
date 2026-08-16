@@ -172,7 +172,7 @@ fn create_texture_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
         wgpu::BindGroupLayoutEntry {
             binding: 8,
             visibility: wgpu::ShaderStages::FRAGMENT,
-            ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+            ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::NonFiltering),
             count: None,
         },
         wgpu::BindGroupLayoutEntry {
