@@ -1444,12 +1444,21 @@ impl RenderTerrain {
         let light_min_z = (min_chunk_z * 32) as i32;
         let light_size_x = ((max_chunk_x - min_chunk_x + 1) * 32) as usize;
         let light_size_z = ((max_chunk_z - min_chunk_z + 1) * 32) as usize;
+        // 光照只覆盖到「最高非空 slab + 1」：minecraft 地形 y≈0-30、parkour y≈0-64，
+        // 全图 256×128×256 时按 128 算光照比 256 快一倍且效果不变。
+        let light_height = chunks
+            .iter()
+            .map(|(_, cy, _, _)| (*cy as usize + 1) * 32)
+            .max()
+            .unwrap_or(64)
+            .min(128)
+            .max(64);
         let voxel_light = StaticVoxelLight::build(
             light_min_x,
             light_min_z,
             light_size_x,
             light_size_z,
-            256,
+            light_height,
             &|x, y, z| solid_voxel_indexed(&chunk_index, x, y, z),
             &|x, y, z| {
                 let block = block_voxel_indexed(&chunk_index, x, y, z);
