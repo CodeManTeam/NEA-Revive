@@ -1287,6 +1287,7 @@ export function createRuntimeEntity(input, runtime = null) {
     _signals: { click: new EventSignal(), interact: new EventSignal(), destroy: new EventSignal(), voxelContact: new EventSignal(), voxelSeparate: new EventSignal(), fluidEnter: new EventSignal(), fluidLeave: new EventSignal(), takeDamage: new EventSignal(), die: new EventSignal(), contact: new EventSignal(), contactSeparate: new EventSignal() },
     _contactPlayers: new Set(),
     _destroyed: false,
+    _zone: { selector: "" },
     _enableDamage: Boolean(input.enableDamage ?? false),
     _showHealthBar: Boolean(input.showHealthBar ?? true),
     _hp: Number(input.hp ?? 100),
@@ -1298,6 +1299,7 @@ export function createRuntimeEntity(input, runtime = null) {
     get isPlayer() { return false; },
     get player() { return undefined; },
     get destroyed() { return this._destroyed; },
+    get zone() { return this._zone; },
     get enableDamage() { return this._enableDamage; },
     set enableDamage(value) { this._enableDamage = Boolean(value); },
     get showHealthBar() { return this._showHealthBar; },
@@ -1367,6 +1369,10 @@ export function createRuntimeEntity(input, runtime = null) {
       if (!this._runtime) throw new Error("Entity is not attached to a Script Runtime");
       this._runtime._messageEntity(this, message, options);
     },
+    // DAO3 玩法 API（minecraft index.js 用到）：占位实现，避免 zone 回调崩溃。
+    Give(name, count) { this._runtime?.logger.info(`[script:give] entity ${this.id} +${count ?? 1} ${name}（本地占位）`); },
+    BuffClear() { return Object.freeze({}); },
+    get gamemode() { return { gamemode: mode => this._runtime?.logger.info(`[script:gamemode] entity ${this.id} -> ${mode}（本地占位）`) }; },
     sound(spec) {
       if (!this._runtime) throw new Error("Entity is not attached to a Script Runtime");
       return this._runtime._soundEntity(this, spec);
@@ -1450,6 +1456,7 @@ function createRuntimePlayer(runtime, input) {
     _signals: { click: new EventSignal(), destroy: new EventSignal(), voxelContact: new EventSignal(), voxelSeparate: new EventSignal(), fluidEnter: new EventSignal(), fluidLeave: new EventSignal(), press: new EventSignal(), release: new EventSignal(), keyDown: new EventSignal(), keyUp: new EventSignal(), respawn: new EventSignal(), takeDamage: new EventSignal(), die: new EventSignal() },
     _wearables: [],
     _destroyed: false,
+    _zone: { selector: "" },
     _enableDamage: false,
     _showHealthBar: true,
     _hp: 100,
@@ -1502,6 +1509,7 @@ function createRuntimePlayer(runtime, input) {
     enableCrouch: true,
     get id() { return runtime._runtimePlayerId(this); },
     get isPlayer() { return true; },
+    get zone() { return this._zone; },
     get player() { return this; },
     get destroyed() { return this._destroyed; },
     get userId() { return this._userId; },
@@ -1553,6 +1561,10 @@ function createRuntimePlayer(runtime, input) {
     resetToDefaultSkin() { runtime._resetPlayerSkin(this); },
     clearSkin() { runtime._clearPlayerSkin(this); },
     directMessage(message) { return runtime._messagePlayer(this, message); },
+    // DAO3 玩法 API（minecraft index.js 用到）：本地为占位实现，避免事件回调崩溃。
+    Give(name, count) { runtime.logger.info(`[script:give] ${this.name} +${count ?? 1} ${name}（本地占位）`); },
+    BuffClear() { return Object.freeze({}); },
+    get gamemode() { return { gamemode: mode => runtime.logger.info(`[script:gamemode] ${this.name} -> ${mode}（本地占位）`) }; },
     wearables(bodyPart) { return this._wearables.filter(item => item.bodyPart === bodyPart); },
     addWearable(spec) { const wearable = { ...structuredClone(spec) }; this._wearables.push(wearable); return wearable; },
     removeWearable(wearable) { const index = this._wearables.indexOf(wearable); if (index >= 0) this._wearables.splice(index, 1); },
