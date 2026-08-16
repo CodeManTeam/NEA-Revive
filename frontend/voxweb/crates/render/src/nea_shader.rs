@@ -314,18 +314,27 @@ fn fs_main(in: VsOut) -> @location(0) vec4f {
   let b = h1 - h0 - 1.0 + h2;
   let face_u = a * base_u + b * base_v;
   let face_v = a * base_v - b * base_u;
-  let tex_coord = get_tex_coord(in.uv, tile_offset(fract(in.world_pos), face_u, face_v));
+  let in_tile = tile_offset(fract(in.world_pos), face_u, face_v);
+  let tex_coord = get_tex_coord(in.uv, in_tile);
   let albedo = textureSample(atlas, atlas_sampler, tex_coord).rgb;
-  let normal_light = saturate(dot(face_normal, normalize(globals.light_direction_gamma.xyz)));
-  let face_shadow = step(0.0, dot(face_normal, globals.light_direction_gamma.xyz));
+  // The original renderer samples material.r/g/b as metalness, smoothness,
+  // and emissive, and perturbs the geometric normal with bump.g/b.
+  let material = textureSample(material_atlas, material_sampler, tex_coord);
+  let bump_coord = get_bump_tex_coord(in.uv + in_tile * (15.0 / 512.0));
+  let bump = textureSample(bump_atlas, bump_sampler, bump_coord);
+  let dh = bump.gb - vec2f(0.5);
+  let shaded_normal = normalize(0.5 * face_normal + dh.x * face_u + dh.y * face_v);
+  let normal_light = saturate(dot(shaded_normal, normalize(globals.light_direction_gamma.xyz)));
+  let face_shadow = step(0.0, dot(shaded_normal, globals.light_direction_gamma.xyz));
   var shadow = face_shadow;
   if (shadow_data.enabled_splits.x > 0.0) {
     shadow = face_shadow * sample_shadows(in.world_pos, face_normal, in.pos);
   }
   let direct = global_shade(normal_light * shadow) * globals.light_color_global.rgb;
   let interpolated_light = 0.25 * (in.light00 + in.light01 + in.light10 + in.light11);
+  let ao = interpolated_light.a * bump.a;
   let irradiance = 100.0 * interpolated_light.rgb +
-    interpolated_light.a * directional_sky(face_normal);
+    ao * directional_sky(shaded_normal);
   // 空气透视 fog factor（与 apply_fog 同一计算，供 F5 显示）
   var view_dir = in.world_pos - globals.eye_exposure.xyz;
   let dist = max(length(view_dir), 0.000001);
@@ -342,7 +351,16 @@ fn fs_main(in: VsOut) -> @location(0) vec4f {
   );
   let uniform_extinction = clamp(exp(-fog_distance * globals.fog_params.w), 0.0, 1.0);
   let fog_amount = min(1.0 - height_extinction * uniform_extinction, globals.fog_params2.z);
-  let mapped = aces_tone_map(globals.eye_exposure.w * albedo * (direct + irradiance));
+  let roughness = 1.0 - material.g;
+  let diffuse = (1.0 - material.r) * albedo;
+  let specular = material.r * (0.04 + 0.96 * albedo);
+  let spec_view_dir = normalize(globals.eye_exposure.xyz - in.world_pos);
+  let half_dir = normalize(spec_view_dir + normalize(globals.light_direction_gamma.xyz));
+  let highlight = pow(saturate(dot(shaded_normal, half_dir)), 8.0 + 56.0 * material.g);
+  let lit = albedo * (diffuse * (direct + irradiance) * ao +
+    specular * highlight * (1.0 - roughness) +
+    material.b * albedo);
+  let mapped = aces_tone_map(globals.eye_exposure.w * lit);
   // Debug view（F1-F6，存 atlas_params.w）：Albedo / Direct / Ambient / Shadow / Fog / Final
   let dbg = globals.atlas_params.w;
   if (dbg > 5.5) { return vec4f(decode_display(mapped), 1.0); }
@@ -398,9 +416,11 @@ mod tests {
         assert!(NEA_FRAGMENT_WGSL.contains("@fragment"), "fragment entry");
         assert!(NEA_FRAGMENT_WGSL.contains("textureSample"), "sampling call");
         assert!(NEA_FRAGMENT_WGSL.contains("material_atlas"));
+        assert!(NEA_FRAGMENT_WGSL.contains("get_bump_tex_coord"));
+        assert!(NEA_FRAGMENT_WGSL.contains("let roughness = 1.0 - material.g"));
         assert!(NEA_FRAGMENT_WGSL.contains("bump_atlas"));
         assert!(NEA_FRAGMENT_WGSL.contains("emissive = material.b"));
-        assert!(!NEA_FRAGMENT_WGSL.contains("textureSample(bump_atlas"));
+        assert!(NEA_FRAGMENT_WGSL.contains("textureSample(bump_atlas"));
         assert!(!NEA_FRAGMENT_WGSL.contains("perturb_normal"));
         assert!(NEA_FRAGMENT_WGSL.contains("global_shade"));
         assert!(NEA_FRAGMENT_WGSL.contains("light_color_global"));
