@@ -96,6 +96,37 @@ fn saturate(v: f32) -> f32 {
   return clamp(v, 0.0, 1.0);
 }
 
+fn pow5(v: f32) -> f32 {
+  let v2 = v * v;
+  return v2 * v2 * v;
+}
+
+fn d_ggx(linear_roughness: f32, no_h: f32) -> f32 {
+  let one_minus_no_h2 = 1.0 - no_h * no_h;
+  let a = no_h * linear_roughness;
+  let k = linear_roughness / max(one_minus_no_h2 + a * a, 0.001);
+  return k * k * (1.0 / 3.141592653589793);
+}
+
+fn v_smith_ggx_correlated(linear_roughness: f32, no_v: f32, no_l: f32) -> f32 {
+  let a2 = linear_roughness * linear_roughness;
+  let ggx_v = no_l * sqrt((no_v - a2 * no_v) * no_v + a2);
+  let ggx_l = no_v * sqrt((no_l - a2 * no_l) * no_l + a2);
+  return 0.5 / max(ggx_v + ggx_l, 0.001);
+}
+
+fn f_schlick(f0: vec3f, vo_h: f32) -> vec3f {
+  return f0 + (vec3f(1.0) - f0) * pow5(1.0 - vo_h);
+}
+
+fn prefiltered_dfg(roughness: f32, no_v: f32) -> vec2f {
+  let c0 = vec4f(-1.0, -0.0275, -0.572, 0.022);
+  let c1 = vec4f(1.0, 0.0425, 1.04, -0.04);
+  let r = roughness * c0 + c1;
+  let a004 = min(r.x * r.x, exp2(-9.28 * no_v)) * r.x + r.y;
+  return vec2f(-1.04, 1.04) * a004 + r.zw;
+}
+
 fn global_shade(value: f32) -> f32 {
   return value * (1.0 - globals.light_color_global.w) + globals.light_color_global.w;
 }
@@ -354,11 +385,40 @@ fn fs_main(in: VsOut) -> @location(0) vec4f {
   );
   let uniform_extinction = clamp(exp(-fog_distance * globals.fog_params.w), 0.0, 1.0);
   let fog_amount = min(1.0 - height_extinction * uniform_extinction, globals.fog_params2.z);
-  // Preserved diffuse early-out used by the original terrain shader. Most
-  // demo-map blocks take this path; AO encloses both direct and irradiance,
-  // while globalLight is deliberately not applied in the non-safe shader.
   let direct = normal_light * shadow * globals.light_color_global.rgb;
-  let lit = albedo * (ao * (direct + irradiance) + 400.0 * material.b);
+  var lit: vec3f;
+  if (material.g < 0.01) {
+    lit = albedo * (ao * (direct + irradiance) + 400.0 * material.b);
+  } else {
+    let n = shaded_normal;
+    let v = normalize(globals.eye_exposure.xyz - in.world_pos);
+    let l = normalize(globals.light_direction_gamma.xyz);
+    let h = normalize(v + l);
+    let no_v = saturate(dot(n, v));
+    let no_l = saturate(dot(n, l));
+    let no_h = saturate(dot(n, h));
+    let lo_h = saturate(dot(l, h));
+    let roughness = 1.0 - material.g;
+    let linear_roughness = roughness * roughness;
+    let diffuse_color = ((1.0 - material.r) / 3.141592653589793) * albedo;
+    let f0 = 0.04 * (1.0 - material.r) + albedo * material.r;
+    let dfg = prefiltered_dfg(roughness, no_v);
+    let specular_color = f0 * dfg.x + vec3f(dfg.y);
+    let brdf = d_ggx(linear_roughness, no_h) *
+      v_smith_ggx_correlated(linear_roughness, no_v, no_l) *
+      f_schlick(f0, lo_h);
+    lit = (no_l * shadow * ao) * globals.light_color_global.rgb *
+      (diffuse_color + brdf);
+    let diffuse_irradiance = ao * irradiance;
+    lit += diffuse_irradiance * diffuse_color;
+    let reflection = -normalize(reflect(v, n));
+    let sky_visibility = 0.25 *
+      (in.light00.a + in.light01.a + in.light10.a + in.light11.a);
+    let reflected_sky = sky_visibility * directional_sky(reflection);
+    let specular_irradiance = mix(reflected_sky, diffuse_irradiance, linear_roughness);
+    lit += specular_irradiance * specular_color;
+    lit += 400.0 * material.b * albedo;
+  }
   let fogged = mix(lit, globals.fog_params3.rgb, fog_amount);
   let mapped = aces_tone_map(globals.eye_exposure.w * fogged);
   // Debug view（F1-F6，存 atlas_params.w）：Albedo / Direct / Ambient / Shadow / Fog / Final
@@ -417,7 +477,9 @@ mod tests {
         assert!(NEA_FRAGMENT_WGSL.contains("textureSample"), "sampling call");
         assert!(NEA_FRAGMENT_WGSL.contains("material_atlas"));
         assert!(NEA_FRAGMENT_WGSL.contains("get_bump_tex_coord"));
-        assert!(NEA_FRAGMENT_WGSL.contains("let lit = albedo * (ao * (direct + irradiance)"));
+        assert!(NEA_FRAGMENT_WGSL.contains("lit = albedo * (ao * (direct + irradiance)"));
+        assert!(NEA_FRAGMENT_WGSL.contains("fn d_ggx"));
+        assert!(NEA_FRAGMENT_WGSL.contains("fn prefiltered_dfg"));
         assert!(NEA_FRAGMENT_WGSL.contains("bump_atlas"));
         assert!(NEA_FRAGMENT_WGSL.contains("emissive = material.b"));
         assert!(NEA_FRAGMENT_WGSL.contains("textureSample(bump_atlas"));
