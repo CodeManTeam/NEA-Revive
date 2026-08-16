@@ -166,54 +166,129 @@ fn recovered_voxel_face_visible(block: u16, neighbour: u16) -> bool {
     }
 }
 
-/// 左上角 FPS 显示控件（DOM 元素，每秒更新一次，避免每帧 DOM 写入）。
+/// 左上角 FPS 图表控件：帧时间折线（最近 180 帧）+ 平均帧耗 + 1% low。
+/// 每帧记录帧耗时，每 500ms 重绘一次 canvas（避免每帧 DOM/Canvas 开销）。
 struct FpsOverlay {
-    element: web_sys::Element,
-    frames: u32,
-    last_update_ms: f64,
+    canvas: web_sys::HtmlCanvasElement,
+    ctx: web_sys::CanvasRenderingContext2d,
+    text: web_sys::Element,
+    frame_times: std::collections::VecDeque<f32>,
+    last_frame_ms: f64,
+    last_ui_update_ms: f64,
 }
+
+const FPS_BUFFER: usize = 180;
 
 impl FpsOverlay {
     fn new(document: &web_sys::Document) -> Result<Self, wasm_bindgen::JsValue> {
         if let Some(previous) = document.get_element_by_id("nea-fps") {
             previous.remove();
         }
-        let element = document.create_element("div")?;
-        element.set_id("nea-fps");
-        element.set_attribute(
+        let root = document.create_element("div")?;
+        root.set_id("nea-fps");
+        root.set_attribute(
             "style",
-            "position:fixed;left:12px;top:12px;color:#fff;font:600 14px Consolas,monospace;text-shadow:0 1px 3px rgba(0,0,0,.9);z-index:30;pointer-events:none;background:rgba(0,0,0,.25);padding:4px 8px;border-radius:4px",
+            "position:fixed;left:12px;top:12px;z-index:30;pointer-events:none;font:600 12px Consolas,monospace;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.9)",
         )?;
         document
             .document_element()
             .ok_or_else(|| wasm_bindgen::JsValue::from_str("no document element"))?
-            .append_child(&element)?;
-        element.set_text_content(Some("FPS: --"));
+            .append_child(&root)?;
+        let text = document.create_element("div")?;
+        text.set_text_content(Some("FPS: --"));
+        root.append_child(&text)?;
+        let canvas = document.create_element("canvas")?;
+        let canvas: web_sys::HtmlCanvasElement = canvas.dyn_into()?;
+        canvas.set_width(240);
+        canvas.set_height(80);
+        root.append_child(&canvas)?;
+        let ctx: web_sys::CanvasRenderingContext2d = canvas
+            .get_context("2d")?
+            .ok_or_else(|| wasm_bindgen::JsValue::from_str("no 2d context"))?
+            .dyn_into()?;
         Ok(Self {
-            element,
-            frames: 0,
-            last_update_ms: 0.0,
+            canvas,
+            ctx,
+            text,
+            frame_times: std::collections::VecDeque::with_capacity(FPS_BUFFER),
+            last_frame_ms: 0.0,
+            last_ui_update_ms: 0.0,
         })
     }
 
     fn record_frame(&mut self, now_ms: f64) {
-        self.frames += 1;
-        let elapsed = now_ms - self.last_update_ms;
-        if elapsed < 1000.0 {
+        if self.last_frame_ms > 0.0 {
+            let dt = (now_ms - self.last_frame_ms) as f32;
+            self.frame_times.push_back(dt.min(250.0));
+            if self.frame_times.len() > FPS_BUFFER {
+                self.frame_times.pop_front();
+            }
+        }
+        self.last_frame_ms = now_ms;
+        if now_ms - self.last_ui_update_ms < 500.0 {
             return;
         }
-        let fps = self.frames as f64 * 1000.0 / elapsed;
-        let frame_ms = elapsed / self.frames as f64;
-        self.frames = 0;
-        self.last_update_ms = now_ms;
-        self.element
-            .set_text_content(Some(&format!("FPS: {fps:.0}  ({frame_ms:.1} ms)")));
+        self.last_ui_update_ms = now_ms;
+        self.draw();
+    }
+
+    fn draw(&mut self) {
+        let n = self.frame_times.len();
+        if n == 0 {
+            return;
+        }
+        let sum: f32 = self.frame_times.iter().sum();
+        let avg_ms = sum / n as f32;
+        let mut sorted: Vec<f32> = self.frame_times.iter().copied().collect();
+        sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        // 1% low：最差 1% 帧时间的平均（p99 帧耗时 → low fps）
+        let low_count = (n / 100).max(1);
+        let low_avg: f32 = sorted[n - low_count..].iter().sum::<f32>() / low_count as f32;
+        let fps = 1000.0 / avg_ms;
+        let low_fps = 1000.0 / low_avg;
+        self.text.set_text_content(Some(&format!(
+            "FPS {fps:.0}  avg {avg_ms:.1}ms  1%low {low_fps:.0}"
+        )));
+
+        let w = self.canvas.width() as f64;
+        let h = self.canvas.height() as f64;
+        let ctx = &self.ctx;
+        ctx.clear_rect(0.0, 0.0, w, h);
+        ctx.set_fill_style(&wasm_bindgen::JsValue::from_str("rgba(0,0,0,0.35)"));
+        ctx.fill_rect(0.0, 0.0, w, h);
+        // 60fps 参考线（16.7ms）与 30fps 参考线（33.3ms）
+        let max_ms = 100.0f64;
+        ctx.set_stroke_style(&wasm_bindgen::JsValue::from_str("rgba(255,255,255,0.2)"));
+        ctx.set_line_width(1.0);
+        for ref_ms in [16.7f64, 33.3] {
+            let y = h * (1.0 - ref_ms / max_ms);
+            ctx.begin_path();
+            ctx.move_to(0.0, y);
+            ctx.line_to(w, y);
+            ctx.stroke();
+        }
+        // 帧时间折线
+        ctx.set_stroke_style(&wasm_bindgen::JsValue::from_str("rgba(120,220,120,0.9)"));
+        ctx.set_line_width(1.5);
+        ctx.begin_path();
+        for (i, &t) in self.frame_times.iter().enumerate() {
+            let x = (i as f64) / (FPS_BUFFER as f64 - 1.0) * w;
+            let y = h - (f64::from(t).min(max_ms) / max_ms) * h;
+            if i == 0 {
+                ctx.move_to(x, y);
+            } else {
+                ctx.line_to(x, y);
+            }
+        }
+        ctx.stroke();
     }
 }
 
 impl Drop for FpsOverlay {
     fn drop(&mut self) {
-        self.element.remove();
+        if let Some(parent) = self.canvas.parent_element() {
+            let _ = parent.remove();
+        }
     }
 }
 
