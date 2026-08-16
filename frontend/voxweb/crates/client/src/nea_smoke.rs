@@ -1474,8 +1474,12 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     renderer.set_environment(&dc.queue, &mvp, &eye, eye_fluid, exposure, inp_debug_view);
                     renderer.draw(&mut pass);
                 }
-                t.alpha_pipeline.draw(&mut pass, t.fluid_pipeline.oit());
-                t.fluid_pipeline.draw(&mut pass);
+                // F4（Shadow debug）下跳过透明面（流体/玻璃），用于隔离
+                // "图层盖在人物之上"是否来自透明渲染。
+                if (inp_debug_view as i32) != 4 {
+                    t.alpha_pipeline.draw(&mut pass, t.fluid_pipeline.oit());
+                    t.fluid_pipeline.draw(&mut pass);
+                }
             }
             t.fluid_pipeline.resolve(&mut encoder, &view);
             dc.queue.submit(Some(encoder.finish()));
