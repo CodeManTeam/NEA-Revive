@@ -468,7 +468,8 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
         &dc.queue,
         &atlas_images,
         AtlasSampling::default(),
-        wgpu::TextureFormat::Rgba8UnormSrgb,
+        // 原版 atlas 是普通 RGBA，采样时不会自动做 sRGB 解码。
+        wgpu::TextureFormat::Rgba8Unorm,
         "nea.atlas",
     )
     .map_err(|error| JsValue::from_str(&format!("color atlas upload: {error}")))?;
@@ -504,6 +505,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
         AtlasSampling {
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::MipmapFilterMode::Linear,
             address_u: wgpu::AddressMode::Repeat,
             address_v: wgpu::AddressMode::Repeat,
         },

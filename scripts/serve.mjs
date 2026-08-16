@@ -58,11 +58,7 @@ backendChild.on("exit", (code) => {
 const distRoot = resolve(rootDir, "frontend", "voxweb", "dist")
 // 本地资源覆盖（asset-overrides）：原版 box3 资产直接从 archive 提供，
 // 让前端用真实水纹/贴图（如 water.bump）替代程序生成的占位。
-const archiveRoot = resolve(rootDir, "backend", "local-player", "archive")
-// slot → (archive 相对路径, content-type)
-const archiveSlots = {
-  "water.bump": { path: "block/QmYGm3ncGqzDyBRq1Kz3VSbMkWmA6CCBdmw13CrGuuhxwk.png", type: "image/png" },
-}
+const assetOverrideRoot = resolve(rootDir, "frontend", "voxweb", "asset-overrides")
 const mime = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript",
@@ -82,36 +78,27 @@ const frontend = createServer(async (req, res) => {
     const urlPath = (req.url ?? "/").split("?")[0]
     // 资源覆盖 manifest：slot → /asset-overrides/files/<name>
     if (urlPath === "/asset-overrides/manifest.json") {
-      const replacements = {}
-      for (const [slot, entry] of Object.entries(archiveSlots)) {
-        replacements[slot] = "/asset-overrides/files/" + encodeURIComponent(slot)
-      }
+      const manifest = JSON.parse(await readFile(join(assetOverrideRoot, "manifest.json"), "utf8"))
       res.writeHead(200, { "content-type": "application/json", "cache-control": "no-cache" })
-      res.end(JSON.stringify({ version: 1, replacements }))
+      res.end(JSON.stringify(manifest))
       return
     }
     // 覆盖文件本体
     if (urlPath.startsWith("/asset-overrides/files/")) {
-      const slot = decodeURIComponent(urlPath.slice("/asset-overrides/files/".length))
-      const entry = archiveSlots[slot]
-      if (!entry) {
-        res.writeHead(404)
-        res.end("unknown asset slot")
-        return
-      }
-      const filePath = resolve(archiveRoot, entry.path)
-      if (!filePath.startsWith(archiveRoot)) {
+      const fileName = decodeURIComponent(urlPath.slice("/asset-overrides/files/".length))
+      if (!/^[A-Za-z0-9._-]+\.png$/.test(fileName)) {
         res.writeHead(403)
         res.end("forbidden")
         return
       }
+      const filePath = resolve(assetOverrideRoot, "files", fileName)
       const info = await stat(filePath).catch(() => null)
       if (!info || !info.isFile()) {
         res.writeHead(404)
         res.end("asset not found")
         return
       }
-      res.writeHead(200, { "content-type": entry.type, "cache-control": "public, max-age=86400" })
+      res.writeHead(200, { "content-type": "image/png", "cache-control": "public, max-age=86400" })
       createReadStream(filePath).pipe(res)
       return
     }

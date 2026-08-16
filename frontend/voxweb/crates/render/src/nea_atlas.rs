@@ -13,6 +13,7 @@ use voxweb_protocol::atlas::AtlasImage;
 pub struct AtlasSampling {
     pub mag_filter: wgpu::FilterMode,
     pub min_filter: wgpu::FilterMode,
+    pub mipmap_filter: wgpu::MipmapFilterMode,
     pub address_u: wgpu::AddressMode,
     pub address_v: wgpu::AddressMode,
 }
@@ -22,6 +23,7 @@ impl Default for AtlasSampling {
         Self {
             mag_filter: wgpu::FilterMode::Nearest,
             min_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::MipmapFilterMode::Linear,
             address_u: wgpu::AddressMode::ClampToEdge,
             address_v: wgpu::AddressMode::ClampToEdge,
         }
@@ -161,7 +163,7 @@ impl AtlasTexture {
             address_mode_w: wgpu::AddressMode::ClampToEdge,
             mag_filter: sampling.mag_filter,
             min_filter: sampling.min_filter,
-            mipmap_filter: wgpu::MipmapFilterMode::Nearest,
+            mipmap_filter: sampling.mipmap_filter,
             ..Default::default()
         });
         AtlasTexture {
@@ -203,6 +205,7 @@ mod tests {
         assert_eq!(s.mag_filter, wgpu::FilterMode::Nearest);
         assert_eq!(s.address_u, wgpu::AddressMode::ClampToEdge);
         assert_eq!(s.address_v, wgpu::AddressMode::ClampToEdge);
+        assert_eq!(s.mipmap_filter, wgpu::MipmapFilterMode::Linear);
     }
 
     #[test]
