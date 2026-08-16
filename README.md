@@ -1,7 +1,8 @@
 # NEA-Revive
 
 **类似 DAO3 的开发者社区本地化运行器。** 给定一个「项目包」（地图 + 代码 + 素材 + 音乐），
-后端 + 前端能在本地完整运行它。首个还原目标：**跑酷（parkour）**地图。
+后端 + 前端能在本地完整运行它。已导入两个项目包：**跑酷（parkour）** 与
+**[Minecraft] 我的世界正式版（minecraft，256×128×256）**。
 
 ## 这是什么
 
@@ -33,16 +34,17 @@ NEA-Revive/
 cd frontend\voxweb
 trunk build --release
 
-# 2. 启动后端 + 前端静态
+# 2. 启动后端 + 前端静态（--map 选择项目包：parkour | minecraft）
 cd ..\..\
-node scripts\serve.mjs
+node scripts\serve.mjs --map minecraft
 
 # 3. 打开（浏览器需 WebGPU，Edge/Chrome ≥113）
 # http://127.0.0.1:18082/start.html?nea=http://127.0.0.1:18081/api/createSession
 ```
 
-后端（18081）加载 `packages/parkour` 项目包；前端（18082）走完整握手链
-（createSession → 3 WS → join → secret → 地形 → 人物模型）。
+后端（18081）加载 `packages/<map>` 项目包；前端（18082）走完整握手链
+（createSession → 3 WS → join → secret → 地形 → 人物模型）。世界 shape（含 128 高的
+minecraft）由 terrain reset 帧动态下发，前后端均已通用化，不再硬编码 256×64×256。
 
 ## 项目包格式
 
@@ -88,9 +90,11 @@ node scripts\serve.mjs
 - [x] 独立工作目录 + git 管理
 - [x] 后端握手链（secret/reset/fetchChunk/net-state/avatar）
 - [x] 前端握手 + 地形渲染 + 人物模型 + 加载界面
-- [x] parkour 项目包（首个，地形为简化版）
-- [ ] parkour 完整地形提取（从 dump websocket 帧）
-- [ ] 更多项目包（通用化验证）
+- [x] parkour 项目包（首个，地形 + 55 方块 + 真实贴图集）
+- [x] 世界 shape 通用化（前后端从 reset 帧读取，支持 256×128×256）
+- [x] minecraft 项目包（第二个：voxel-sparse 地形 1.17M 体素 → 42,837 盒）
+- [ ] minecraft 完整玩法脚本（原 index.js 依赖 20+ 未导出模块）
+- [ ] 全图流式加载/视锥裁剪（当前 ?nea= 烟测渲染出生点周围 5×5 × 全高）
 
 ## 开发指引
 
