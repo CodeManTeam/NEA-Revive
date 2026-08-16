@@ -171,7 +171,11 @@ fn sample_shadows(world_pos: vec3f, face_normal: vec3f, frag_coord: vec4f) -> f3
   // 已移除原恢复版的调试残留分支（忽略 fog + 错误 gamma 1.3）。
   // Debug view（与地形 F1-F6 同步，存 atlas_params.z）：人物也响应
   let dbg = globals.atlas_params.z;
-  if (dbg > 3.5) { return vec4f(vec3f(shadow), 1.0); }        // F4+: Shadow Factor
+  if (dbg > 3.5) {
+    // F4+: 纯 shadow map 采样（不含 face_shadow/ambient.a），区分阴影来源
+    let sm = sample_shadows(input.world_position, normal, input.clip_position);
+    return vec4f(vec3f(sm), 1.0);
+  }
   if (dbg > 2.5) { return vec4f(irradiance / 400.0, 1.0); }   // F3: Ambient/Sky
   if (dbg > 1.5) { return vec4f(direct / 500.0, 1.0); }       // F2: Direct
   if (dbg > 0.5) { return vec4f(rgbe.rgb, 1.0); }             // F1: Albedo
