@@ -288,28 +288,33 @@ pub fn recovered_shadow_frame(
 }
 
 /// 以 `center` 为中心的固定正交级联：shadow_view 空间 XZ 正方形
-/// `[-extent/2, extent/2]`，深度 `[near_z, far_z]`（沿 shadow_view 的 -Z）。
+/// `[-extent/2, extent/2]`，深度覆盖 shadow 相机范围（shadow_view 的 eye 在
+/// center + sun*512，玩家深度≈512，故深度固定 [0.5, 700] 覆盖 ±200 余量）。
+const SHADOW_DEPTH_NEAR: f32 = 0.5;
+const SHADOW_DEPTH_FAR: f32 = 700.0;
+
 fn fit_cascade_fixed(
     shadow_view: Mat4,
     center: Vec3,
     extent: f32,
-    near_z: f32,
-    far_z: f32,
+    _near_z: f32,
+    _far_z: f32,
     uv_bounds: [f32; 4],
     resolution: u32,
 ) -> ShadowCascade {
     let center_shadow = shadow_view.transform_point3(center);
     let width_scale = 2.0 / extent;
     let height_scale = 2.0 / extent;
-    let depth_scale = -1.0 / (far_z - near_z);
+    // 深度：[SHADOW_DEPTH_NEAR, SHADOW_DEPTH_FAR]（shadow_view 空间 -z）→ NDC [-1,1]
+    let depth_scale = -2.0 / (SHADOW_DEPTH_FAR - SHADOW_DEPTH_NEAR);
     let columns = [
         Vec4::new(width_scale, 0.0, 0.0, 0.0),
         Vec4::new(0.0, height_scale, 0.0, 0.0),
-        Vec4::new(0.0, 0.0, 2.0 * depth_scale, 0.0),
+        Vec4::new(0.0, 0.0, depth_scale, 0.0),
         Vec4::new(
             -width_scale * center_shadow.x,
             -height_scale * center_shadow.z,
-            depth_scale * (far_z + near_z),
+            -(SHADOW_DEPTH_NEAR + SHADOW_DEPTH_FAR) / (SHADOW_DEPTH_FAR - SHADOW_DEPTH_NEAR),
             1.0,
         ),
     ];

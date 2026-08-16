@@ -9,7 +9,9 @@ use crate::nea_pipeline::{
 };
 
 const DEFAULT_GAMMA: f32 = 1.3;
-const DEFAULT_GLOBAL_LIGHT: f32 = 0.3;
+// 环境光强度：原值 0.3 使背光面/阴影内偏黑（原版有半球光兜底）。
+// 提高到 0.38 让暗面保留细节，同时保持阴影对比。
+const DEFAULT_GLOBAL_LIGHT: f32 = 0.38;
 const EMISSIVE_SCALE: f32 = 100.0;
 
 /// Natural-sky state at the recovered default phase `4 / 24`.
@@ -110,7 +112,10 @@ pub fn recovered_default_globals(atlas_size: f32, tile_size: f32) -> [f32; GLOBA
 pub fn apply_underwater_globals(values: &mut [f32; GLOBALS_FLOATS], fluid: Option<[f32; 4]>) {
     let Some(fluid) = fluid else { return };
     values[GLOBALS_FOG_OFFSET] = 0.0;
-    values[GLOBALS_FOG_OFFSET + 3] = 0.1 * fluid[3];
+    // 水下雾密度：原实现 0.1*alpha 对 water(alpha=0.2) 只有 0.02，几乎无雾，
+    // 水下看起来和陆地一样。按流体不透明度给下限：water 0.12（约 8 米视野），
+    // 果汁 0.2、咖啡 ~0.28（黑水更看不清）。
+    values[GLOBALS_FOG_OFFSET + 3] = 0.08 + 0.2 * fluid[3];
     values[GLOBALS_FOG2_OFFSET..GLOBALS_FOG2_OFFSET + 4].copy_from_slice(&[0.0, 1.0, 1.0, 0.0]);
     set_rgb(values, GLOBALS_FOG3_OFFSET, [1.0, 1.0, 1.0]);
     for offset in [
@@ -151,7 +156,8 @@ mod tests {
     fn underwater_override_uses_packed_fluid_channels() {
         let mut globals = recovered_default_globals(512.0, 16.0);
         apply_underwater_globals(&mut globals, Some([0.1, 0.2, 0.3, 0.5]));
-        assert_eq!(globals[GLOBALS_FOG_OFFSET + 3], 0.05);
+        // 新公式：0.08 + 0.2 * alpha = 0.18（原 0.1*alpha=0.05 对 water 几乎无雾）
+        assert_eq!(globals[GLOBALS_FOG_OFFSET + 3], 0.18);
         assert_eq!(
             &globals[GLOBALS_SKY_FRONT_OFFSET..GLOBALS_SKY_FRONT_OFFSET + 3],
             &[0.1, 0.2, 0.3]
