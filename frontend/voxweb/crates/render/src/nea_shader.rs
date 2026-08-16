@@ -357,10 +357,14 @@ fn fs_main(in: VsOut) -> @location(0) vec4f {
   let spec_view_dir = normalize(globals.eye_exposure.xyz - in.world_pos);
   let half_dir = normalize(spec_view_dir + normalize(globals.light_direction_gamma.xyz));
   let highlight = pow(saturate(dot(shaded_normal, half_dir)), 8.0 + 56.0 * material.g);
-  let lit = albedo * (diffuse * (direct + irradiance) * ao +
+  // Keep albedo in the diffuse/specular terms exactly once. The previous
+  // port multiplied the complete lit result by albedo a second time, which
+  // flattened the yellow terrain and destroyed its block-level contrast.
+  let lit = diffuse * (direct + irradiance) * ao +
     specular * highlight * (1.0 - roughness) +
-    material.b * albedo);
-  let mapped = aces_tone_map(globals.eye_exposure.w * lit);
+    material.b * albedo;
+  let fogged = mix(lit, globals.fog_params3.rgb, fog_amount);
+  let mapped = aces_tone_map(globals.eye_exposure.w * fogged);
   // Debug view（F1-F6，存 atlas_params.w）：Albedo / Direct / Ambient / Shadow / Fog / Final
   let dbg = globals.atlas_params.w;
   if (dbg > 5.5) { return vec4f(decode_display(mapped), 1.0); }
