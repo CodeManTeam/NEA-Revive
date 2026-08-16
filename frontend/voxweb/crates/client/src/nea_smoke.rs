@@ -574,6 +574,8 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
     let mut eye_exposure = EyeExposure::new(RECOVERED_INITIAL_EXPOSURE);
     let mut eye_ambient = 1.0f32;
     let mut last_eye_ambient_ms = 0u32;
+    let mut exposure_synchronized = false;
+    let mut last_exposure_log_ms = 0u32;
     // keyboard input state (shared with the JS event closures)
     let input = Rc::new(RefCell::new(InputState::default()));
     install_keyboard(&canvas, &input);
@@ -1411,8 +1413,22 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 });
                 last_eye_ambient_ms = now_ms();
             }
-            let exposure =
-                eye_exposure.update(default_environment.target_exposure(eye_ambient), false);
+            let exposure_target = default_environment.target_exposure(eye_ambient);
+            // During the original initial world sync netSkip is set, which
+            // snaps the schema default exposure to the measured target.
+            // Without this, the first several seconds render about 4x too
+            // bright while the logarithmic adaptation slowly catches up.
+            let exposure = eye_exposure.update(exposure_target, !exposure_synchronized);
+            exposure_synchronized = true;
+            if now_ms() - last_exposure_log_ms > 2000 {
+                jslog!(
+                    "[nea] lighting ambient={:.4} exposure={:.6} target={:.6}",
+                    eye_ambient,
+                    exposure,
+                    exposure_target
+                );
+                last_exposure_log_ms = now_ms();
+            }
             t.fluid_pipeline.set_frame(
                 &dc.queue,
                 &mvp,
