@@ -250,27 +250,23 @@ impl NeaShadowFrame {
 
 pub fn recovered_shadow_frame(
     eye: Vec3,
-    _camera_view: Mat4,
-    _fov_y: f32,
-    _aspect: f32,
+    camera_view: Mat4,
+    fov_y: f32,
+    aspect: f32,
     near: f32,
     far: f32,
     sun_direction: Vec3,
     resolution: u32,
 ) -> NeaShadowFrame {
-    // 稳定阴影：级联以玩家位置为中心、固定世界范围，不随相机朝向重建。
-    // 原实现用相机视锥角点拟合级联 → 相机旋转时 shadow 矩阵剧烈变化，
-    // 造成「影子形状无规律变换」。这里只在玩家移动时缓慢跟随。
     let z = recovered_cascade_z(near, far);
     let sun = sun_direction.normalize_or_zero();
     let shadow_view = Mat4::look_at_rh(eye + sun * 512.0, eye, Vec3::Z);
-    // 固定级联世界范围（以玩家为中心的 XZ 正方形边长）
-    let extents = [24.0, 64.0, 160.0, 320.0];
     let cascades = std::array::from_fn(|index| {
-        fit_cascade_fixed(
+        fit_cascade(
+            camera_view,
             shadow_view,
-            eye,
-            extents[index],
+            fov_y,
+            aspect,
             z[index],
             z[index + 1],
             CASCADE_VIEWPORTS[index],
