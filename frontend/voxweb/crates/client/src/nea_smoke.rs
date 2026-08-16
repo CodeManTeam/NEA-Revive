@@ -147,10 +147,23 @@ fn block_surface_friction(block: u16) -> f32 {
         .map_or(1.0, |entry| entry.friction)
 }
 
-/// DAO3 barrier（id=650）是隐形屏障：不渲染，但保留碰撞与面剔除参与
-/// （相邻 opaque 方块的面照常显示，因为 barrier 不提供视觉遮挡）。
-fn is_invisible_block(id: u16) -> bool {
+/// DAO3 barrier（id=650）：隐形屏障但**按不透明渲染**（有贴图）——
+/// 既避免半透明网格造成的透视，也避免完全不渲染导致地面层悬空/底部透空。
+/// 面剔除时视作 opaque（奇数规则）。
+fn is_barrier_block(id: u16) -> bool {
     matches!(id, 650)
+}
+
+fn recovered_voxel_face_visible(block: u16, neighbour: u16) -> bool {
+    let block = block & voxweb_protocol::geometry::BLOCK_ID_MASK;
+    let neighbour = neighbour & voxweb_protocol::geometry::BLOCK_ID_MASK;
+    let block_opaque = block & 1 != 0 || is_barrier_block(block);
+    let neighbour_opaque = neighbour & 1 != 0 || is_barrier_block(neighbour);
+    if block_opaque {
+        !neighbour_opaque
+    } else {
+        block != 0 && neighbour == 0
+    }
 }
 
 /// 左上角 FPS 显示控件（DOM 元素，每秒更新一次，避免每帧 DOM 写入）。
@@ -201,16 +214,6 @@ impl FpsOverlay {
 impl Drop for FpsOverlay {
     fn drop(&mut self) {
         self.element.remove();
-    }
-}
-
-fn recovered_voxel_face_visible(block: u16, neighbour: u16) -> bool {
-    let block = block & voxweb_protocol::geometry::BLOCK_ID_MASK;
-    let neighbour = neighbour & voxweb_protocol::geometry::BLOCK_ID_MASK;
-    if block & 1 != 0 {
-        neighbour & 1 == 0
-    } else {
-        block != 0 && neighbour == 0
     }
 }
 
@@ -1550,11 +1553,6 @@ impl RenderTerrain {
                             let Some(entry) = catalog.get(block_id) else {
                                 continue;
                             };
-                            // DAO3 barrier（隐形屏障）：不渲染任何面（保持碰撞），
-                            // 避免大量半透明网格造成的「各种透视」。
-                            if is_invisible_block(block_id) {
-                                continue;
-                            }
                             let unrotated_rects = [
                                 voxweb_protocol::geometry::face_uv_rect(entry.faces.px, 512.0),
                                 voxweb_protocol::geometry::face_uv_rect(entry.faces.nx, 512.0),
@@ -1666,7 +1664,8 @@ impl RenderTerrain {
                                 &voxel_light,
                                 &chunk_index,
                             );
-                            let uses_alpha = block_id & 1 == 0;
+                            // barrier 按不透明渲染（其余偶数 id 才是 alpha 透明方块）
+                            let uses_alpha = block_id & 1 == 0 && !is_barrier_block(block_id);
                             if uses_alpha {
                                 alpha_verts.extend_from_slice(&packed.vertices);
                                 alpha_idx
