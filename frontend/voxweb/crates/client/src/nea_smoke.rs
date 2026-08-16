@@ -399,6 +399,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
     // Populated after the terrain reset arrives (spawn + world shape are
     // authoritative there); each entry is (cx, cy, cz).
     let mut pending_chunks: Vec<(u32, u32, u32)> = Vec::new();
+    let mut near_count: usize = 0;
     let mut chunk_cells: Vec<(u32, u32, u32, Vec<u16>)> = Vec::new();
     // net-state: incremental base + decoded player body position
     let mut ns_base = voxweb_protocol::netstate::NetStateBase::default();
@@ -630,21 +631,32 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                 let scy = (reset.origin[1] as u32 / 32).clamp(0, grid[1] - 1);
                                 let scz = (reset.origin[2] as u32 / 32).clamp(0, grid[2] - 1);
                                 if pending_chunks.is_empty() {
-                                    // 5×5 xz around spawn, full height.
-                                    let x0 = scx.saturating_sub(2);
-                                    let x1 = (scx + 2).min(grid[0] - 1);
-                                    let z0 = scz.saturating_sub(2);
-                                    let z1 = (scz + 2).min(grid[2] - 1);
+                                    // 全图拉取（minecraft 8×8×4=256 chunks）：所有 xz × 全高。
+                                    // near（出生点周围 5×5×全高）排序在前，先渲染出生区域，
+                                    // 其余后台补全后重建全图。
+                                    let x1 = grid[0] - 1;
+                                    let z1 = grid[2] - 1;
+                                    let mut near = Vec::new();
+                                    let mut rest = Vec::new();
                                     for cy in 0..grid[1] {
-                                        for cx in x0..=x1 {
-                                            for cz in z0..=z1 {
-                                                pending_chunks.push((cx, cy, cz));
+                                        for cx in 0..=x1 {
+                                            for cz in 0..=z1 {
+                                                let entry = (cx, cy, cz);
+                                                if cx.abs_diff(scx) <= 2 && cz.abs_diff(scz) <= 2 {
+                                                    near.push(entry);
+                                                } else {
+                                                    rest.push(entry);
+                                                }
                                             }
                                         }
                                     }
+                                    pending_chunks = near;
+                                    near_count = pending_chunks.len();
+                                    pending_chunks.extend(rest);
                                     jslog!(
-                                        "[nea] fetch plan: {} chunks (spawn chunk {},{},{})",
+                                        "[nea] fetch plan: {} chunks (full map, near={}, spawn chunk {},{},{})",
                                         pending_chunks.len(),
+                                        near_count,
                                         scx,
                                         scy,
                                         scz
@@ -727,92 +739,113 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                             }
                                         }
                                     }
-                                    // rebuild terrain once all chunks arrived
-                                    if terrain.is_none()
-                                        && !pending_chunks.is_empty()
-                                        && chunk_cells.len() == pending_chunks.len()
-                                    {
-                                        terrain = Some(RenderTerrain::build_chunks(
-                                            &dc.device,
-                                            &atlas,
-                                            &material_atlas,
-                                            &bump_atlas,
-                                            &water_bump,
-                                            &chunk_cells,
-                                            dc.surface_format,
-                                            width,
-                                            height,
-                                        ));
-                                        // place the player on the terrain
-                                        // top (solid block with 4 AIR
-                                        // blocks above so the standing
-                                        // player at eye 1.62 has clear
-                                        // view — probing only y+1 left
-                                        // the head inside a ceiling,
-                                        // rendering black)
-                                        for gy in 0..=128 {
-                                            if solid_at(
+                                    // 分批渐进构建：near（出生点周围）全部到达即先渲染，
+                                    // 全图（256 chunks）到达后重建补全其余区域。
+                                    let arrived = chunk_cells.len();
+                                    let near_done = near_count > 0 && arrived >= near_count;
+                                    if !pending_chunks.is_empty() && near_done {
+                                        if terrain.is_none() {
+                                            terrain = Some(RenderTerrain::build_chunks(
+                                                &dc.device,
+                                                &atlas,
+                                                &material_atlas,
+                                                &bump_atlas,
+                                                &water_bump,
                                                 &chunk_cells,
-                                                local_pos[0],
-                                                gy as f32,
-                                                local_pos[2],
-                                            ) && !solid_at(
-                                                &chunk_cells,
-                                                local_pos[0],
-                                                gy as f32 + 1.0,
-                                                local_pos[2],
-                                            ) && !solid_at(
-                                                &chunk_cells,
-                                                local_pos[0],
-                                                gy as f32 + 2.0,
-                                                local_pos[2],
-                                            ) && !solid_at(
-                                                &chunk_cells,
-                                                local_pos[0],
-                                                gy as f32 + 3.0,
-                                                local_pos[2],
-                                            ) && !solid_at(
-                                                &chunk_cells,
-                                                local_pos[0],
-                                                gy as f32 + 4.0,
-                                                local_pos[2],
-                                            ) {
-                                                // 玩家脚底应落在「脚下 solid 方块顶面」(gy+1)，
-                                                // center = 顶面 + body 半高。旧公式 gy+1.1 让脚底
-                                                // 落在方块内部 (gy)，物理会把玩家顶出/弹飞（悬空下落）。
-                                                local_pos[1] =
-                                                    gy as f32 + 1.0 + local_body_half_extents[1];
-                                                local_vel[1] = 0.0;
-                                                // 若本地物理已初始化（地形重建等），同步其位置，
-                                                // 避免旧位置继续主导（悬空/下落）。
-                                                if let Some(p) = local_physics.as_mut() {
-                                                    p.position = local_pos;
-                                                    p.velocity = [0.0, 0.0, 0.0];
-                                                    p.grounded = true;
+                                                dc.surface_format,
+                                                width,
+                                                height,
+                                            ));
+                                            // place the player on the terrain
+                                            // top (solid block with 4 AIR
+                                            // blocks above so the standing
+                                            // player at eye 1.62 has clear
+                                            // view — probing only y+1 left
+                                            // the head inside a ceiling,
+                                            // rendering black)
+                                            for gy in 0..=128 {
+                                                if solid_at(
+                                                    &chunk_cells,
+                                                    local_pos[0],
+                                                    gy as f32,
+                                                    local_pos[2],
+                                                ) && !solid_at(
+                                                    &chunk_cells,
+                                                    local_pos[0],
+                                                    gy as f32 + 1.0,
+                                                    local_pos[2],
+                                                ) && !solid_at(
+                                                    &chunk_cells,
+                                                    local_pos[0],
+                                                    gy as f32 + 2.0,
+                                                    local_pos[2],
+                                                ) && !solid_at(
+                                                    &chunk_cells,
+                                                    local_pos[0],
+                                                    gy as f32 + 3.0,
+                                                    local_pos[2],
+                                                ) && !solid_at(
+                                                    &chunk_cells,
+                                                    local_pos[0],
+                                                    gy as f32 + 4.0,
+                                                    local_pos[2],
+                                                ) {
+                                                    // 玩家脚底应落在「脚下 solid 方块顶面」(gy+1)，
+                                                    // center = 顶面 + body 半高。旧公式 gy+1.1 让脚底
+                                                    // 落在方块内部 (gy)，物理会把玩家顶出/弹飞（悬空下落）。
+                                                    local_pos[1] =
+                                                        gy as f32 + 1.0 + local_body_half_extents[1];
+                                                    local_vel[1] = 0.0;
+                                                    // 若本地物理已初始化（地形重建等），同步其位置，
+                                                    // 避免旧位置继续主导（悬空/下落）。
+                                                    if let Some(p) = local_physics.as_mut() {
+                                                        p.position = local_pos;
+                                                        p.velocity = [0.0, 0.0, 0.0];
+                                                        p.grounded = true;
+                                                    }
+                                                    player_pos = Some(local_pos);
+                                                    break;
                                                 }
-                                                player_pos = Some(local_pos);
-                                                break;
                                             }
+                                            jslog!(
+                                                "[nea] spawn ground: pos=({:.1},{:.1},{:.1})",
+                                                local_pos[0],
+                                                local_pos[1],
+                                                local_pos[2]
+                                            );
+                                            let foot_block = block_voxel_at(
+                                                &chunk_cells,
+                                                local_pos[0].floor() as i32,
+                                                (local_pos[1] - local_body_half_extents[1]).floor() as i32,
+                                                local_pos[2].floor() as i32,
+                                            );
+                                            jslog!(
+                                                "[nea] spawn foot block={} half_h={:.2}",
+                                                foot_block,
+                                                local_body_half_extents[1]
+                                            );
+                                            loading.set_status("地形渲染完成，进入世界…");
+                                            loading.set_progress(0.98);
+                                        } else if arrived == pending_chunks.len() {
+                                            // 全图到达 → 重建补全其余区域（位置保持）
+                                            jslog!(
+                                                "[nea] rebuilding full map terrain ({} chunks)",
+                                                arrived
+                                            );
+                                            terrain = Some(RenderTerrain::build_chunks(
+                                                &dc.device,
+                                                &atlas,
+                                                &material_atlas,
+                                                &bump_atlas,
+                                                &water_bump,
+                                                &chunk_cells,
+                                                dc.surface_format,
+                                                width,
+                                                height,
+                                            ));
+                                            loading.set_status("全图加载完成");
+                                            loading.set_progress(1.0);
                                         }
-                                        jslog!(
-                                            "[nea] spawn ground: pos=({:.1},{:.1},{:.1})",
-                                            local_pos[0],
-                                            local_pos[1],
-                                            local_pos[2]
-                                        );
-                                        let foot_block = block_voxel_at(
-                                            &chunk_cells,
-                                            local_pos[0].floor() as i32,
-                                            (local_pos[1] - local_body_half_extents[1]).floor() as i32,
-                                            local_pos[2].floor() as i32,
-                                        );
-                                        jslog!(
-                                            "[nea] spawn foot block={} half_h={:.2}",
-                                            foot_block,
-                                            local_body_half_extents[1]
-                                        );
-                                        loading.set_status("地形渲染完成，进入世界…");
-                                        loading.set_progress(0.98);
                                     }
                                 }
                             }
