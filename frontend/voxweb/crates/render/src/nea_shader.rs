@@ -289,8 +289,9 @@ fn shade_voxel(in: VsOut) -> vec4f {
   );
   let fogged = apply_fog(shaded, in.world_pos);
   let mapped = aces_tone_map(globals.eye_exposure.w * fogged);
-  let corrected = pow(mapped, vec3f(1.0 / globals.light_direction_gamma.w));
-  return vec4f(corrected, shadow);
+  // surface 是 sRGB（GPU 自动编码），不再手动 pow(1/gamma)——
+  // 双重重编码使有效 gamma≈2.86，导致暗部压黑、颜色失真。
+  return vec4f(mapped, shadow);
 }
 
 @fragment
@@ -318,8 +319,8 @@ fn fs_main(in: VsOut) -> @location(0) vec4f {
   let irradiance = 100.0 * interpolated_light.rgb +
     interpolated_light.a * directional_sky(face_normal);
   let mapped = aces_tone_map(globals.eye_exposure.w * albedo * (direct + irradiance));
-  let corrected = pow(mapped, vec3f(1.0 / globals.light_direction_gamma.w));
-  return vec4f(corrected, 1.0);
+  // 同上：sRGB surface 自动编码，不做第二次 gamma。
+  return vec4f(mapped, 1.0);
 }
 "#;
 

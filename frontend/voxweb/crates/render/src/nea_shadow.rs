@@ -282,9 +282,21 @@ pub fn recovered_shadow_frame(
         )
     });
     NeaShadowFrame {
-        splits: [z[1], z[2], z[3]],
+        // shader 用 `frag_coord.z/w`（NDC 深度 0..1）选级联，而 z[1..3] 是视距米
+        // （16/48/128）。两者直接比较会让所有像素几乎全选最近级联 → 远处阴影
+        // 全部失效。把视距 split 转成对应 NDC 深度阈值（perspective 逆映射）。
+        splits: [ndc_depth(near, far, z[1]), ndc_depth(near, far, z[2]), ndc_depth(near, far, z[3])],
         cascades,
     }
+}
+
+/// 视距 z（米）→ 相机 NDC 深度（0..1，perspective_rh）：
+/// ndc = far*(z-near) / (z*(far-near))
+fn ndc_depth(near: f32, far: f32, z: f32) -> f32 {
+    if z <= near {
+        return 0.0;
+    }
+    (far * (z - near) / (z * (far - near))).clamp(0.0, 1.0)
 }
 
 /// 以 `center` 为中心的固定正交级联：shadow_view 空间 XZ 正方形
@@ -504,7 +516,18 @@ mod tests {
             Vec3::new(0.5, 0.86, 0.1),
             1024,
         );
-        assert_eq!(frame.splits, [16.0, 48.0, 128.0]);
+        // splits 现在是 NDC 深度（视距 16/48/128 米 → 0..1）
+        let expected = [
+            ndc_depth(0.1, 2000.0, 16.0),
+            ndc_depth(0.1, 2000.0, 48.0),
+            ndc_depth(0.1, 2000.0, 128.0),
+        ];
+        assert!(
+            (frame.splits[0] - expected[0]).abs() < 1.0e-5
+                && (frame.splits[1] - expected[1]).abs() < 1.0e-5
+                && (frame.splits[2] - expected[2]).abs() < 1.0e-5
+        );
+        assert!(frame.splits[0] > 0.9 && frame.splits[0] < frame.splits[1] && frame.splits[1] < frame.splits[2]);
         assert_eq!(frame.cascades[3].viewport, [512, 512, 512, 512]);
         assert!(
             frame
@@ -513,7 +536,8 @@ mod tests {
                 .all(|cascade| cascade.view_projection.is_finite())
         );
         let uniform = frame.uniform_data(true);
-        assert_eq!(&uniform[0..4], &[1.0, 16.0, 48.0, 128.0]);
+        assert_eq!(uniform[0], 1.0);
+        assert!((uniform[1] - expected[0]).abs() < 1.0e-5);
         assert_eq!(&uniform[132..134], &[0.0, 0.0]);
         assert_eq!(&uniform[144..146], &[0.5, 0.5]);
     }
