@@ -1466,8 +1466,9 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     occlusion_query_set: None,
                     multiview_mask: None,
                 });
+                let inp_debug_view = input.borrow().debug_view;
                 t.pipeline
-                    .set_camera(&dc.queue, &mvp, &eye, eye_fluid, exposure);
+                    .set_camera(&dc.queue, &mvp, &eye, eye_fluid, exposure, inp_debug_view);
                 t.pipeline.draw(&mut pass);
                 if let Some(renderer) = avatar_renderer.as_ref() {
                     renderer.set_environment(&dc.queue, &mvp, &eye, eye_fluid, exposure);
@@ -2211,6 +2212,8 @@ struct InputState {
     local_yaw: f32,
     /// accumulated mouse deltas (m76459:11081 lookAxisMovement)
     look_axis: [f32; 2],
+    /// Debug view 模式：F1=Albedo F2=Direct F3=Ambient/Sky F4=Shadow F5=Fog F6=Final
+    debug_view: f32,
 }
 
 impl Default for InputState {
@@ -2232,6 +2235,7 @@ impl Default for InputState {
             local_pitch: 0.0,
             local_yaw: 0.0,
             look_axis: [0.0, 0.0],
+            debug_view: 0.0,
         }
     }
 }
@@ -2427,6 +2431,26 @@ fn install_keyboard(canvas: &HtmlCanvasElement, input: &Rc<RefCell<InputState>>)
                 }
                 "ShiftLeft" | "ShiftRight" => {
                     s.crouching = true;
+                    handled = true;
+                }
+                // Debug view 切换：F1..F6（再按同键回到 Final）
+                "F1" | "F2" | "F3" | "F4" | "F5" | "F6" => {
+                    let index = code.as_str().chars().nth(1).and_then(|c| c.to_digit(10));
+                    if let Some(i) = index {
+                        let value = i as f32;
+                        s.debug_view = if (s.debug_view - value).abs() < 0.5 { 0.0 } else { value };
+                        web_sys::console::log_1(&wasm_bindgen::JsValue::from_str(&format!(
+                            "[nea] debug view F{i}: {}",
+                            match i {
+                                1 => "Albedo",
+                                2 => "Direct",
+                                3 => "Ambient/Sky",
+                                4 => "Shadow",
+                                5 => "Fog",
+                                _ => "Final",
+                            }
+                        )));
+                    }
                     handled = true;
                 }
                 _ => {}

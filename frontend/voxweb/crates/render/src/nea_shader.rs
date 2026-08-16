@@ -318,9 +318,31 @@ fn fs_main(in: VsOut) -> @location(0) vec4f {
   let interpolated_light = 0.25 * (in.light00 + in.light01 + in.light10 + in.light11);
   let irradiance = 100.0 * interpolated_light.rgb +
     interpolated_light.a * directional_sky(face_normal);
+  // 空气透视 fog factor（与 apply_fog 同一计算，供 F5 显示）
+  var view_dir = in.world_pos - globals.eye_exposure.xyz;
+  let dist = max(length(view_dir), 0.000001);
+  view_dir /= dist;
+  let fog_distance = max(0.0, dist - globals.fog_params.x);
+  let fog_height = in.world_pos.y - globals.fog_params.y;
+  let view_y = select(-0.000001, view_dir.y, abs(view_dir.y) > 0.000001);
+  let height_extinction = 1.0 - clamp(
+    (1.0 / view_y) * (
+      exp(globals.fog_params.z * (fog_distance * view_y - fog_height)) -
+      exp(-globals.fog_params.z * fog_height)
+    ),
+    0.0, 1.0,
+  );
+  let uniform_extinction = clamp(exp(-fog_distance * globals.fog_params.w), 0.0, 1.0);
+  let fog_amount = min(1.0 - height_extinction * uniform_extinction, globals.fog_params2.z);
   let mapped = aces_tone_map(globals.eye_exposure.w * albedo * (direct + irradiance));
-  // 同上：sRGB surface 自动编码，不做第二次 gamma。
-  return vec4f(mapped, 1.0);
+  // Debug view（F1-F6，存 atlas_params.z）：Albedo / Direct / Ambient / Shadow / Fog / Final
+  let dbg = globals.atlas_params.z;
+  if (dbg > 5.5) { return vec4f(mapped, 1.0); }
+  if (dbg > 4.5) { return vec4f(vec3f(fog_amount), 1.0); }
+  if (dbg > 3.5) { return vec4f(vec3f(shadow), 1.0); }
+  if (dbg > 2.5) { return vec4f(irradiance / 400.0, 1.0); }
+  if (dbg > 1.5) { return vec4f(direct / 500.0, 1.0); }
+  return vec4f(albedo, 1.0);
 }
 "#;
 

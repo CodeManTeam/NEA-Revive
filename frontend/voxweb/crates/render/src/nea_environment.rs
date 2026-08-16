@@ -74,7 +74,10 @@ pub fn recovered_default_globals(atlas_size: f32, tile_size: f32) -> [f32; GLOBA
         values[GLOBALS_MVP_OFFSET + index] = 1.0;
     }
     values[GLOBALS_EYE_EXPOSURE_OFFSET + 3] = environment.exposure;
-    values[GLOBALS_FOG_OFFSET..GLOBALS_FOG_OFFSET + 4].copy_from_slice(&[0.0, -8.0, 0.8, 0.0]);
+    // 世界雾（空气透视）：fog = [起始距离, 高度基准, 高度衰减, 密度]。
+    // 原值密度 0 = 无雾 → 远处物体过暗过饱和、无空气透视。给默认密度
+    // 0.003（约 300 米 59% 混向天空色），起始 16 米。
+    values[GLOBALS_FOG_OFFSET..GLOBALS_FOG_OFFSET + 4].copy_from_slice(&[16.0, -8.0, 0.8, 0.003]);
     values[GLOBALS_LIGHT_GAMMA_OFFSET..GLOBALS_LIGHT_GAMMA_OFFSET + 4].copy_from_slice(&[
         environment.sun_direction[0],
         environment.sun_direction[1],
@@ -142,9 +145,10 @@ mod tests {
     #[test]
     fn recovered_defaults_replace_approximate_environment() {
         let globals = recovered_default_globals(512.0, 16.0);
+        // 世界雾：起始 16 米、密度 0.003（空气透视）
         assert_eq!(
             &globals[GLOBALS_FOG_OFFSET..GLOBALS_FOG_OFFSET + 4],
-            &[0.0, -8.0, 0.8, 0.0]
+            &[16.0, -8.0, 0.8, 0.003]
         );
         assert_eq!(globals[GLOBALS_LIGHT_GAMMA_OFFSET + 3], 1.3);
         assert_eq!(globals[GLOBALS_FOG2_OFFSET], 1.0);

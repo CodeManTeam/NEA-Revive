@@ -25,6 +25,8 @@ pub const GLOBALS_SKY_BOTTOM_OFFSET: usize = 52;
 pub const GLOBALS_SKY_FRONT_OFFSET: usize = 56;
 pub const GLOBALS_SKY_BACK_OFFSET: usize = 60;
 pub const GLOBALS_ATLAS_OFFSET: usize = 64;
+/// Debug view 模式（F1-F6）：存 atlas_params.z（原恢复布局里 z/w 空闲）。
+pub const GLOBALS_DEBUG_MODE_OFFSET: usize = GLOBALS_ATLAS_OFFSET + 2;
 
 /// A full NEA terrain pipeline: atlas texture + mesh buffers + pipeline.
 pub struct NeaTerrainPipeline {
@@ -278,11 +280,13 @@ impl NeaTerrainPipeline {
         eye: &[f32; 3],
         eye_fluid: Option<[f32; 4]>,
         exposure: f32,
+        debug_mode: f32,
     ) {
         let mut globals = recovered_default_globals(512.0, 16.0);
         globals[GLOBALS_MVP_OFFSET..GLOBALS_MVP_OFFSET + 16].copy_from_slice(mvp);
         globals[GLOBALS_EYE_EXPOSURE_OFFSET..GLOBALS_EYE_EXPOSURE_OFFSET + 3].copy_from_slice(eye);
         globals[GLOBALS_EYE_EXPOSURE_OFFSET + 3] = exposure;
+        globals[GLOBALS_DEBUG_MODE_OFFSET] = debug_mode;
         apply_underwater_globals(&mut globals, eye_fluid);
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::cast_slice(&globals));
     }
