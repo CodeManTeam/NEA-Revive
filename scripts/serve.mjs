@@ -56,6 +56,13 @@ backendChild.on("exit", (code) => {
 
 // ---- 前端静态服务器 ----
 const distRoot = resolve(rootDir, "frontend", "voxweb", "dist")
+// 本地资源覆盖（asset-overrides）：原版 box3 资产直接从 archive 提供，
+// 让前端用真实水纹/贴图（如 water.bump）替代程序生成的占位。
+const archiveRoot = resolve(rootDir, "backend", "local-player", "archive")
+// slot → (archive 相对路径, content-type)
+const archiveSlots = {
+  "water.bump": { path: "block/QmYGm3ncGqzDyBRq1Kz3VSbMkWmA6CCBdmw13CrGuuhxwk.png", type: "image/png" },
+}
 const mime = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript",
@@ -73,6 +80,41 @@ const mime = {
 const frontend = createServer(async (req, res) => {
   try {
     const urlPath = (req.url ?? "/").split("?")[0]
+    // 资源覆盖 manifest：slot → /asset-overrides/files/<name>
+    if (urlPath === "/asset-overrides/manifest.json") {
+      const replacements = {}
+      for (const [slot, entry] of Object.entries(archiveSlots)) {
+        replacements[slot] = "/asset-overrides/files/" + encodeURIComponent(slot)
+      }
+      res.writeHead(200, { "content-type": "application/json", "cache-control": "no-cache" })
+      res.end(JSON.stringify({ version: 1, replacements }))
+      return
+    }
+    // 覆盖文件本体
+    if (urlPath.startsWith("/asset-overrides/files/")) {
+      const slot = decodeURIComponent(urlPath.slice("/asset-overrides/files/".length))
+      const entry = archiveSlots[slot]
+      if (!entry) {
+        res.writeHead(404)
+        res.end("unknown asset slot")
+        return
+      }
+      const filePath = resolve(archiveRoot, entry.path)
+      if (!filePath.startsWith(archiveRoot)) {
+        res.writeHead(403)
+        res.end("forbidden")
+        return
+      }
+      const info = await stat(filePath).catch(() => null)
+      if (!info || !info.isFile()) {
+        res.writeHead(404)
+        res.end("asset not found")
+        return
+      }
+      res.writeHead(200, { "content-type": entry.type, "cache-control": "public, max-age=86400" })
+      createReadStream(filePath).pipe(res)
+      return
+    }
     let filePath = normalize(join(distRoot, urlPath === "/" ? "start.html" : urlPath))
     if (!filePath.startsWith(distRoot)) {
       res.writeHead(403)

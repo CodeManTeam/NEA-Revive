@@ -123,8 +123,9 @@ fn fs_main(in: VsOut) {
     fresnel * reflection_color +
     extinction * in.fog.rgb;
   let mapped = aces_tone_map(globals.eye_exposure.w * color);
-  // sRGB surface 自动编码：输出 pow(A, 2.2) 让 GPU 编码还原（与地形/人物一致）
-  oit_store(vec4f(pow(mapped, vec3f(2.2)), extinction), in.position);
+  // 原版 outputFragment：pow(rgb, 1/gamma)，gamma=1.3 → pow(x, 1/1.3)≈pow(x,0.769)
+  // （sRGB surface 上最终显示 = shader 输出值，故原版为提亮方向；此前 pow(2.2) 压暗方向相反）
+  oit_store(vec4f(pow(mapped, vec3f(1.0 / 1.3)), extinction), in.position);
 }
 "#;
 

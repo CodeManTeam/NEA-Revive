@@ -106,11 +106,11 @@ fn aces_tone_map(color: vec3f) -> vec3f {
   return clamp(mapped, vec3f(0.0), vec3f(1.0));
 }
 
-/// 把 tone-mapped 显示值（sRGB 空间）解码回 linear，交给 sRGB surface 的
-/// 自动编码：输出 pow(A, 2.2) → GPU 编码 sRGB_encode(pow(A,2.2)) = A。
-/// （此前误用 1/2.2，反而把显示值再压暗 → 画面更糟。）
+/// 原版 outputFragment 的显示端 gamma：pow(rgb, 1/gamma)，gamma=1.3
+/// （box3 渲染器 environment.gamma 默认 1.3，提亮方向；sRGB surface 上
+/// 最终显示 = shader 输出值，故输出 pow(A, 1/1.3)≈pow(A,0.769) 而非 2.2。）
 fn decode_display(value: vec3f) -> vec3f {
-  return pow(value, vec3f(2.2));
+  return pow(value, vec3f(1.0 / 1.3));
 }
 
 fn sample_shadows(world_pos: vec3f, face_normal: vec3f, frag_coord: vec4f) -> f32 {
@@ -298,7 +298,7 @@ fn shade_voxel(in: VsOut) -> vec4f {
   );
   let fogged = apply_fog(shaded, in.world_pos);
   let mapped = aces_tone_map(globals.eye_exposure.w * fogged);
-  // 还原显示值 → sRGB surface 自动编码（decode 1/2.2 + encode 2.2 = 正确显示）
+  // 原版 outputFragment：tone map 后 pow(rgb, 1/gamma)，gamma=1.3（提亮）
   return vec4f(decode_display(mapped), shadow);
 }
 
