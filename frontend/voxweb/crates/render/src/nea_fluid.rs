@@ -304,9 +304,8 @@ impl NeaFluidPipeline {
         &self,
         encoder: &mut wgpu::CommandEncoder,
         output: &wgpu::TextureView,
-        depth_view: &wgpu::TextureView,
     ) {
-        self.oit.resolve(encoder, output, depth_view);
+        self.oit.resolve(encoder, output);
     }
 }
 

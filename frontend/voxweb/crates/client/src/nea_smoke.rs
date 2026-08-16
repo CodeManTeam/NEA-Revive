@@ -1481,7 +1481,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     t.fluid_pipeline.draw(&mut pass);
                 }
             }
-            t.fluid_pipeline.resolve(&mut encoder, &view, &depth_view);
+            t.fluid_pipeline.resolve(&mut encoder, &view);
             dc.queue.submit(Some(encoder.finish()));
             frame.present();
             fps_overlay.record_frame(now_ms() as f64);

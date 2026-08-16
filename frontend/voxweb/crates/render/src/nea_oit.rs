@@ -15,7 +15,6 @@ struct OitUniform {
 }
 
 pub struct NeaOit {
-    device: wgpu::Device,
     width: u32,
     height: u32,
     opaque_texture: wgpu::Texture,
@@ -25,7 +24,7 @@ pub struct NeaOit {
     layout: wgpu::BindGroupLayout,
     group: wgpu::BindGroup,
     resolve_pipeline: wgpu::RenderPipeline,
-    background_layout: wgpu::BindGroupLayout,
+    resolve_background_group: wgpu::BindGroup,
 }
 
 impl NeaOit {
@@ -100,28 +99,24 @@ impl NeaOit {
         });
         let background_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("nea.oit.background-layout"),
-            entries: &[
-                wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Float { filterable: false },
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        multisampled: false,
-                    },
-                    count: None,
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Texture {
+                    sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                    view_dimension: wgpu::TextureViewDimension::D2,
+                    multisampled: false,
                 },
-                wgpu::BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: wgpu::ShaderStages::FRAGMENT,
-                    ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Depth,
-                        view_dimension: wgpu::TextureViewDimension::D2,
-                        multisampled: false,
-                    },
-                    count: None,
-                },
-            ],
+                count: None,
+            }],
+        });
+        let resolve_background_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("nea.oit.background-group"),
+            layout: &background_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: wgpu::BindingResource::TextureView(&opaque_view),
+            }],
         });
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("nea.oit.resolve-shader"),
@@ -158,7 +153,6 @@ impl NeaOit {
             cache: None,
         });
         Self {
-            device: device.clone(),
             width,
             height,
             opaque_texture,
@@ -168,7 +162,7 @@ impl NeaOit {
             layout,
             group,
             resolve_pipeline,
-            background_layout,
+            resolve_background_group,
         }
     }
 
@@ -182,27 +176,7 @@ impl NeaOit {
         &self.opaque_view
     }
 
-    pub fn resolve(
-        &self,
-        encoder: &mut wgpu::CommandEncoder,
-        output: &wgpu::TextureView,
-        depth_view: &wgpu::TextureView,
-    ) {
-        // 绑定：背景颜色 + 背景深度。resolve 时按深度剔除被 opaque 遮挡的透明面。
-        let background = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Some("nea.oit.background-depth-group"),
-            layout: &self.background_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&self.opaque_view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::TextureView(depth_view),
-                },
-            ],
-        });
+    pub fn resolve(&self, encoder: &mut wgpu::CommandEncoder, output: &wgpu::TextureView) {
         {
             let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("nea.oit.resolve"),
@@ -221,7 +195,7 @@ impl NeaOit {
                 multiview_mask: None,
             });
             pass.set_pipeline(&self.resolve_pipeline);
-            pass.set_bind_group(0, &background, &[]);
+            pass.set_bind_group(0, &self.resolve_background_group, &[]);
             pass.set_bind_group(1, &self.group, &[]);
             pass.draw(0..3, 0..1);
         }
@@ -310,7 +284,6 @@ struct OitUniform { viewport: vec2f, node_buffer_bytes: f32, padding: f32 }
 struct FragmentData { color: u32, depth: f32 }
 struct StaticNode { data: FragmentData, next: u32 }
 @group(0) @binding(0) var background: texture_2d<f32>;
-@group(0) @binding(1) var background_depth: texture_depth_2d;
 @group(1) @binding(0) var<uniform> oit: OitUniform;
 @group(1) @binding(1) var<storage, read_write> nodes0: array<StaticNode>;
 @group(1) @binding(2) var<storage, read_write> offsets0: array<atomic<u32>>;
@@ -328,8 +301,6 @@ fn unpack_color(value: u32) -> vec4f {
 @fragment fn fs_main(@builtin(position) position: vec4f) -> @location(0) vec4f {
   let pixel = vec2u(position.xy);
   var color = textureLoad(background, pixel, 0);
-  // 背景深度（opaque 最近深度）：被它遮挡的透明面不应混合到背景上。
-  let bg_depth = textureLoad(background_depth, pixel, 0);
   let per_h = u32(oit.viewport.y) / 3u;
   let band = min(u32(position.y) / max(per_h, 1u), 2u);
   let local_y = u32(position.y) - band * per_h;
@@ -359,14 +330,8 @@ fn unpack_color(value: u32) -> vec4f {
     let index = indices[i];
     var packed = select(nodes0[index].data.color, nodes1[index].data.color, band == 1u);
     packed = select(packed, nodes2[index].data.color, band == 2u);
-    var nd = select(nodes0[index].data.depth, nodes1[index].data.depth, band == 1u);
-    nd = select(nd, nodes2[index].data.depth, band == 2u);
-    // 透明面在背景（人物/地形）之前才混合；被遮挡的跳过——
-    // 修复「水/玻璃图层盖在人物上」。
-    if (nd <= bg_depth) {
-      let rgba = unpack_color(packed);
-      color = vec4f(color.rgb * (1.0 - rgba.a) + rgba.rgb * rgba.a, color.a);
-    }
+    let rgba = unpack_color(packed);
+    color = vec4f(color.rgb * (1.0 - rgba.a) + rgba.rgb * rgba.a, color.a);
   }
   return color;
 }
