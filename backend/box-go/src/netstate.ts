@@ -133,6 +133,11 @@ export interface NetPlayerDisplay {
 export interface NetPlayerState {
   id: number
   position: [number, number, number]
+  // 可选：脚本对玩家属性的修改（DAO3 player API），同步到前端本地物理。
+  walkSpeed?: number
+  runSpeed?: number
+  flySpeed?: number
+  flags?: number
 }
 
 /**
@@ -164,6 +169,10 @@ export function encodeNetPublicPacket(input: {
     platformX: p.position[0],
     platformY: p.position[1],
     platformZ: p.position[2],
+    ...(p.walkSpeed === undefined ? {} : { walkSpeed: p.walkSpeed }),
+    ...(p.runSpeed === undefined ? {} : { runSpeed: p.runSpeed }),
+    ...(p.flySpeed === undefined ? {} : { flySpeed: p.flySpeed }),
+    ...(p.flags === undefined ? {} : { flags: p.flags }),
   }))
   current.state.players = players
 

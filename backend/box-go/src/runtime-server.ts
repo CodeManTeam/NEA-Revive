@@ -106,6 +106,46 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   const sessionNames = new Map<string, string>() // sessionId -> playerName（来自 createSession）
   const playerSessions = new Map<string, string>() // playerId -> sessionId
   const chatLogIds = new Map<string, number>() // sessionId -> chat log id
+  // 周期 net-state 同步：脚本对玩家属性的修改（walkSpeed/runSpeed/flySpeed/canFly/
+  // spectator 等 DAO3 player API）推送到前端本地物理。初始帧在 join 后发一次，
+  // 之后每 200ms 按 runtime.snapshot() 的权威玩家状态补发。
+  let netStateTick = 4
+  const netStateTimer = setInterval(() => {
+    const snap: any = runtime.snapshot()
+    const tick = netStateTick
+    netStateTick += 2
+    for (const [playerId, sessionId] of playerSessions) {
+      const player = snap.players.find((p: any) => p.id === playerId)
+      const netClient = gameNetClients()[sessionId]
+      if (!player || !netClient) continue
+      // DAO3 玩家 flags：默认禁飞（252 = 254 & ~ALLOW_FLIGHT(2)），
+      // canFly→ALLOW_FLIGHT(2)，spectator→SPECTATOR(1)。
+      const flags = 252 | (player.canFly ? 2 : 0) | (player.spectator ? 1 : 0)
+      try {
+        const packet = encodeNetPublicPacket({
+          tick,
+          pauseCounter: 0,
+          displays: [{
+            id: 1,
+            name: String(player.name ?? "Player"),
+            avatarSkin: LOCAL_AVATAR_SKIN_PART_IDS,
+          }],
+          players: [{
+            id: 1,
+            position: player.position,
+            walkSpeed: player.walkSpeed,
+            runSpeed: player.runSpeed,
+            flySpeed: player.flySpeed,
+            flags,
+          }],
+        })
+        netClient.sendRaw(packet, false)
+      } catch (error) {
+        log(`[net-state] send failed: ${String(error)}`)
+      }
+    }
+  }, 200)
+  netStateTimer.unref?.()
   // 协议引用必须在 mudbServer.start() 之前注册并捕获；启动后 protocol() 会抛错
   let gameChatProtocolRef: any = null
   let gameTerrainProtocolRef: any = null
@@ -366,7 +406,7 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
               tick: 4,
               pauseCounter: 0,
               displays: [{ id: 1, name: sessionNames.get(client.sessionId) ?? "Player", avatarSkin: LOCAL_AVATAR_SKIN_PART_IDS }],
-              players: [{ id: 1, position: VIEW_SPAWN }],
+              players: [{ id: 1, position: VIEW_SPAWN, flags: 252 }],
             })
             netClient.sendRaw(packet, false)
             log(`[session] sent net-state frame to ${client.sessionId}`)
@@ -475,6 +515,7 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
     runtime,
     async close() {
       clearInterval(tickTimer)
+      clearInterval(netStateTimer)
       runtime.stop()
       if (mudbServer.running) mudbServer.destroy()
       await new Promise<void>((resolve) => httpServer.close(() => resolve()))

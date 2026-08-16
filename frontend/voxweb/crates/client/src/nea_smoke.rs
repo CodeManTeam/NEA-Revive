@@ -147,6 +147,12 @@ fn block_surface_friction(block: u16) -> f32 {
         .map_or(1.0, |entry| entry.friction)
 }
 
+/// DAO3 barrier（id=650）是隐形屏障：不渲染，但保留碰撞与面剔除参与
+/// （相邻 opaque 方块的面照常显示，因为 barrier 不提供视觉遮挡）。
+fn is_invisible_block(id: u16) -> bool {
+    matches!(id, 650)
+}
+
 fn recovered_voxel_face_visible(block: u16, neighbour: u16) -> bool {
     let block = block & voxweb_protocol::geometry::BLOCK_ID_MASK;
     let neighbour = neighbour & voxweb_protocol::geometry::BLOCK_ID_MASK;
@@ -1482,6 +1488,11 @@ impl RenderTerrain {
                             let Some(entry) = catalog.get(block_id) else {
                                 continue;
                             };
+                            // DAO3 barrier（隐形屏障）：不渲染任何面（保持碰撞），
+                            // 避免大量半透明网格造成的「各种透视」。
+                            if is_invisible_block(block_id) {
+                                continue;
+                            }
                             let unrotated_rects = [
                                 voxweb_protocol::geometry::face_uv_rect(entry.faces.px, 512.0),
                                 voxweb_protocol::geometry::face_uv_rect(entry.faces.nx, 512.0),
