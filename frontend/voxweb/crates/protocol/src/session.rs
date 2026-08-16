@@ -159,6 +159,9 @@ pub fn decode_reset(v: &Value) -> TerrainReset {
             }
         }
     }
+    // Publish the world shape so the adapter (chunkId -> grid, slab placement)
+    // uses the actual map shape rather than the historical 256×64×256.
+    crate::adapter::set_nea_shape(counts);
     TerrainReset {
         origin,
         reset_counter,
@@ -251,19 +254,17 @@ pub fn encode_outbound(table: &ProtocolTable, msg: &Outbound) -> Result<Vec<u8>,
     }
 }
 
-/// Convenience: chunk id for a voxel position (origin/32 in the 8×2×8 grid).
+/// Convenience: chunk id for a voxel position (origin/32 in the world grid).
 pub fn chunk_id_for_origin(origin: [f64; 3]) -> u32 {
-    use crate::adapter::NEA_CHUNK_GRID;
-    let shape_x = NEA_CHUNK_GRID[0];
-    let shape_y = NEA_CHUNK_GRID[1];
+    use crate::adapter::nea_chunk_grid;
+    let grid = nea_chunk_grid();
+    let shape_x = grid[0];
+    let shape_y = grid[1];
+    let shape_z = grid[2];
     let cx = (origin[0] as u32 / 32).clamp(0, shape_x - 1);
     let cy = (origin[1] as u32 / 32).clamp(0, shape_y - 1);
-    let cz = (origin[2] as u32 / 32).clamp(0, shape_z(shape_x, shape_y) - 1);
+    let cz = (origin[2] as u32 / 32).clamp(0, shape_z - 1);
     cx + shape_x * (cy + shape_y * cz)
-}
-
-fn shape_z(_shape_x: u32, _shape_y: u32) -> u32 {
-    crate::adapter::NEA_CHUNK_GRID[2]
 }
 
 /// Load the block catalog from a JSON string (block-texture-map.json).

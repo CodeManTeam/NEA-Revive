@@ -395,14 +395,11 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
     let mut fetch_sent = false;
     let mut ready_sent = false;
     let mut last_log_ms = now_ms();
-    // 5×5 chunk area around spawn (grid 4,1,4): collect cells per chunk
-    let mut pending_chunks: Vec<(u32, u32)> = Vec::new(); // (cx, cz)
-    for cx in 2..=6u32 {
-        for cz in 2..=6u32 {
-            pending_chunks.push((cx, cz));
-        }
-    }
-    let mut chunk_cells: Vec<(u32, u32, Vec<u16>)> = Vec::new();
+    // 5×5 xz × full-height chunk area around spawn: collect cells per chunk.
+    // Populated after the terrain reset arrives (spawn + world shape are
+    // authoritative there); each entry is (cx, cy, cz).
+    let mut pending_chunks: Vec<(u32, u32, u32)> = Vec::new();
+    let mut chunk_cells: Vec<(u32, u32, u32, Vec<u16>)> = Vec::new();
     // net-state: incremental base + decoded player body position
     let mut ns_base = voxweb_protocol::netstate::NetStateBase::default();
     let mut avatar_catalog = voxweb_protocol::AvatarCatalog::default();
@@ -619,6 +616,40 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                     reset.counts[1],
                                     reset.counts[2]
                                 );
+                                // Local player starts at the authoritative
+                                // spawn carried by the reset frame.
+                                local_pos = [
+                                    reset.origin[0] as f32,
+                                    reset.origin[1] as f32,
+                                    reset.origin[2] as f32,
+                                ];
+                                player_pos = Some(local_pos);
+                                // Chunk grid + spawn chunk from the reset shape.
+                                let grid = voxweb_protocol::adapter::nea_chunk_grid();
+                                let scx = (reset.origin[0] as u32 / 32).clamp(0, grid[0] - 1);
+                                let scy = (reset.origin[1] as u32 / 32).clamp(0, grid[1] - 1);
+                                let scz = (reset.origin[2] as u32 / 32).clamp(0, grid[2] - 1);
+                                if pending_chunks.is_empty() {
+                                    // 5×5 xz around spawn, full height.
+                                    let x0 = scx.saturating_sub(2);
+                                    let x1 = (scx + 2).min(grid[0] - 1);
+                                    let z0 = scz.saturating_sub(2);
+                                    let z1 = (scz + 2).min(grid[2] - 1);
+                                    for cy in 0..grid[1] {
+                                        for cx in x0..=x1 {
+                                            for cz in z0..=z1 {
+                                                pending_chunks.push((cx, cy, cz));
+                                            }
+                                        }
+                                    }
+                                    jslog!(
+                                        "[nea] fetch plan: {} chunks (spawn chunk {},{},{})",
+                                        pending_chunks.len(),
+                                        scx,
+                                        scy,
+                                        scz
+                                    );
+                                }
                                 loading.set_status("世界数据已就绪，正在请求地形区块…");
                                 loading.set_progress(0.62);
                                 if !ready_sent {
@@ -671,12 +702,14 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                         boxes.len()
                                     );
                                     // record every response (even empty chunks)
-                                    // so the 25/25 completion check fires
+                                    // so the all-arrived completion check fires
                                     let idx = rpc_id.saturating_sub(1) as usize;
-                                    if let Some(&(cx, cz)) = pending_chunks.get(idx) {
-                                        if !chunk_cells.iter().any(|(c, z, _)| *c == cx && *z == cz)
+                                    if let Some(&(cx, cy, cz)) = pending_chunks.get(idx) {
+                                        if !chunk_cells
+                                            .iter()
+                                            .any(|(c, y, z, _)| *c == cx && *y == cy && *z == cz)
                                         {
-                                            chunk_cells.push((cx, cz, cells.clone()));
+                                            chunk_cells.push((cx, cy, cz, cells.clone()));
                                             let got = chunk_cells.len();
                                             loading.set_status(&format!(
                                                 "正在加载地形区块 {got}/{}…",
@@ -687,14 +720,18 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                             );
                                             if non_air > 0 {
                                                 jslog!(
-                                                    "[nea] chunk {cx},{cz} cells={non_air} ({}/9)",
-                                                    chunk_cells.len()
+                                                    "[nea] chunk {cx},{cy},{cz} cells={non_air} ({}/{})",
+                                                    chunk_cells.len(),
+                                                    pending_chunks.len()
                                                 );
                                             }
                                         }
                                     }
-                                    // rebuild terrain once all 25 chunks arrived
-                                    if terrain.is_none() && chunk_cells.len() == 25 {
+                                    // rebuild terrain once all chunks arrived
+                                    if terrain.is_none()
+                                        && !pending_chunks.is_empty()
+                                        && chunk_cells.len() == pending_chunks.len()
+                                    {
                                         terrain = Some(RenderTerrain::build_chunks(
                                             &dc.device,
                                             &atlas,
@@ -713,7 +750,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                         // view — probing only y+1 left
                                         // the head inside a ceiling,
                                         // rendering black)
-                                        for gy in 0..=64 {
+                                        for gy in 0..=128 {
                                             if solid_at(
                                                 &chunk_cells,
                                                 local_pos[0],
@@ -759,14 +796,15 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                             }
                         }
                     }
-                    // fetch the 3×3 chunk area once the driver is playing
+                    // fetch the chunk area once the driver is playing
                     if !fetch_sent
                         && matches!(driver.borrow().stage, SessionStage::Playing)
                         && ready_sent
                     {
-                        for (i, (cx, cz)) in pending_chunks.iter().enumerate() {
-                            // chunkId = cx + 8*(cy + 2*cz), cy=1 (spawn y layer)
-                            let chunk_id = cx + 8 * (1 + 2 * cz);
+                        let grid = voxweb_protocol::adapter::nea_chunk_grid();
+                        for (i, (cx, cy, cz)) in pending_chunks.iter().enumerate() {
+                            // chunkId = cx + gridI*(cy + gridJ*cz)
+                            let chunk_id = cx + grid[0] * (cy + grid[1] * cz);
                             let fetch = voxweb_protocol::session::encode_outbound(
                                 &table,
                                 &voxweb_protocol::session::Outbound::FetchChunk {
@@ -779,7 +817,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                         }
                         fetch_sent = true;
                         jslog!(
-                            "[nea] fetchChunk sent {} chunks (rpc 1..=25)",
+                            "[nea] fetchChunk sent {} chunks",
                             pending_chunks.len()
                         );
                     }
@@ -1265,14 +1303,15 @@ struct RenderTerrain {
 
 impl RenderTerrain {
     /// Build the terrain mesh from multiple NEA chunks. Each chunk entry is
-    /// (grid_cx, grid_cz, 32³ cells); world position = (cx*32, y, cz*32).
+    /// (grid_cx, grid_cy, grid_cz, 32³ cells); world position =
+    /// (cx*32, cy*32+y, cz*32).
     fn build_chunks(
         device: &wgpu::Device,
         atlas: &AtlasTexture,
         material_atlas: &AtlasTexture,
         bump_atlas: &AtlasTexture,
         water_bump: &AtlasTexture,
-        chunks: &[(u32, u32, Vec<u16>)],
+        chunks: &[(u32, u32, u32, Vec<u16>)],
         surface_format: wgpu::TextureFormat,
         width: u32,
         height: u32,
@@ -1306,20 +1345,20 @@ impl RenderTerrain {
         let mut fluid_base = 0u32;
         let mut solid = 0usize;
         let mut fluid_cells = 0usize;
-        let chunk_index: HashMap<(u32, u32), &[u16]> = chunks
+        let chunk_index: HashMap<(u32, u32, u32), &[u16]> = chunks
             .iter()
-            .map(|(x, z, cells)| ((*x, *z), cells.as_slice()))
+            .map(|(x, y, z, cells)| ((*x, *y, *z), cells.as_slice()))
             .collect();
-        let min_chunk_x = chunks.iter().map(|(x, _, _)| *x).min().unwrap_or(0);
+        let min_chunk_x = chunks.iter().map(|(x, _, _, _)| *x).min().unwrap_or(0);
         let max_chunk_x = chunks
             .iter()
-            .map(|(x, _, _)| *x)
+            .map(|(x, _, _, _)| *x)
             .max()
             .unwrap_or(min_chunk_x);
-        let min_chunk_z = chunks.iter().map(|(_, z, _)| *z).min().unwrap_or(0);
+        let min_chunk_z = chunks.iter().map(|(_, _, z, _)| *z).min().unwrap_or(0);
         let max_chunk_z = chunks
             .iter()
-            .map(|(_, z, _)| *z)
+            .map(|(_, _, z, _)| *z)
             .max()
             .unwrap_or(min_chunk_z);
         let light_min_x = (min_chunk_x * 32) as i32;
@@ -1339,7 +1378,7 @@ impl RenderTerrain {
             },
         );
 
-        for (cx, cz, cells) in chunks {
+        for (cx, cy, cz, cells) in chunks {
             // NEA 32³ cells -> 4 VoxWeb 16×256×16 columns
             let mut columns = [[0u16; CHUNK_SIZE]; 4];
             let cells32: [u16; 32768] = {
@@ -1349,15 +1388,16 @@ impl RenderTerrain {
                 a
             };
             voxweb_protocol::adapter::write_voxweb_chunks(&cells32, &mut columns, true);
-            let positions = voxweb_protocol::adapter::voxweb_chunk_positions(*cx, 1, *cz);
+            let positions = voxweb_protocol::adapter::voxweb_chunk_positions(*cx, *cy, *cz);
 
             for (ci, col) in columns.iter().enumerate() {
                 let (bx, bz) = positions[ci];
-                // world origin of this chunk: (cx*32, 0, cz*32)
+                // world origin of this chunk: (cx*32, cy*32, cz*32)
                 let world_base_x = (cx * 32) as f32;
+                let world_base_y = (cy * 32) as f32;
                 let world_base_z = (cz * 32) as f32;
                 let _ = (bx, bz);
-                for y in 0..256usize {
+                for y in 0..32usize {
                     for z in 0..16usize {
                         for x in 0..16usize {
                             let block = col[voxweb_protocol::adapter::voxweb_cell_index(x, y, z)];
@@ -1382,10 +1422,11 @@ impl RenderTerrain {
                             let local_x = (ci & 1) * 16 + x;
                             let local_z = (ci >> 1) * 16 + z;
                             let wx = world_base_x + local_x as f32;
+                            let wy = world_base_y + y as f32;
                             let wz = world_base_z + local_z as f32;
                             if entry.fluid {
                                 let world_x = wx as i32;
-                                let world_y = y as i32;
+                                let world_y = wy as i32;
                                 let world_z = wz as i32;
                                 let air = |dx: i32, dy: i32, dz: i32| {
                                     block_voxel_indexed(
@@ -1411,7 +1452,7 @@ impl RenderTerrain {
                                 if fluid_mask != 0 {
                                     let geometry =
                                         voxweb_protocol::geometry::build_box_geometry_masked(
-                                            wx, y as f32, wz, 1.0, 1.0, 1.0, &rects, fluid_mask,
+                                            wx, wy, wz, 1.0, 1.0, 1.0, &rects, fluid_mask,
                                         );
                                     let mut packed = MeshBuffers::from_box_mesh(&geometry);
                                     apply_recovered_fluid_heights(
@@ -1443,7 +1484,7 @@ impl RenderTerrain {
                                 block_voxel_indexed(
                                     &chunk_index,
                                     wx as i32 + dx,
-                                    y as i32 + dy,
+                                    wy as i32 + dy,
                                     wz as i32 + dz,
                                 )
                             };
@@ -1470,7 +1511,7 @@ impl RenderTerrain {
                                 continue; // fully enclosed
                             }
                             let m = voxweb_protocol::geometry::build_box_geometry_masked(
-                                wx, y as f32, wz, 1.0, 1.0, 1.0, &rects, mask,
+                                wx, wy, wz, 1.0, 1.0, 1.0, &rects, mask,
                             );
                             let mut packed = MeshBuffers::from_box_mesh(&m);
                             write_recovered_texture_rotation(&mut packed.vertices, rotation);
@@ -1593,7 +1634,7 @@ fn recovered_fluid_height(sky_sum: u32) -> f32 {
 fn write_recovered_corner_light(
     vertices: &mut [f32],
     voxel_light: &StaticVoxelLight,
-    chunk_index: &HashMap<(u32, u32), &[u16]>,
+    chunk_index: &HashMap<(u32, u32, u32), &[u16]>,
 ) {
     for face in vertices.chunks_exact_mut(4 * FLOATS_PER_VERTEX) {
         let mut corners = [[0.0; 4]; 4];
@@ -1619,7 +1660,7 @@ fn corner_light(
     position: [f32; 3],
     normal: [f32; 3],
     voxel_light: &StaticVoxelLight,
-    chunk_index: &HashMap<(u32, u32), &[u16]>,
+    chunk_index: &HashMap<(u32, u32, u32), &[u16]>,
 ) -> [f32; 4] {
     let normal_axis = normal
         .iter()
@@ -1656,7 +1697,7 @@ fn corner_light(
 
 /// Is the voxel at world (x, y, z) solid? Uses the loaded chunk cells
 /// (32³ per chunk, chunk_cell_index layout). Unloaded areas are air.
-fn solid_at(chunks: &[(u32, u32, Vec<u16>)], x: f32, y: f32, z: f32) -> bool {
+fn solid_at(chunks: &[(u32, u32, u32, Vec<u16>)], x: f32, y: f32, z: f32) -> bool {
     let vx = x.floor() as i32;
     let vy = y.floor() as i32;
     let vz = z.floor() as i32;
@@ -1667,41 +1708,43 @@ fn solid_at(chunks: &[(u32, u32, Vec<u16>)], x: f32, y: f32, z: f32) -> bool {
         return false;
     }
     let cx = vx.div_euclid(32) as u32;
+    let cy = vy.div_euclid(32) as u32;
     let cz = vz.div_euclid(32) as u32;
     let lx = vx.rem_euclid(32) as u32;
+    let ly = vy.rem_euclid(32) as u32;
     let lz = vz.rem_euclid(32) as u32;
     chunks
         .iter()
-        .find(|(c, z, _)| *c == cx && *z == cz)
-        .map(|(_, _, cells)| {
-            let idx = voxweb_protocol::terrain::chunk_cell_index(lx, vy as u32, lz);
+        .find(|(c, j, k, _)| *c == cx && *j == cy && *k == cz)
+        .map(|(_, _, _, cells)| {
+            let idx = voxweb_protocol::terrain::chunk_cell_index(lx, ly, lz);
             cells.get(idx).copied().is_some_and(block_is_solid)
         })
         .unwrap_or(false)
 }
 
-fn solid_voxel_at(chunks: &[(u32, u32, Vec<u16>)], vx: i32, vy: i32, vz: i32) -> bool {
+fn solid_voxel_at(chunks: &[(u32, u32, u32, Vec<u16>)], vx: i32, vy: i32, vz: i32) -> bool {
     if vy < 0 {
         return true;
     }
     block_is_solid(block_voxel_at(chunks, vx, vy, vz))
 }
 
-fn block_voxel_at(chunks: &[(u32, u32, Vec<u16>)], vx: i32, vy: i32, vz: i32) -> u16 {
+fn block_voxel_at(chunks: &[(u32, u32, u32, Vec<u16>)], vx: i32, vy: i32, vz: i32) -> u16 {
     if !(0..256).contains(&vy) {
         return 0;
     }
     let cx = vx.div_euclid(32) as u32;
+    let cy = vy.div_euclid(32) as u32;
     let cz = vz.div_euclid(32) as u32;
     let lx = vx.rem_euclid(32) as u32;
+    let ly = vy.rem_euclid(32) as u32;
     let lz = vz.rem_euclid(32) as u32;
     chunks
         .iter()
-        .find(|(chunk_x, chunk_z, _)| *chunk_x == cx && *chunk_z == cz)
-        .and_then(|(_, _, cells)| {
-            cells.get(voxweb_protocol::terrain::chunk_cell_index(
-                lx, vy as u32, lz,
-            ))
+        .find(|(x, y, z, _)| *x == cx && *y == cy && *z == cz)
+        .and_then(|(_, _, _, cells)| {
+            cells.get(voxweb_protocol::terrain::chunk_cell_index(lx, ly, lz))
         })
         .copied()
         .unwrap_or(0)
@@ -1710,7 +1753,7 @@ fn block_voxel_at(chunks: &[(u32, u32, Vec<u16>)], vx: i32, vy: i32, vz: i32) ->
 fn fluid_volume_fraction(
     position: [f32; 3],
     half_extents: [f32; 3],
-    chunks: &[(u32, u32, Vec<u16>)],
+    chunks: &[(u32, u32, u32, Vec<u16>)],
 ) -> f32 {
     let min: [f32; 3] = std::array::from_fn(|axis| position[axis] - half_extents[axis]);
     let max: [f32; 3] = std::array::from_fn(|axis| position[axis] + half_extents[axis]);
@@ -1735,7 +1778,12 @@ fn fluid_volume_fraction(
     fluid_volume / body_volume
 }
 
-fn solid_voxel_indexed(chunks: &HashMap<(u32, u32), &[u16]>, vx: i32, vy: i32, vz: i32) -> bool {
+fn solid_voxel_indexed(
+    chunks: &HashMap<(u32, u32, u32), &[u16]>,
+    vx: i32,
+    vy: i32,
+    vz: i32,
+) -> bool {
     if vy < 0 {
         return true;
     }
@@ -1745,18 +1793,28 @@ fn solid_voxel_indexed(chunks: &HashMap<(u32, u32), &[u16]>, vx: i32, vy: i32, v
     block_is_solid(block_voxel_indexed(chunks, vx, vy, vz))
 }
 
-fn block_voxel_indexed(chunks: &HashMap<(u32, u32), &[u16]>, vx: i32, vy: i32, vz: i32) -> u16 {
+fn block_voxel_indexed(
+    chunks: &HashMap<(u32, u32, u32), &[u16]>,
+    vx: i32,
+    vy: i32,
+    vz: i32,
+) -> u16 {
     if !(0..256).contains(&vy) {
         return 0;
     }
-    let chunk = (vx.div_euclid(32) as u32, vz.div_euclid(32) as u32);
+    let chunk = (
+        vx.div_euclid(32) as u32,
+        vy.div_euclid(32) as u32,
+        vz.div_euclid(32) as u32,
+    );
     let local_x = vx.rem_euclid(32) as u32;
+    let local_y = vy.rem_euclid(32) as u32;
     let local_z = vz.rem_euclid(32) as u32;
     chunks
         .get(&chunk)
         .and_then(|cells| {
             cells.get(voxweb_protocol::terrain::chunk_cell_index(
-                local_x, vy as u32, local_z,
+                local_x, local_y, local_z,
             ))
         })
         .copied()
@@ -1817,7 +1875,7 @@ fn make_camera(
     crouching: bool,
     pitch: f32,
     yaw: f32,
-    chunks: &[(u32, u32, Vec<u16>)],
+    chunks: &[(u32, u32, u32, Vec<u16>)],
     current_ray_distance: &mut f32,
 ) -> ([f32; 16], [f32; 3], bool) {
     let aspect = width as f32 / height.max(1) as f32;

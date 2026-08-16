@@ -25,7 +25,8 @@ pub mod stream;
 pub mod terrain;
 
 pub use adapter::{
-    nea_chunk_id_to_grid, voxweb_chunk_positions, write_voxweb_chunks, NEA_CHUNK_GRID, NEA_WORLD,
+    nea_chunk_grid, nea_chunk_id_to_grid, set_nea_shape, voxweb_chunk_positions,
+    write_voxweb_chunks, FALLBACK_NEA_WORLD,
 };
 pub use avatar_catalog::{AvatarCatalog, AvatarSkin, AVATAR_PART_NAMES};
 pub use avatar_part::{decode_avatar_part, AvatarFace, AvatarPart, AvatarTexture};

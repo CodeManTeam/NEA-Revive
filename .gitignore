@@ -37,3 +37,9 @@ cdp-profile-*
 .env.local
 *.pem
 *.key
+
+# === reference 原始导出（大二进制/原始数据不提交；文本副本在 packages/minecraft/reference/）===
+/reference/
+
+# === packages 内导入的二进制素材（源在 reference/）===
+packages/minecraft/assets/

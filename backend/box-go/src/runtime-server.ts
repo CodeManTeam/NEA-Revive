@@ -238,17 +238,11 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   const mudbServer = new MuServer(socketServer, logger, true)
 
   // ---- 地形视图（voxweb 前端契约）----
-  // voxweb 前端硬编码 NEA 世界 256×64×256（8×2×8 chunk 网格，chunkId = i + 8*(j + 2*k)）。
-  // 源世界 shape 从 runtime.voxels.shape 读取（含边界，故 +1）。
-  // 若源世界就是 256×64×256，offset=0 不平移；否则居中嵌入 256 视口。
-  const VOXWEB_SHAPE: [number, number, number] = [256, 64, 256]
+  // 视口 = 源世界本身（前端从 reset 帧的 nx/ny/nz 读取 shape，不再硬编码 256×64×256）。
+  // chunk 网格 = 源 shape / 32（parkour 8×2×8，minecraft 8×4×8）。
   const viewShape = runtime.voxels.shape as { x: number; y: number; z: number }
   const sourceShape: [number, number, number] = [viewShape.x + 1, viewShape.y + 1, viewShape.z + 1]
-  const WORLD_OFFSET: [number, number, number] = [
-    sourceShape[0] === 256 ? 0 : Math.floor((256 - sourceShape[0]) / 2),
-    sourceShape[1] === 64 ? 0 : Math.floor((64 - sourceShape[1]) / 2),
-    sourceShape[2] === 256 ? 0 : Math.floor((256 - sourceShape[2]) / 2),
-  ]
+  const WORLD_OFFSET: [number, number, number] = [0, 0, 0]
   const SOURCE_SPAWN = spawn
   const VIEW_SPAWN: [number, number, number] = [
     SOURCE_SPAWN[0] + WORLD_OFFSET[0],
@@ -256,9 +250,9 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
     SOURCE_SPAWN[2] + WORLD_OFFSET[2],
   ]
   const chunkSize = 32
-  const gridI = VOXWEB_SHAPE[0] / chunkSize // 8
-  const gridJ = VOXWEB_SHAPE[1] / chunkSize // 2
-  const gridK = VOXWEB_SHAPE[2] / chunkSize // 8
+  const gridI = sourceShape[0] / chunkSize
+  const gridJ = sourceShape[1] / chunkSize
+  const gridK = sourceShape[2] / chunkSize
 
   // chunkId (voxweb 网格) → 源世界坐标内的方块 box 列表（MuSortedArray 需要排序）
   function collisionBoxesForChunk(chunkId: number): Array<Record<string, number>> {
@@ -316,9 +310,9 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
       positionY: VIEW_SPAWN[1],
       positionZ: VIEW_SPAWN[2],
       resetCounter: 1,
-      nx: VOXWEB_SHAPE[0],
-      ny: VOXWEB_SHAPE[1],
-      nz: VOXWEB_SHAPE[2],
+      nx: sourceShape[0],
+      ny: sourceShape[1],
+      nz: sourceShape[2],
       innerAO: false,
       blocks: "QmZ3ot2FZ8jR9z7bY5n8Z6mX4qW2vL9cS1hK7fD3tG5xR8pN4",
       hashes: [],

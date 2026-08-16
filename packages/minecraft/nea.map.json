@@ -1,0 +1,41 @@
+{
+  "formatVersion": "nea-map/v1",
+  "id": "minecraft",
+  "display": {
+    "name": "[Minecraft] 我的世界正式版",
+    "description": "从 reference 的 DAO3「[Minecraft]我的世界正式版」项目包（map 100471484）导入：256×128×256 地形、32 种方块、150 gltf 模型、290 图片、20 音频。地形已完整还原（1,167,963 体素 → 42,837 地形盒）；脚本仅导入入口（原 20+ 模块未随导出，见 reference/code/index.js）。"
+  },
+  "runtime": {
+    "apiVersion": "0.1.0",
+    "tickRate": 20,
+    "clientContract": "dao3-client-runtime/v1",
+    "serverContract": "nea-server-runtime/v1",
+    "compatibilityLevel": "experimental"
+  },
+  "world": {
+    "shape": [256, 128, 256],
+    "spawn": [64, 3, 48],
+    "entityLimit": 4000,
+    "terrain": "world/terrain.json",
+    "entities": "world/entities.json",
+    "physics": "world/physics.json"
+  },
+  "scripts": {
+    "server": "scripts/server.js",
+    "client": null,
+    "serverCapabilities": [
+      "server.world.events",
+      "server.world.chat",
+      "server.world.entities",
+      "server.world.voxels",
+      "server.world.config",
+      "server.gui",
+      "server.storage",
+      "server.player",
+      "server.player.write",
+      "server.remote-channel",
+      "server.http"
+    ],
+    "clientCapabilities": []
+  }
+}

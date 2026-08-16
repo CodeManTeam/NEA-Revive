@@ -1,23 +1,58 @@
 //! NEA → VoxWeb world-shape adapter.
 //!
-//! The preserved NEA world is 256×64×256 voxels in 32×32×32 chunks
-//! (8×2×8 grid, chunkId = i + shapeI*(j + shapeJ*k)); VoxWeb chunks are
+//! NEA worlds are voxel grids in 32×32×32 chunks
+//! (chunkId = i + shapeI*(j + shapeJ*k)); VoxWeb chunks are
 //! 16×256×16 columns (x/z split, y full-height). One NEA chunk therefore
 //! maps onto 2×2 VoxWeb chunks in the xz plane, with the NEA chunk's y-slab
-//! (j*32 .. j*32+32) placed at the same absolute y offset (NEA world height
-//! 64 fits inside VoxWeb's 256-high column).
+//! (j*32 .. j*32+32) placed at the same absolute y offset (the NEA world
+//! height must fit inside VoxWeb's 256-high column).
+//!
+//! The world shape is read from the game-terrain reset frame (`nx/ny/nz`) and
+//! published through `set_nea_shape`, so a single build serves any map
+//! (parkour 256×64×256, minecraft 256×128×256, …). Before the reset arrives
+//! the adapter falls back to the historical 256×64×256.
 //!
 //! Pure data mapping — no rendering, no IO — so it is unit-testable in
 //! native Rust. Rendering consumption is a separate step.
 
+use std::sync::atomic::{AtomicU32, Ordering};
+
 use crate::terrain::{chunk_cell_index, CELLS_PER_CHUNK, CHUNK_SIZE};
 
-pub const NEA_WORLD: [u32; 3] = [256, 64, 256];
-pub const NEA_CHUNK_GRID: [u32; 3] = [
-    NEA_WORLD[0] / CHUNK_SIZE as u32,
-    NEA_WORLD[1] / CHUNK_SIZE as u32,
-    NEA_WORLD[2] / CHUNK_SIZE as u32,
-]; // 8×2×8
+/// Fallback NEA world shape (used before the reset frame arrives).
+pub const FALLBACK_NEA_WORLD: [u32; 3] = [256, 64, 256];
+
+static NEA_NX: AtomicU32 = AtomicU32::new(FALLBACK_NEA_WORLD[0]);
+static NEA_NY: AtomicU32 = AtomicU32::new(FALLBACK_NEA_WORLD[1]);
+static NEA_NZ: AtomicU32 = AtomicU32::new(FALLBACK_NEA_WORLD[2]);
+
+/// Publish the NEA world shape (nx, ny, nz) decoded from a terrain reset.
+pub fn set_nea_shape(shape: [u32; 3]) {
+    if shape.iter().all(|&axis| axis > 0) {
+        NEA_NX.store(shape[0], Ordering::Relaxed);
+        NEA_NY.store(shape[1], Ordering::Relaxed);
+        NEA_NZ.store(shape[2], Ordering::Relaxed);
+    }
+}
+
+/// Current NEA world shape (fallback before reset).
+pub fn nea_world() -> [u32; 3] {
+    [
+        NEA_NX.load(Ordering::Relaxed),
+        NEA_NY.load(Ordering::Relaxed),
+        NEA_NZ.load(Ordering::Relaxed),
+    ]
+}
+
+/// Current NEA chunk grid (world shape / 32).
+pub fn nea_chunk_grid() -> [u32; 3] {
+    let world = nea_world();
+    [
+        world[0] / CHUNK_SIZE as u32,
+        world[1] / CHUNK_SIZE as u32,
+        world[2] / CHUNK_SIZE as u32,
+    ]
+}
 
 /// VoxWeb chunk dimensions (core crate constants mirrored here so this module
 /// stays dependency-free).
@@ -27,8 +62,9 @@ pub const VW_CHUNK_Y: usize = 256;
 
 /// Decode a NEA chunkId into (i, j, k) grid indices.
 pub fn nea_chunk_id_to_grid(chunk_id: u32) -> (u32, u32, u32) {
-    let shape_i = NEA_CHUNK_GRID[0];
-    let shape_j = NEA_CHUNK_GRID[1];
+    let grid = nea_chunk_grid();
+    let shape_i = grid[0];
+    let shape_j = grid[1];
     let k = chunk_id / (shape_i * shape_j);
     let rest = chunk_id % (shape_i * shape_j);
     let j = rest / shape_i;
@@ -104,6 +140,7 @@ mod tests {
 
     #[test]
     fn nea_chunk_id_grid_roundtrip() {
+        set_nea_shape([256, 64, 256]);
         for (id, expect) in [
             (0, (0, 0, 0)),
             (1, (1, 0, 0)),
@@ -118,9 +155,20 @@ mod tests {
         }
         // full grid: 8*2*8 = 128 chunks
         assert_eq!(
-            NEA_CHUNK_GRID[0] * NEA_CHUNK_GRID[1] * NEA_CHUNK_GRID[2],
+            nea_chunk_grid()[0] * nea_chunk_grid()[1] * nea_chunk_grid()[2],
             128
         );
+    }
+
+    #[test]
+    fn dynamic_shape_updates_grid() {
+        assert_eq!(nea_chunk_grid(), [8, 2, 8]);
+        set_nea_shape([256, 128, 256]);
+        assert_eq!(nea_chunk_grid(), [8, 4, 8]);
+        // chunkId decode respects the new y-grid
+        assert_eq!(nea_chunk_id_to_grid(8 * 4), (0, 0, 1));
+        assert_eq!(nea_chunk_id_to_grid(8 * 4 + 8 * 3), (0, 3, 1));
+        set_nea_shape([256, 64, 256]);
     }
 
     #[test]

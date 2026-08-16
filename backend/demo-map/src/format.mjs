@@ -6,7 +6,7 @@ export const TERRAIN_FORMAT = "nea-terrain/v1";
 export const PHYSICS_FORMAT = "nea-physics/v1";
 export const ENVIRONMENT_FORMAT = "nea-recovered-environment/v1";
 export const RUNTIME_API_VERSION = "0.1.0";
-export const MAX_EXPANDED_VOXELS = 1_000_000;
+export const MAX_EXPANDED_VOXELS = 4_000_000;
 
 export async function loadMapSource(rootDirectory) {
   const root = resolve(rootDirectory);
@@ -342,9 +342,9 @@ export function validateEntitySource(value, shape) {
 export function expandTerrain(terrain) {
   const cells = new Map();
   for (const box of terrain.boxes) {
-    for (let x = box.from[0]; x <= box.to[0]; x += 1) {
-      for (let y = box.from[1]; y <= box.to[1]; y += 1) {
-        for (let z = box.from[2]; z <= box.to[2]; z += 1) {
+    for (let x = box.from[0]; x < box.to[0]; x += 1) {
+      for (let y = box.from[1]; y < box.to[1]; y += 1) {
+        for (let z = box.from[2]; z < box.to[2]; z += 1) {
           setCell(cells, [x, y, z], box.blockId, box.rotation);
         }
       }

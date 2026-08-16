@@ -1,0 +1,397 @@
+//summon minecraft:villager ~ ~ ~ 
+const fl = {
+    VillagerData:{
+        profession:"librarian",
+        type:"minecraft:plains",
+        level:8
+    },
+    Offers:{Recipes:[
+        {
+            buy:{
+                id:"minecraft:dirt",count:1
+            },
+            sell:{
+                id:"minecraft:netherite_sword",
+                Count:1,
+                components:{
+                    enchantments:{sharpness:255,smite:255,fire_aspect:255,knockback:255,sweeping_edge:255,unbreaking:255,mending:255,looting:255}
+                },
+                xp:1,
+                maxUses:999
+            }
+        },
+        {
+            buy:{
+                id:"minecraft:dirt",count:1
+            },
+            sell:{
+                id:"minecraft:netherite_pickaxe",
+                Count:1,
+                components:{
+                    enchantments:{efficiency:255,fortune:255,unbreaking:255,mending:255}
+                },
+                xp:1,
+                maxUses:999
+            }
+        },
+        {
+            buy:{
+                id:"minecraft:dirt",count:1
+            },
+            sell:{
+                id:"minecraft:netherite_axe",
+                Count:1,
+                components:{
+                    enchantments:{efficiency:255,sharpness:255,silk_touch:255,unbreaking:255,mending:255}
+                },
+                xp:1,
+                maxUses:999
+            }
+        },
+        {
+            buy:{
+                id:"minecraft:dirt",count:1
+            },
+            sell:{
+                id:"minecraft:netherite_shovel",
+                Count:1,
+                components:{
+                    enchantments:{efficiency:255,fortune:255,unbreaking:255,mending:255}
+                },
+                xp:1,
+                maxUses:999
+            }
+        },
+        {
+            buy:{
+                id:"minecraft:dirt",count:1
+            },
+            sell:{
+                id:"minecraft:netherite_helmet",
+                Count:1,
+                components:{
+                    enchantments:{protection:255,unbreaking:255,respiration:255,aqua_affinity:255,thorns:255,mending:255},
+                },
+                xp:1,
+                maxUses:999
+            }
+        },
+        {
+            buy:{
+                id:"minecraft:dirt",count:1
+            },
+            sell:{
+                id:"minecraft:netherite_chestplate",
+                Count:1,
+                components:{
+                    enchantments:{protection:255,unbreaking:255,thorns:255,mending:255,fire_protection:255},
+                },
+                xp:1,
+                maxUses:999
+            }
+        },
+        {
+            buy:{
+                id:"minecraft:dirt",count:1
+            },
+            sell:{
+                id:"minecraft:netherite_leggings",
+                Count:1,
+                components:{
+                    enchantments:{protection:255,unbreaking:255,thorns:255,mending:255,blast_protection:255,projectile_protection:255},
+                },
+                xp:1,
+                maxUses:999
+            }
+        },
+        {
+            buy:{
+                id:"minecraft:dirt",count:1
+            },
+            sell:{
+                id:"minecraft:netherite_boots",
+                Count:1,
+                components:{
+                    enchantments:{protection:255,feather_falling:255,protection:255,unbreaking:255,thorns:255,depth_strider:255,soul_speed:255,mending:255},
+                },
+                xp:1,
+                maxUses:999
+            }
+        },
+        {
+            buy:{
+                id:"minecraft:dirt",count:1
+            },
+            sell:{
+                id:"minecraft:crossbow",
+                Count:1,
+                components:{
+                    enchantments:{punch:255,piercing:255,quick_charge:255,unbreaking:255,mending:255,power:255,flame:255,infinity:255},
+                },
+                xp:1,
+                maxUses:999
+            }
+        },
+        {
+            buy:{
+                id:"minecraft:dirt",count:1
+            },
+            sell:{
+                id:"minecraft:bow",
+                Count:1,
+                components:{
+                    enchantments:{flame:255,punch:255,unbreaking:255,infinity:255,power:255,mending:255},
+                },
+                xp:1,
+                maxUses:999
+            }
+        },
+        {
+            buy:{
+                id:"minecraft:dirt",count:1
+            },
+            sell:{
+                id:"minecraft:elytra",
+                Count:1,
+                components:{
+                    enchantments:{unbreaking:255,mending:255},
+                },
+                xp:1,
+                maxUses:999
+            }
+        },
+        {
+            buy:{
+                id:"minecraft:dirt",count:1
+            },
+            sell:{
+                id:"minecraft:trident",
+                Count:1,
+                components:{
+                    enchantments:{impaling:255,channeling:255,loyalty:255,mending:255},
+                },
+                xp:1,
+                maxUses:999
+            }
+        },
+        {
+            buy:{
+                id:"minecraft:dirt",count:1
+            },
+            sell:{
+                id:"minecraft:fireworks_rocket",
+                Count:64,
+                xp:1,
+                maxUses:999
+            }
+        },
+    ]}
+}
+/*
+/summon minecraft:villager ~ ~1 ~ {CustomName:"卖装备的村民",CustomNameVisible:true,VillagerData:{profession:"librarian",type:"minecraft:plains",level:8},Offers:{Recipes:[{buy:{id:"minecraft:dirt",count:1},sell:{id:"minecraft:netherite_sword",Count:1,components:{enchantments:{sharpness:255,smite:255,fire_aspect:255,knockback:255,sweeping_edge:255,unbreaking:255,mending:255,looting:255}},xp:1,maxUses:999}},{buy:{id:"minecraft:dirt",count:1},sell:{id:"minecraft:netherite_pickaxe",Count:1,components:{enchantments:{efficiency:255,fortune:255,unbreaking:255,mending:255}},xp:1,maxUses:999}},{buy:{id:"minecraft:dirt",count:1},sell:{id:"minecraft:netherite_axe",Count:1,components:{enchantments:{efficiency:255,sharpness:255,silk_touch:255,unbreaking:255,mending:255}},xp:1,maxUses:999}},{buy:{id:"minecraft:dirt",count:1},sell:{id:"minecraft:netherite_shovel",Count:1,components:{enchantments:{efficiency:255,fortune:255,unbreaking:255,mending:255}},xp:1,maxUses:999}}]}}
+
+/summon minecraft:villager ~ ~1 ~ {CustomName:"卖装备的村民",CustomNameVisible:true,VillagerData:{profession:"librarian",type:"minecraft:plains",level:8},Offers:{Recipes:[{buy:{id:"minecraft:dirt",count:1},sell:{id:"minecraft:netherite_helmet",Count:1,components:{enchantments:{protection:255,unbreaking:255,respiration:255,aqua_affinity:255,thorns:255,mending:255},},xp:1,maxUses:999}},{buy:{id:"minecraft:dirt",count:1},sell:{id:"minecraft:chestplate",Count:1,components:{enchantments:{protection:255,unbreaking:255,thorns:255,mending:255,fire_protection:255},},xp:1,maxUses:999}},{buy:{id:"minecraft:dirt",count:1},sell:{id:"minecraft:leggings",Count:1,components:{enchantments:{protection:255,unbreaking:255,thorns:255,mending:255,blast_protection:255,projectile_protection:255},},xp:1,maxUses:999}},{buy:{id:"minecraft:dirt",count:1},sell:{id:"minecraft:boots",Count:1,components:{enchantments:{protection:255,feather_falling:255,protection:255,unbreaking:255,thorns:255,depth_strider:255,soul_speed:255,mending:255},},xp:1,maxUses:999}},]}}
+
+/summon minecraft:villager ~ ~1 ~ {VillagerData:{profession:"librarian",type:"minecraft:plains",level:8},Offers:{Recipes:[{buy:{id:"minecraft:dirt",count:1},sell:{id:"minecraft:netherite_sword",Count:1,components:{enchantments:{sharpness:255,smite:255,fire_aspect:255,knockback:255,sweeping_edge:255,unbreaking:255,mending:255,looting:255}},xp:1,maxUses:999}},{buy:{id:"minecraft:dirt",count:1},sell:{id:"minecraft:netherite_pickaxe",Count:1,components:{enchantments:{efficiency:255,fortune:255,unbreaking:255,mending:255}},xp:1,maxUses:999}},{buy:{id:"minecraft:dirt",count:1},sell:{id:"minecraft:netherite_axe",Count:1,components:{enchantments:{efficiency:255,sharpness:255,silk_touch:255,unbreaking:255,mending:255}},xp:1,maxUses:999}},{buy:{id:"minecraft:dirt",count:1},sell:{id:"minecraft:netherite_shovel",Count:1,components:{enchantments:{efficiency:255,fortune:255,unbreaking:255,mending:255}},xp:1,maxUses:999}},{buy:{id:"minecraft:dirt",count:1},sell:{id:"minecraft:netherite_helmet",Count:1,components:{enchantments:{protection:255,unbreaking:255,respiration:255,aqua_affinity:255,thorns:255,mending:255},},xp:1,maxUses:999}},{buy:{id:"minecraft:dirt",count:1},sell:{id:"minecraft:netherite_chestplate",Count:1,components:{enchantments:{protection:255,unbreaking:255,thorns:255,mending:255,fire_protection:255},},xp:1,maxUses:999}},{buy:{id:"minecraft:dirt",count:1},sell:{id:"minecraft:netherite_leggings",Count:1,components:{enchantments:{protection:255,unbreaking:255,thorns:255,mending:255,blast_protection:255,projectile_protection:255},},xp:1,maxUses:999}},{buy:{id:"minecraft:dirt",count:1},sell:{id:"minecraft:netherite_boots",Count:1,components:{enchantments:{protection:255,feather_falling:255,protection:255,unbreaking:255,thorns:255,depth_strider:255,soul_speed:255,mending:255},},xp:1,maxUses:999}},{buy:{id:"minecraft:dirt",count:1},sell:{id:"minecraft:crossbow",Count:1,components:{enchantments:{punch:255,piercing:255,quick_charge:255,unbreaking:255,mending:255,power:255,flame:255,infinity:255},},xp:1,maxUses:999}},{buy:{id:"minecraft:dirt",count:1},sell:{id:"minecraft:bow",Count:1,components:{enchantments:{flame:255,punch:255,unbreaking:255,infinity:255,power:255,mending:255},},xp:1,maxUses:999}},{buy:{id:"minecraft:dirt",count:1},sell:{id:"minecraft:elytra",Count:1,components:{enchantments:{unbreaking:255,mending:255},},xp:1,maxUses:999}},{buy:{id:"minecraft:dirt",count:1},sell:{id:"minecraft:trident",Count:1,components:{enchantments:{impaling:255,channeling:255,loyalty:255,mending:255},},xp:1,maxUses:999}},{buy:{id:"minecraft:dirt",count:1},sell:{id:"minecraft:firework_rocket",count:64,xp:1,maxUses:999}},{buy:{id:"minecraft:dirt",count:1},sell:{id:"minecraft:arrow",count:64,xp:1,maxUses:999}},]}}
+
+/summon minecraft:villager ~ ~ ~ 
+{
+VillagerData:{
+profession:"librarian",
+type:"minecraft:plains",
+level:8
+},
+Offers:{Recipes:[
+{
+buy:{
+id:"minecraft:dirt",count:1
+},
+sell:{
+id:"minecraft:netherite_sword",
+Count:1,
+components:{
+enchantments:{sharpness:255,smite:255,fire_aspect:255,knockback:255,sweeping_edge:255,unbreaking:255,mending:255,looting:255}
+},
+xp:1,
+maxUses:999
+}
+},
+{
+buy:{
+id:"minecraft:dirt",count:1
+},
+sell:{
+id:"minecraft:netherite_pickaxe",
+Count:1,
+components:{
+enchantments:{efficiency:255,fortune:255,unbreaking:255,mending:255}
+},
+xp:1,
+maxUses:999
+}
+},
+{
+buy:{
+id:"minecraft:dirt",count:1
+},
+sell:{
+id:"minecraft:netherite_axe",
+Count:1,
+components:{
+enchantments:{efficiency:255,sharpness:255,silk_touch:255,unbreaking:255,mending:255}
+},
+xp:1,
+maxUses:999
+}
+},
+{
+buy:{
+id:"minecraft:dirt",count:1
+},
+sell:{
+id:"minecraft:netherite_shovel",
+Count:1,
+components:{
+enchantments:{efficiency:255,fortune:255,unbreaking:255,mending:255}
+},
+xp:1,
+maxUses:999
+}
+},
+{
+buy:{
+id:"minecraft:dirt",count:1
+},
+sell:{
+id:"minecraft:netherite_helmet",
+Count:1,
+components:{
+enchantments:{protection:255,unbreaking:255,respiration:255,aqua_affinity:255,thorns:255,mending:255},
+},
+xp:1,
+maxUses:999
+}
+},
+{
+buy:{
+id:"minecraft:dirt",count:1
+},
+sell:{
+id:"minecraft:netherite_chestplate",
+Count:1,
+components:{
+enchantments:{protection:255,unbreaking:255,thorns:255,mending:255,fire_protection:255},
+},
+xp:1,
+maxUses:999
+}
+},
+{
+buy:{
+id:"minecraft:dirt",count:1
+},
+sell:{
+id:"minecraft:netherite_leggings",
+Count:1,
+components:{
+enchantments:{protection:255,unbreaking:255,thorns:255,mending:255,blast_protection:255,projectile_protection:255},
+},
+xp:1,
+maxUses:999
+}
+},
+{
+buy:{
+id:"minecraft:dirt",count:1
+},
+sell:{
+id:"minecraft:netherite_boots",
+Count:1,
+components:{
+enchantments:{protection:255,feather_falling:255,protection:255,unbreaking:255,thorns:255,depth_strider:255,soul_speed:255,mending:255},
+},
+xp:1,
+maxUses:999
+}
+},
+{
+buy:{
+id:"minecraft:dirt",count:1
+},
+sell:{
+id:"minecraft:crossbow",
+Count:1,
+components:{
+enchantments:{punch:255,piercing:255,quick_charge:255,unbreaking:255,mending:255,power:255,flame:255,infinity:255},
+},
+xp:1,
+maxUses:999
+}
+},
+{
+buy:{
+id:"minecraft:dirt",count:1
+},
+sell:{
+id:"minecraft:bow",
+Count:1,
+components:{
+enchantments:{flame:255,punch:255,unbreaking:255,infinity:255,power:255,mending:255},
+},
+xp:1,
+maxUses:999
+}
+},
+{
+buy:{
+id:"minecraft:dirt",count:1
+},
+sell:{
+id:"minecraft:elytra",
+Count:1,
+components:{
+enchantments:{unbreaking:255,mending:255},
+},
+xp:1,
+maxUses:999
+}
+},
+{
+buy:{
+id:"minecraft:dirt",count:1
+},
+sell:{
+id:"minecraft:trident",
+Count:1,
+components:{
+enchantments:{impaling:255,channeling:255,loyalty:255,mending:255},
+},
+xp:1,
+maxUses:999
+}
+},
+{
+buy:{
+id:"minecraft:dirt",count:1
+},
+sell:{
+id:"minecraft:firework_rocket",
+Count:64,
+xp:1,
+maxUses:999
+}
+},
+{
+buy:{
+id:"minecraft:dirt",count:1
+},
+sell:{
+id:"minecraft:arrow",
+Count:64,
+xp:1,
+maxUses:999
+}
+},
+]}
+}
+*/

@@ -1,0 +1,26 @@
+{
+  "formatVersion": "nea-physics/v1",
+  "gravity": -20,
+  "maxFallSpeed": 50,
+  "stepHeight": 1.25,
+  "playerBody": {
+    "profileId": "historical-player-default-v1",
+    "origin": "body-center",
+    "originStatus": "confirmed",
+    "sizeStatus": "confirmed",
+    "boundsHalfExtents": [0.45, 1.1, 0.45],
+    "shapeHalfExtents": [0.45, 1.1, 0.45],
+    "evidence": "Player physics module 7166 exports PLAYER_WIDTH=0.45 and PLAYER_HEIGHT=1.1"
+  },
+  "materials": {
+    "364": { "friction": 0, "restitution": 0, "tags": ["water"], "fluid": true },
+    "428": { "friction": 0, "restitution": 0, "tags": ["coffee"], "fluid": true },
+    "412": { "friction": 0, "restitution": 0, "tags": ["strawberry_juice"], "fluid": true },
+    "420": { "friction": 0, "restitution": 0, "tags": ["grape_juice"], "fluid": true },
+    "129": { "friction": 10, "restitution": 0, "tags": ["stone"] },
+    "125": { "friction": 10, "restitution": 0, "tags": ["dirt"] },
+    "107": { "friction": 10, "restitution": 0, "tags": ["dark_red"] },
+    "389": { "friction": 10, "restitution": 0, "tags": ["medium_yellow"] },
+    "149": { "friction": 10, "restitution": 0, "tags": ["grey_stone_brick"] }
+  }
+}

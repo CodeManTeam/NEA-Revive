@@ -1,7 +1,7 @@
 // NEA-Revive 本地开发栈启动脚本：
-// - 后端 runtime-server（18081）：packages/parkour + local-player archive
+// - 后端 runtime-server（18081）：packages/<map> + local-player archive
 // - 前端静态服务器（18082）：frontend/voxweb/dist
-// 用法：node scripts/serve.mjs [--backend-port 18081] [--frontend-port 18082]
+// 用法：node scripts/serve.mjs [--map parkour|minecraft] [--backend-port 18081] [--frontend-port 18082]
 import { createServer } from "node:http"
 import { readFile, stat } from "node:fs/promises"
 import { createReadStream } from "node:fs"
@@ -11,6 +11,14 @@ import { fileURLToPath } from "node:url"
 const rootDir = resolve(fileURLToPath(import.meta.url), "..", "..")
 const backendPort = Number(process.env.NEA_BACKEND_PORT ?? 18081)
 const frontendPort = Number(process.env.NEA_FRONTEND_PORT ?? 18082)
+const mapArg = process.argv.includes("--map")
+  ? process.argv[process.argv.indexOf("--map") + 1]
+  : (process.env.NEA_MAP ?? "parkour")
+const maps = {
+  parkour: { spawn: [115, 11, 154], build: "parkour" },
+  minecraft: { spawn: [64, 3, 48], build: "minecraft" },
+}
+const map = maps[mapArg] ?? maps.parkour
 
 // ---- 后端（runtime-server）----
 // 用 child 方式启动，避免本进程直接 import tsx 的生命周期耦合
@@ -23,9 +31,10 @@ const backendChild = spawn(
 import { startRuntimeServer } from './src/runtime-server.ts'
 const server = await startRuntimeServer({
   port: ${backendPort},
-  sourceRoot: '${rootDir.replace(/\\/g, "/")}/packages/parkour',
+  sourceRoot: '${rootDir.replace(/\\/g, "/")}/packages/${mapArg}',
   assetRoot: '${rootDir.replace(/\\/g, "/")}/backend/local-player/archive',
-  buildRoot: '${rootDir.replace(/\\/g, "/")}/.build/parkour',
+  buildRoot: '${rootDir.replace(/\\/g, "/")}/.build/${map.build}',
+  spawn: [${map.spawn.join(", ")}],
   quiet: false,
 })
 console.log('[backend] READY on', server.port)
