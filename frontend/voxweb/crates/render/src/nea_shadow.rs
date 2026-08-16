@@ -254,26 +254,27 @@ impl NeaShadowFrame {
 
 pub fn recovered_shadow_frame(
     eye: Vec3,
-    camera_view: Mat4,
-    fov_y: f32,
-    aspect: f32,
+    _camera_view: Mat4,
+    _fov_y: f32,
+    _aspect: f32,
     near: f32,
     far: f32,
     sun_direction: Vec3,
     resolution: u32,
 ) -> NeaShadowFrame {
+    // 稳定阴影：级联以玩家位置为中心、固定世界范围，不随相机朝向重建。
+    // 原实现用相机视锥角点拟合级联 → 相机旋转时 shadow 矩阵剧烈变化，
+    // 造成「影子形状无规律变换」。这里只在玩家移动时缓慢跟随。
     let z = recovered_cascade_z(near, far);
-    let shadow_view = Mat4::look_at_rh(
-        eye + sun_direction.normalize_or_zero() * 512.0,
-        eye,
-        Vec3::Z,
-    );
+    let sun = sun_direction.normalize_or_zero();
+    let shadow_view = Mat4::look_at_rh(eye + sun * 512.0, eye, Vec3::Z);
+    // 固定级联世界范围（以玩家为中心的 XZ 正方形边长）
+    let extents = [24.0, 64.0, 160.0, 320.0];
     let cascades = std::array::from_fn(|index| {
-        fit_cascade(
-            camera_view,
+        fit_cascade_fixed(
             shadow_view,
-            fov_y,
-            aspect,
+            eye,
+            extents[index],
             z[index],
             z[index + 1],
             CASCADE_VIEWPORTS[index],
@@ -283,6 +284,59 @@ pub fn recovered_shadow_frame(
     NeaShadowFrame {
         splits: [z[1], z[2], z[3]],
         cascades,
+    }
+}
+
+/// 以 `center` 为中心的固定正交级联：shadow_view 空间 XZ 正方形
+/// `[-extent/2, extent/2]`，深度 `[near_z, far_z]`（沿 shadow_view 的 -Z）。
+fn fit_cascade_fixed(
+    shadow_view: Mat4,
+    center: Vec3,
+    extent: f32,
+    near_z: f32,
+    far_z: f32,
+    uv_bounds: [f32; 4],
+    resolution: u32,
+) -> ShadowCascade {
+    let center_shadow = shadow_view.transform_point3(center);
+    let width_scale = 2.0 / extent;
+    let height_scale = 2.0 / extent;
+    let depth_scale = -1.0 / (far_z - near_z);
+    let columns = [
+        Vec4::new(width_scale, 0.0, 0.0, 0.0),
+        Vec4::new(0.0, height_scale, 0.0, 0.0),
+        Vec4::new(0.0, 0.0, 2.0 * depth_scale, 0.0),
+        Vec4::new(
+            -width_scale * center_shadow.x,
+            -height_scale * center_shadow.z,
+            depth_scale * (far_z + near_z),
+            1.0,
+        ),
+    ];
+    let projection = Mat4::from_cols(columns[0], columns[1], columns[2], columns[3]);
+    let depth_to_webgpu = Mat4::from_cols(
+        Vec4::X,
+        Vec4::Y,
+        Vec4::new(0.0, 0.0, 0.5, 0.0),
+        Vec4::new(0.0, 0.0, 0.5, 1.0),
+    );
+    let view_projection = depth_to_webgpu * projection * shadow_view;
+    let inverse = view_projection.inverse();
+    ShadowCascade {
+        view_projection,
+        normal: Mat3::from_mat4(inverse).transpose(),
+        bounds: [
+            uv_bounds[0],
+            uv_bounds[1],
+            extent,
+            extent,
+        ],
+        viewport: [
+            (uv_bounds[0] * resolution as f32) as u32,
+            (uv_bounds[1] * resolution as f32) as u32,
+            (uv_bounds[2] * resolution as f32) as u32,
+            (uv_bounds[3] * resolution as f32) as u32,
+        ],
     }
 }
 

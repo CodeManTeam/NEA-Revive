@@ -184,7 +184,9 @@ impl NeaAvatarRenderer {
                 compilation_options: Default::default(),
                 targets: &[Some(wgpu::ColorTargetState {
                     format: surface_format,
-                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    // 角色必须是实心的：ALPHA_BLENDING 会让角色半透明叠层、
+                    // 内部面穿透、背景透过（深度正确但混合错误）。
+                    blend: Some(wgpu::BlendState::REPLACE),
                     write_mask: wgpu::ColorWrites::ALL,
                 })],
             }),
