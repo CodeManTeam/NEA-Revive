@@ -1,0 +1,9 @@
+{
+  "format": "nea-recovered-project-bootstrap-manifest",
+  "version": 1,
+  "file": {
+    "name": "bootstrap.json",
+    "bytes": 62962,
+    "sha256": "ea634db3a6c184bd4c5fb8ff27139e588314d053e9f4ce6d15f0037aa8e93596"
+  }
+}

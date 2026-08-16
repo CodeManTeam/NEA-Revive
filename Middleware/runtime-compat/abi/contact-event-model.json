@@ -1,0 +1,359 @@
+{
+  "format": "nea-contact-event-model",
+  "version": 3,
+  "generatedAt": "2026-07-31T04:39:04.099Z",
+  "scope": "Server Script Runtime collision events and active contact value objects",
+  "canonicalEvents": [
+    {
+      "id": "GameEntityContactEvent",
+      "fields": [
+        "tick",
+        "entity",
+        "other",
+        "axis",
+        "force"
+      ],
+      "wire": [
+        "tick",
+        "id",
+        "otherId",
+        "nx",
+        "ny",
+        "nz",
+        "fx",
+        "fy",
+        "fz"
+      ],
+      "localStatus": "partial",
+      "unresolved": [
+        "other: local static colliders are not GameEntity instances"
+      ],
+      "evidence": [
+        {
+          "path": "dao3-docs-mirror/markdown/api/GameWorld/input.md",
+          "confidence": "direct"
+        },
+        {
+          "path": "origin/origin/origin/shell/ScriptShell.js",
+          "confidence": "direct"
+        }
+      ]
+    },
+    {
+      "id": "GameVoxelContactEvent",
+      "fields": [
+        "tick",
+        "entity",
+        "x",
+        "y",
+        "z",
+        "voxel",
+        "axis",
+        "force"
+      ],
+      "wire": [
+        "tick",
+        "id",
+        "x",
+        "y",
+        "z",
+        "axis",
+        "fx",
+        "fy",
+        "fz"
+      ],
+      "localStatus": "compatible",
+      "unresolved": [],
+      "evidence": [
+        {
+          "path": "dao3-docs-mirror/markdown/api/GameWorld/input.md",
+          "confidence": "direct"
+        },
+        {
+          "path": "origin/origin/origin/shell/ScriptShell.js",
+          "confidence": "direct"
+        },
+        {
+          "path": "demo-map/src/runtime/script-runtime.mjs",
+          "confidence": "direct"
+        }
+      ]
+    }
+  ],
+  "activeContacts": [
+    {
+      "id": "GameEntityContact",
+      "fields": [
+        "other",
+        "force",
+        "axis"
+      ],
+      "localStatus": "missing",
+      "unresolved": [
+        "RuntimeEntity active contact storage is not implemented"
+      ],
+      "evidence": [
+        {
+          "path": "origin/origin/origin/api/GameEntityContact.js",
+          "confidence": "direct"
+        },
+        {
+          "path": "dao3-docs-mirror/markdown/api/GameEntity/physics.md",
+          "confidence": "direct"
+        }
+      ]
+    },
+    {
+      "id": "GameVoxelContact",
+      "fields": [
+        "x",
+        "y",
+        "z",
+        "voxel",
+        "force",
+        "axis"
+      ],
+      "localStatus": "missing",
+      "unresolved": [
+        "RuntimeEntity active contact storage is not implemented"
+      ],
+      "evidence": [
+        {
+          "path": "origin/origin/origin/api/GameVoxelContact.js",
+          "confidence": "direct"
+        },
+        {
+          "path": "dao3-docs-mirror/markdown/api/GameEntity/physics.md",
+          "confidence": "direct"
+        }
+      ]
+    }
+  ],
+  "authoritativeState": {
+    "schema": "ContactIndexSchema = sorted ContactRecordSchema[] by entity id",
+    "synchronization": "ScriptEntitySync.preTick applies ContactBinding to state.contact after RigidBodyBinding and DamageBinding",
+    "records": {
+      "ContactRecord": [
+        "id",
+        "body",
+        "voxel",
+        "fluidVoxels",
+        "fluidVolumeFraction"
+      ],
+      "BodyContact": [
+        "otherId",
+        "nx",
+        "ny",
+        "nz",
+        "fx",
+        "fy",
+        "fz"
+      ],
+      "VoxelContact": [
+        "x",
+        "y",
+        "z",
+        "b",
+        "axis",
+        "fx",
+        "fy",
+        "fz"
+      ],
+      "FluidContact": [
+        "b",
+        "volumeFraction"
+      ]
+    },
+    "status": "confirmed-schema-partial-binding",
+    "unresolved": [
+      "ContactBinding implementation is absent from the recovered origin tree.",
+      "The exact GameEntity.contactForce aggregation rule across active contact records is not yet recovered.",
+      "The exact construction and reuse policy for active contact value objects is not yet recovered."
+    ],
+    "evidence": [
+      {
+        "path": "Lokibox/box-go/dump/cube-axis.js",
+        "confidence": "direct"
+      },
+      {
+        "path": "origin/origin/origin/sync/ScriptEntitySync.js",
+        "confidence": "direct"
+      }
+    ],
+    "conformance": {
+      "status": "covered",
+      "fixture": "runtime-compat/conformance/contact-state.mjs",
+      "tests": "runtime-compat/test/contact-state-conformance.test.mjs",
+      "coveredMappings": [
+        "body contact fields",
+        "voxel contact fields",
+        "fluid contact fields",
+        "cube axis decoding"
+      ],
+      "excludedMappings": [
+        "GameEntity.contactForce aggregation"
+      ]
+    }
+  },
+  "axis": {
+    "entityWire": "nx/ny/nz are reconstructed directly as GameVector3",
+    "voxelWire": "packed axis is passed through origin unpackAxis before event construction",
+    "local": "sweep contact normal is exposed as canonical axis and retained as the normal extension alias",
+    "packedMapping": {
+      "0": [
+        1,
+        0,
+        0
+      ],
+      "1": [
+        -1,
+        0,
+        0
+      ],
+      "2": [
+        0,
+        1,
+        0
+      ],
+      "3": [
+        0,
+        -1,
+        0
+      ],
+      "4": [
+        0,
+        0,
+        1
+      ],
+      "5": [
+        0,
+        0,
+        -1
+      ]
+    },
+    "status": "confirmed",
+    "evidence": [
+      {
+        "path": "Lokibox/box-go/dump/cube-axis.js",
+        "confidence": "direct"
+      },
+      {
+        "path": "Lokibox/box-go/custom-schema.ts",
+        "confidence": "direct"
+      },
+      {
+        "path": "origin/origin/origin/shell/ScriptShell.js",
+        "confidence": "direct"
+      }
+    ]
+  },
+  "force": {
+    "wire": "fx/fy/fz are reconstructed as GameVector3",
+    "schema": "BodyContactSchema and VoxelContactSchema store fx/fy/fz as unquantized MuFloat32 fields",
+    "local": "The sweep solver projects its actual collision and ground-friction velocity deltas through force = mass * deltaVelocity / deltaTime, distributing simultaneous contacts evenly before GameVector3 event reconstruction.",
+    "status": "confirmed-historical-production-local-compatible",
+    "solver": {
+      "reset": "Each solver pass resets contact fx/fy/fz before processing its contact points.",
+      "perPointFormula": "force += (normal * normalImpulse + tangent * tangentImpulse + binormal * binormalImpulse) * INV_DT",
+      "units": "impulse-per-fixed-step converted to force by INV_DT",
+      "includesFriction": true,
+      "status": "confirmed"
+    },
+    "bodyProjection": {
+      "firstBody": {
+        "axis": "negative solver normal",
+        "force": "solver force"
+      },
+      "secondBody": {
+        "axis": "solver normal",
+        "force": "negative solver force"
+      },
+      "status": "confirmed"
+    },
+    "voxelProjection": {
+      "initialForce": [
+        0,
+        0,
+        0
+      ],
+      "solverForceAssignedToFirstGeneratedVoxelContact": true,
+      "compactGrouping": "same packed axis and same coordinate along that axis",
+      "cutoff": 0.001,
+      "cutoffRule": "retain a group when any absolute summed force component exceeds the cutoff",
+      "retainedForce": "component-wise group sum divided by group contact count, copied to each retained contact",
+      "status": "confirmed"
+    },
+    "aggregateContactForce": {
+      "status": "unresolved",
+      "reason": "ContactBinding implementation is absent; the rule that aggregates active contact records into GameEntity.contactForce is still unavailable."
+    },
+    "evidence": [
+      {
+        "path": "runtime-compat/generated/contact-force-production-analysis.json",
+        "confidence": "direct"
+      }
+    ],
+    "policy": "Per-contact event force follows the recovered impulse-per-fixed-step formula; do not invent GameEntity.contactForce aggregation without ContactBinding evidence."
+  },
+  "localExtensions": {
+    "eventFields": [
+      "player",
+      "collider",
+      "normal",
+      "compatibility"
+    ],
+    "events": [
+      "world.onContact",
+      "world.onContactSeparate",
+      "world.onTriggerEnter",
+      "world.onTriggerLeave"
+    ],
+    "status": "extension"
+  },
+  "evidence": {
+    "worldDocs": {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/input.md",
+      "confidence": "direct"
+    },
+    "entityPhysicsDocs": {
+      "path": "dao3-docs-mirror/markdown/api/GameEntity/physics.md",
+      "confidence": "direct"
+    },
+    "entityContact": {
+      "path": "origin/origin/origin/api/GameEntityContact.js",
+      "confidence": "direct"
+    },
+    "voxelContact": {
+      "path": "origin/origin/origin/api/GameVoxelContact.js",
+      "confidence": "direct"
+    },
+    "shell": {
+      "path": "origin/origin/origin/shell/ScriptShell.js",
+      "confidence": "direct"
+    },
+    "entitySync": {
+      "path": "origin/origin/origin/sync/ScriptEntitySync.js",
+      "confidence": "direct"
+    },
+    "contactSchema": {
+      "path": "Lokibox/box-go/dump/cube-axis.js",
+      "confidence": "direct"
+    },
+    "cubeAxis": {
+      "path": "Lokibox/box-go/custom-schema.ts",
+      "confidence": "direct"
+    },
+    "localRuntime": {
+      "path": "demo-map/src/runtime/script-runtime.mjs",
+      "confidence": "direct"
+    },
+    "localPhysics": {
+      "path": "demo-map/src/runtime/physics/fixed-step-physics.mjs",
+      "confidence": "direct"
+    },
+    "conformance": {
+      "path": "runtime-compat/conformance/contact-state.mjs",
+      "confidence": "direct"
+    }
+  }
+}

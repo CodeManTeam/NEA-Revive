@@ -1,0 +1,9 @@
+[package]
+name = "voxweb-physics"
+version = "0.1.0"
+edition.workspace = true
+description = "Recovered DAO3 player physics (voxel collision, contact solving) — no rendering/network dependencies"
+
+[dependencies]
+glam = "0.30"
+voxweb-protocol = { path = "../protocol" }

@@ -1,0 +1,102 @@
+{
+  "format": "nea-player-network-body-analysis",
+  "version": 1,
+  "generatedAt": "2026-07-31T04:39:03.305Z",
+  "sources": {
+    "backend": {
+      "path": "local-player/backend/box3-server.cjs",
+      "bytes": 652833,
+      "sha256": "781760ff619c95c7eab835dabc198e08b3b445177ffa479a3893bf10e1b68b43"
+    },
+    "demoPhysics": {
+      "path": "demo-map/project/world/physics.json",
+      "bytes": 1274,
+      "sha256": "3867e60d3f26ae2a2460d103af1986ff9d18de1091f4f9c14e8c77f0633f87f7"
+    }
+  },
+  "schema": {
+    "genericRigidBodyIdentityHalfExtents": [
+      1,
+      1,
+      1
+    ],
+    "genericBoundsHalfExtents": [
+      1,
+      1,
+      1
+    ],
+    "genericShapeHalfExtents": [
+      1,
+      1,
+      1
+    ],
+    "boundsFields": [
+      "rx",
+      "ry",
+      "rz"
+    ],
+    "shapeHalfExtentFields": [
+      "hsx",
+      "hsy",
+      "hsz"
+    ],
+    "interpretation": "schema-identity-only",
+    "historicalPlayerSizeEvidence": false
+  },
+  "playerProducer": {
+    "overridesGenericIdentity": true,
+    "boundsAssignments": [
+      "body.rx = rx",
+      "body.ry = ry",
+      "body.rz = rz"
+    ],
+    "shapeAssignments": [
+      "body.hsx = hsx",
+      "body.hsy = hsy",
+      "body.hsz = hsz"
+    ],
+    "boundsAndShapeAreIndependent": true,
+    "sourceProfile": "BOX3_PLAYER_BODY_PROFILE",
+    "projectPackageRequiresExplicitProfile": true
+  },
+  "propagation": {
+    "initialHandshakeCarriesBounds": true,
+    "initialHandshakeCarriesShape": true,
+    "initialPublicStateCarriesBounds": true,
+    "initialPublicStateCarriesShape": true,
+    "authoritativeRegistrationCarriesBounds": true,
+    "authoritativeRegistrationCarriesShape": true,
+    "authoritativeFrameCarriesBounds": true,
+    "authoritativeFrameCarriesShape": true,
+    "laterPublicStateCarriesBounds": true,
+    "laterPublicStateCarriesShape": true,
+    "initialAndLaterUseSameProfile": true
+  },
+  "activeProfile": {
+    "profileId": "historical-player-default-v1",
+    "origin": "body-center",
+    "originStatus": "confirmed",
+    "sizeStatus": "confirmed",
+    "boundsHalfExtents": [
+      0.45,
+      1.1,
+      0.45
+    ],
+    "shapeHalfExtents": [
+      0.45,
+      1.1,
+      0.45
+    ],
+    "historicalSizeConfirmed": true
+  },
+  "conclusions": [
+    "The generic RigidBody identity remains part of the wire/schema constructor but is no longer inherited by project-package Player bounds or shape producers.",
+    "Project-package Player sessions fail startup without an explicit body profile.",
+    "Initial and authoritative follow-up PUBLIC states propagate independent bounds and shape half extents from the same player body profile.",
+    "The Demo uses the recovered upright Player default 0.45/1.1/0.45 for both axis-aligned bounds and shape half extents."
+  ],
+  "unresolved": [
+    "server-authoritative crouch shape mutation",
+    "server-authoritative flying shape mutation"
+  ]
+}

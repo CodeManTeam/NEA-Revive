@@ -1,0 +1,78 @@
+diff --git a/Backend/local-player/backend/box3-server.cjs b/Backend/local-player/backend/box3-server.cjs
+index 81306a8..01f34b4 100644
+--- a/Backend/local-player/backend/box3-server.cjs
++++ b/Backend/local-player/backend/box3-server.cjs
+@@ -13771,6 +13771,33 @@ var ProjectBootstrapSessions = class {
+     session.sound = client;
+     return this.flush(session);
+   }
++  sendSoundCommand(command) {
++    const recipients = [...this.sessions.values()].filter((session) => session.soundSent && session.sound);
++    if (recipients.length === 0) return false;
++    if (command.action === "play") {
++      const sampleId = this.options.bootstrap.soundDictionary.indexOf(command.sample);
++      if (sampleId < 0) throw new Error(`Sound sample is not present in the project bootstrap dictionary: ${command.sample}`);
++      const payload = {
++        gain: command.gain,
++        pitch: command.pitch,
++        radius: command.radius,
++        sampleId,
++        soundId: command.soundId,
++        position: command.position
++      };
++      for (const session of recipients) session.sound.message.play(payload);
++      return recipients.length;
++    }
++    const messageName = command.action === "setCurrentTimeAndResume" ? "setCurrentTimeAndResume" : command.action;
++    for (const session of recipients) {
++      if (command.action === "setCurrentTime" || command.action === "setCurrentTimeAndResume") {
++        session.sound.message[messageName]({ soundId: command.soundId, currentTime: command.currentTime });
++      } else {
++        session.sound.message[messageName](command.soundId);
++      }
++    }
++    return recipients.length;
++  }
+   connectTerrain(client) {
+     const session = this.getOrCreate(client.sessionId);
+     session.terrain = client;
+@@ -16691,6 +16718,10 @@ var Box3Server = class {
+     if (!guiSessions?.hasActiveClient(sessionId)) return false;
+     return guiSessions.command(sessionId, command);
+   }
++  sendSoundCommand(command) {
++    if (!this.running) return false;
++    return this.historicalProjectInstance?.projectBootstrapSessions.sendSoundCommand(command) ?? false;
++  }
+   openDialog(sessionId, config) {
+     if (!this.running) return false;
+     const dialogSessions = this.historicalProjectInstance?.dialogSessions;
+@@ -17262,6 +17293,28 @@ async function startNeaControlBridge(server, logger) {
+         response.end(JSON.stringify(delivered ? { ok: true } : { ok: false, error: "session not connected" }));
+         return;
+       }
++      if (request.method === "POST" && url.pathname === "/__nea/control/sound-command") {
++        const command = body.command;
++        if (!command || typeof command !== "object" || Array.isArray(command)) throw new Error("sound command is required");
++        if (!Number.isSafeInteger(command.soundId) || command.soundId < 1) throw new Error("soundId must be a positive safe integer");
++        if (!["play", "resume", "pause", "stop", "setCurrentTime", "setCurrentTimeAndResume"].includes(command.action)) throw new Error("invalid sound command action");
++        if (command.action === "play") {
++          if (typeof command.sample !== "string" || command.sample.length === 0) throw new Error("sound sample is required");
++          if (!Number.isFinite(command.gain) || command.gain < 0) throw new Error("sound gain must be non-negative");
++          if (!Number.isFinite(command.pitch) || command.pitch < 0.1) throw new Error("sound pitch must be at least 0.1");
++          if (!Number.isFinite(command.radius) || command.radius < 0) throw new Error("sound radius must be non-negative");
++          const position = command.position;
++          if (!position || typeof position !== "object" || !["global", "player", "entity", "position"].includes(position.type)) throw new Error("invalid sound position");
++          if (position.type === "position" && !isNeaVector(position.data)) throw new Error("sound position data must be a finite vector");
++          if ((position.type === "player" || position.type === "entity") && (!Number.isSafeInteger(position.data) || position.data < 1)) throw new Error("sound target must be a positive entity id");
++        } else if ((command.action === "setCurrentTime" || command.action === "setCurrentTimeAndResume") && !Number.isFinite(command.currentTime)) {
++          throw new Error("sound currentTime must be finite");
++        }
++        const delivered = server.sendSoundCommand(command);
++        response.statusCode = delivered === false ? 404 : 200;
++        response.end(JSON.stringify(delivered === false ? { ok: false, error: "sound client not connected" } : { ok: true, delivered }));
++        return;
++      }
+       if (request.method === "POST" && url.pathname === "/__nea/control/gui-command") {
+         if (typeof body.session !== "string" || !body.command || typeof body.command !== "object" || Array.isArray(body.command)) {
+           throw new Error("session and GUI command are required");

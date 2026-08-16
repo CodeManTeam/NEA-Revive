@@ -1,0 +1,2532 @@
+{
+  "format": "nea-recovered-client-ui",
+  "version": 1,
+  "sourceMessage": "gameUI.reset",
+  "running": true,
+  "defaultScreenId": "DEFAULT_SCREEN_ID",
+  "pictureAssets": {},
+  "uiTree": {
+    "ROOT_ID": {
+      "id": "ROOT_ID",
+      "type": 0,
+      "name": "Root",
+      "parentId": "",
+      "childrenIds": [
+        "DEFAULT_SCREEN_ID"
+      ]
+    },
+    "DEFAULT_SCREEN_ID": {
+      "id": "DEFAULT_SCREEN_ID",
+      "type": 2,
+      "name": "screen",
+      "parentId": "ROOT_ID",
+      "childrenIds": [
+        "sidebar",
+        "bagButton",
+        "cameraButton",
+        "settingsButton",
+        "choosecase",
+        "quickItem",
+        "quickNum",
+        "inventorycase",
+        "health_bar",
+        "extra_hp_bar",
+        "shadow",
+        "shop",
+        "chat",
+        "msgContent",
+        "inputBox"
+      ],
+      "value": {
+        "type": "screen",
+        "data": {
+          "enable": true,
+          "layout": {
+            "type": "none"
+          },
+          "zIndex": 1
+        }
+      }
+    },
+    "RED": {
+      "id": "RED",
+      "type": 5,
+      "name": "RED",
+      "parentId": "sidebar",
+      "childrenIds": [
+        "redbed",
+        "redNum"
+      ],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "text",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                100,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "textContent": "RED",
+            "textFontSize": 16,
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textOpacity": 1,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "textLineHeight": 1.2,
+            "autoWordWrap": false,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "richText": false,
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "redbed": {
+      "id": "redbed",
+      "type": 5,
+      "name": "redbed",
+      "parentId": "RED",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "text",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                100,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "textContent": "✔",
+            "textFontSize": 16,
+            "textColor": [
+              0,
+              255,
+              0
+            ],
+            "textOpacity": 1,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "textLineHeight": 1.2,
+            "autoWordWrap": false,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "richText": false,
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "redNum": {
+      "id": "redNum",
+      "type": 5,
+      "name": "redNum",
+      "parentId": "RED",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "text",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                100,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "textContent": "0",
+            "textFontSize": 16,
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textOpacity": 1,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "textLineHeight": 1.2,
+            "autoWordWrap": false,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "richText": false,
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "BLUE": {
+      "id": "BLUE",
+      "type": 5,
+      "name": "BLUE",
+      "parentId": "sidebar",
+      "childrenIds": [
+        "bluebed",
+        "blueNum"
+      ],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "text",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                100,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "textContent": "BLUE",
+            "textFontSize": 16,
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textOpacity": 1,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "textLineHeight": 1.2,
+            "autoWordWrap": false,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "richText": false,
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "bluebed": {
+      "id": "bluebed",
+      "type": 5,
+      "name": "bluebed",
+      "parentId": "BLUE",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "text",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                100,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "textContent": "✔",
+            "textFontSize": 16,
+            "textColor": [
+              0,
+              255,
+              0
+            ],
+            "textOpacity": 1,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "textLineHeight": 1.2,
+            "autoWordWrap": false,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "richText": false,
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "blueNum": {
+      "id": "blueNum",
+      "type": 5,
+      "name": "blueNum",
+      "parentId": "BLUE",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "text",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                100,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "textContent": "0",
+            "textFontSize": 16,
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textOpacity": 1,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "textLineHeight": 1.2,
+            "autoWordWrap": false,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "richText": false,
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "GREEN": {
+      "id": "GREEN",
+      "type": 5,
+      "name": "GREEN",
+      "parentId": "sidebar",
+      "childrenIds": [
+        "greenbed",
+        "greenNum"
+      ],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "text",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                100,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "textContent": "GREEN",
+            "textFontSize": 16,
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textOpacity": 1,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "textLineHeight": 1.2,
+            "autoWordWrap": false,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "richText": false,
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "greenbed": {
+      "id": "greenbed",
+      "type": 5,
+      "name": "greenbed",
+      "parentId": "GREEN",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "text",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                100,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "textContent": "✔",
+            "textFontSize": 16,
+            "textColor": [
+              0,
+              255,
+              0
+            ],
+            "textOpacity": 1,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "textLineHeight": 1.2,
+            "autoWordWrap": false,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "richText": false,
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "greenNum": {
+      "id": "greenNum",
+      "type": 5,
+      "name": "greenNum",
+      "parentId": "GREEN",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "text",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                100,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "textContent": "0",
+            "textFontSize": 16,
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textOpacity": 1,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "textLineHeight": 1.2,
+            "autoWordWrap": false,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "richText": false,
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "YELLOW": {
+      "id": "YELLOW",
+      "type": 5,
+      "name": "YELLOW",
+      "parentId": "sidebar",
+      "childrenIds": [
+        "yellowbed",
+        "yellowNum"
+      ],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "text",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                100,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "textContent": "YELLOW",
+            "textFontSize": 16,
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textOpacity": 1,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "textLineHeight": 1.2,
+            "autoWordWrap": false,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "richText": false,
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "yellowbed": {
+      "id": "yellowbed",
+      "type": 5,
+      "name": "yellowbed",
+      "parentId": "YELLOW",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "text",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                100,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "textContent": "✔",
+            "textFontSize": 16,
+            "textColor": [
+              0,
+              255,
+              0
+            ],
+            "textOpacity": 1,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "textLineHeight": 1.2,
+            "autoWordWrap": false,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "richText": false,
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "yellowNum": {
+      "id": "yellowNum",
+      "type": 5,
+      "name": "yellowNum",
+      "parentId": "YELLOW",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "text",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                100,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "textContent": "0",
+            "textFontSize": 16,
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textOpacity": 1,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "textLineHeight": 1.2,
+            "autoWordWrap": false,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "richText": false,
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "sidebar": {
+      "id": "sidebar",
+      "type": 4,
+      "name": "sidebar",
+      "parentId": "DEFAULT_SCREEN_ID",
+      "childrenIds": [
+        "date",
+        "RED",
+        "BLUE",
+        "GREEN",
+        "YELLOW",
+        "YOU",
+        "KILL",
+        "kills",
+        "FINALKILL",
+        "finalkills",
+        "BED",
+        "breakBeds"
+      ],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "box",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                10,
+                10
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                180,
+                200
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "color": [
+              30,
+              30,
+              35
+            ],
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "date": {
+      "id": "date",
+      "type": 5,
+      "name": "date",
+      "parentId": "sidebar",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "text",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                100,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "textContent": "Day 1",
+            "textFontSize": 12,
+            "textColor": [
+              200,
+              200,
+              200
+            ],
+            "textOpacity": 1,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "textLineHeight": 1.2,
+            "autoWordWrap": false,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "richText": false,
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "YOU": {
+      "id": "YOU",
+      "type": 5,
+      "name": "YOU",
+      "parentId": "sidebar",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "text",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                100,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "textContent": "YOU",
+            "textFontSize": 16,
+            "textColor": [
+              255,
+              255,
+              0
+            ],
+            "textOpacity": 1,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "textLineHeight": 1.2,
+            "autoWordWrap": false,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "richText": false,
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "KILL": {
+      "id": "KILL",
+      "type": 5,
+      "name": "KILL",
+      "parentId": "sidebar",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "text",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                100,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "textContent": "KILL",
+            "textFontSize": 14,
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textOpacity": 1,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "textLineHeight": 1.2,
+            "autoWordWrap": false,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "richText": false,
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "kills": {
+      "id": "kills",
+      "type": 5,
+      "name": "kills",
+      "parentId": "sidebar",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "text",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                100,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "textContent": "0",
+            "textFontSize": 14,
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textOpacity": 1,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "textLineHeight": 1.2,
+            "autoWordWrap": false,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "richText": false,
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "FINALKILL": {
+      "id": "FINALKILL",
+      "type": 5,
+      "name": "FINALKILL",
+      "parentId": "sidebar",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "text",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                100,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "textContent": "FINAL",
+            "textFontSize": 14,
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textOpacity": 1,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "textLineHeight": 1.2,
+            "autoWordWrap": false,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "richText": false,
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "finalkills": {
+      "id": "finalkills",
+      "type": 5,
+      "name": "finalkills",
+      "parentId": "sidebar",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "text",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                100,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "textContent": "0",
+            "textFontSize": 14,
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textOpacity": 1,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "textLineHeight": 1.2,
+            "autoWordWrap": false,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "richText": false,
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "BED": {
+      "id": "BED",
+      "type": 5,
+      "name": "BED",
+      "parentId": "sidebar",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "text",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                100,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "textContent": "BEDS",
+            "textFontSize": 14,
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textOpacity": 1,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "textLineHeight": 1.2,
+            "autoWordWrap": false,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "richText": false,
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "breakBeds": {
+      "id": "breakBeds",
+      "type": 5,
+      "name": "breakBeds",
+      "parentId": "sidebar",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "text",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                100,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "textContent": "0",
+            "textFontSize": 14,
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textOpacity": 1,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "textLineHeight": 1.2,
+            "autoWordWrap": false,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "richText": false,
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "bagButton": {
+      "id": "bagButton",
+      "type": 4,
+      "name": "bagButton",
+      "parentId": "DEFAULT_SCREEN_ID",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "box",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                40,
+                40
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "color": [
+              80,
+              80,
+              90
+            ],
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "cameraButton": {
+      "id": "cameraButton",
+      "type": 4,
+      "name": "cameraButton",
+      "parentId": "DEFAULT_SCREEN_ID",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "box",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                40,
+                40
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "color": [
+              80,
+              80,
+              90
+            ],
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "settingsButton": {
+      "id": "settingsButton",
+      "type": 4,
+      "name": "settingsButton",
+      "parentId": "DEFAULT_SCREEN_ID",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "box",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                40,
+                40
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "color": [
+              80,
+              80,
+              90
+            ],
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "choosecase": {
+      "id": "choosecase",
+      "type": 4,
+      "name": "choosecase",
+      "parentId": "DEFAULT_SCREEN_ID",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "box",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                60,
+                60
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "color": [
+              120,
+              120,
+              130
+            ],
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "quickItem": {
+      "id": "quickItem",
+      "type": 5,
+      "name": "quickItem",
+      "parentId": "DEFAULT_SCREEN_ID",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "text",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                100,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "textContent": "1",
+            "textFontSize": 16,
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textOpacity": 1,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "textLineHeight": 1.2,
+            "autoWordWrap": false,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "richText": false,
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "quickNum": {
+      "id": "quickNum",
+      "type": 5,
+      "name": "quickNum",
+      "parentId": "DEFAULT_SCREEN_ID",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "text",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                100,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "textContent": "1",
+            "textFontSize": 12,
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textOpacity": 1,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "textLineHeight": 1.2,
+            "autoWordWrap": false,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "richText": false,
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "inventorycase": {
+      "id": "inventorycase",
+      "type": 4,
+      "name": "inventorycase",
+      "parentId": "DEFAULT_SCREEN_ID",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "box",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                180,
+                120
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "color": [
+              40,
+              40,
+              45
+            ],
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "health_bar": {
+      "id": "health_bar",
+      "type": 5,
+      "name": "health_bar",
+      "parentId": "DEFAULT_SCREEN_ID",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "text",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                100,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "textContent": "❤ 20",
+            "textFontSize": 14,
+            "textColor": [
+              255,
+              80,
+              80
+            ],
+            "textOpacity": 1,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "textLineHeight": 1.2,
+            "autoWordWrap": false,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "richText": false,
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "extra_hp_bar": {
+      "id": "extra_hp_bar",
+      "type": 5,
+      "name": "extra_hp_bar",
+      "parentId": "DEFAULT_SCREEN_ID",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "text",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                100,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "textContent": "",
+            "textFontSize": 12,
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textOpacity": 1,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "textLineHeight": 1.2,
+            "autoWordWrap": false,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "richText": false,
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "shadow": {
+      "id": "shadow",
+      "type": 4,
+      "name": "shadow",
+      "parentId": "DEFAULT_SCREEN_ID",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "box",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                50,
+                50
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "color": [
+              60,
+              60,
+              65
+            ],
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "shop": {
+      "id": "shop",
+      "type": 4,
+      "name": "shop",
+      "parentId": "DEFAULT_SCREEN_ID",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "box",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                200,
+                260
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "color": [
+              25,
+              25,
+              30
+            ],
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "chat": {
+      "id": "chat",
+      "type": 5,
+      "name": "chat",
+      "parentId": "DEFAULT_SCREEN_ID",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "text",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                100,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "textContent": "chat",
+            "textFontSize": 12,
+            "textColor": [
+              200,
+              200,
+              200
+            ],
+            "textOpacity": 1,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "textLineHeight": 1.2,
+            "autoWordWrap": false,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "richText": false,
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "msgContent": {
+      "id": "msgContent",
+      "type": 5,
+      "name": "msgContent",
+      "parentId": "DEFAULT_SCREEN_ID",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "text",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                100,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "textContent": "",
+            "textFontSize": 12,
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textOpacity": 1,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "textLineHeight": 1.2,
+            "autoWordWrap": false,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "richText": false,
+            "rotation": 0
+          }
+        }
+      }
+    },
+    "inputBox": {
+      "id": "inputBox",
+      "type": 4,
+      "name": "inputBox",
+      "parentId": "DEFAULT_SCREEN_ID",
+      "childrenIds": [],
+      "value": {
+        "type": "element",
+        "data": {
+          "type": "box",
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "size": {
+              "offset": [
+                200,
+                24
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "autoResize": 0,
+            "visible": true,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0.9,
+            "zIndex": 1,
+            "layoutOrder": 1,
+            "layout": {
+              "type": "none"
+            },
+            "clipsDescendants": false,
+            "color": [
+              50,
+              50,
+              55
+            ],
+            "rotation": 0
+          }
+        }
+      }
+    }
+  }
+}

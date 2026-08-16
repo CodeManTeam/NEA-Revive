@@ -1,0 +1,23 @@
+{
+  "formatVersion": "nea-terrain/v1",
+  "boxes": [
+    { "from": [0, 0, 0], "to": [63, 7, 63], "blockId": 125 },
+    { "from": [8, 9, 31], "to": [10, 10, 33], "blockId": 129 },
+    { "from": [16, 9, 31], "to": [18, 10, 33], "blockId": 129 },
+    { "from": [24, 11, 31], "to": [26, 12, 33], "blockId": 129 },
+    { "from": [32, 11, 31], "to": [34, 12, 33], "blockId": 129 },
+    { "from": [40, 9, 31], "to": [42, 10, 33], "blockId": 129 },
+    { "from": [48, 9, 31], "to": [50, 10, 33], "blockId": 129 },
+    { "from": [56, 9, 31], "to": [58, 10, 33], "blockId": 129 }
+  ],
+  "voxels": [
+    { "position": [12, 8, 32], "blockId": 127 },
+    { "position": [13, 8, 32], "blockId": 127 },
+    { "position": [20, 8, 32], "blockId": 343 },
+    { "position": [21, 8, 32], "blockId": 343 },
+    { "position": [36, 8, 32], "blockId": 119 },
+    { "position": [37, 8, 32], "blockId": 119 },
+    { "position": [44, 8, 32], "blockId": 391 },
+    { "position": [45, 8, 32], "blockId": 391 }
+  ]
+}

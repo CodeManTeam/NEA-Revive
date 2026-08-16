@@ -1,0 +1,86 @@
+{
+  "format": "nea-api-abi-completeness",
+  "version": 1,
+  "generatedAt": "2026-08-09T18:49:33.779Z",
+  "status": "complete",
+  "signatureModel": "member-variants-v1",
+  "rules": {
+    "documentation": {
+      "global": [
+        "type"
+      ],
+      "property": [
+        "type",
+        "readonly"
+      ],
+      "method": [
+        "parameters",
+        "returns"
+      ],
+      "event": [
+        "parameters+returns",
+        "or type for property-style events"
+      ],
+      "object": [
+        "declaration"
+      ],
+      "common": [
+        "id",
+        "side",
+        "owner",
+        "name",
+        "availability",
+        "compatibility",
+        "evidence",
+        "memberVariants"
+      ]
+    },
+    "protocolMessage": [
+      "id",
+      "protocolId",
+      "direction",
+      "sender",
+      "receiver",
+      "schema",
+      "availability",
+      "compatibility",
+      "evidence"
+    ],
+    "propagation": [
+      "documentation ids exactly cover the compatibility matrix",
+      "every documentation id is retained by its side catalog"
+    ]
+  },
+  "summary": {
+    "documentation": {
+      "entries": 599,
+      "memberVariants": 602,
+      "byKind": {
+        "method": 245,
+        "event": 53,
+        "property": 265,
+        "global": 17,
+        "object": 22
+      }
+    },
+    "catalogs": {
+      "client": 133,
+      "server": 1186,
+      "shared": 131
+    },
+    "compatibilityMatrix": {
+      "entries": 599,
+      "coveredDocumentationEntries": 599
+    },
+    "protocols": {
+      "catalogs": 32,
+      "messages": 180,
+      "byDirection": {
+        "server-to-client": 86,
+        "client-to-server": 94
+      }
+    },
+    "gaps": 0
+  },
+  "gaps": []
+}

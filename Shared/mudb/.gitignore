@@ -1,0 +1,32 @@
+# dependency
+node_modules
+
+# log
+logs
+*.log
+*npm-debug.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# view config
+.DS_Store
+Desktop.ini
+
+# misc
+.jsbeautifyrc
+.vscode
+*package-lock.json
+*yarn.lock
+coverage
+
+# build
+build
+*.d.ts
+*.js
+*.map
+
+# unignore
+!src/*.js
+!bin/*.js
+!**/bin/*.js

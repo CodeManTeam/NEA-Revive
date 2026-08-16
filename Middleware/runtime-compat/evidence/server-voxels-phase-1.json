@@ -1,0 +1,103 @@
+{
+  "format": "nea-server-voxel-abi-evidence",
+  "version": 1,
+  "generatedAt": "2026-07-29T00:00:00.000Z",
+  "scope": ["voxels.getVoxelId", "voxels.setVoxelId", "voxels.id", "voxels.setVoxel"],
+  "policy": {
+    "workSpecificBehaviorAllowed": false,
+    "authoritativeBehaviorSource": "historical-source",
+    "declarationsAndDocsUsedFor": "signature-and-contract-corroboration",
+    "privateSourceIncluded": false
+  },
+  "constants": {
+    "voxelTypeMask": 16383,
+    "voxelRotationShift": 14,
+    "voxelRotationIncrement": 16384,
+    "evidence": [
+      "dao3-docs-mirror/markdown/api/GameVoxels/operate.md:21",
+      "origin/origin/origin/sync/ScriptVoxelSync.js:3",
+      "origin/origin/origin/sync/ScriptVoxelSync.js:45"
+    ]
+  },
+  "catalog": {
+    "source": "local-player/archive/block/QmW2E9E8ipYUifsCfkMj5SULYMYbFQvP6BQxo52atXw7Zj",
+    "provenance": "local-player/archive/world-bedwars.json:6",
+    "decoder": "local-player/backend/box3-server.cjs:13900",
+    "entries": 384,
+    "notes": "The preserved BlockInfo asset is the only accepted name/id catalog for this phase."
+  },
+  "apis": {
+    "voxels.getVoxelId": {
+      "signature": "getVoxelId(x:number,y:number,z:number):number",
+      "realUsage": { "calls": 78, "arity": { "3": 78 } },
+      "confirmedBehavior": [
+        "Returns the stored full numeric voxel id including rotation bits.",
+        "Floors valid coordinates before reading.",
+        "Returns 0 outside the script-visible shape.",
+        "The script-visible maximum is one less than each underlying voxel dimension."
+      ],
+      "evidence": [
+        "dao3-docs-mirror/markdown/api/GameVoxels/operate.md:375",
+        "origin/third-party/ArenaPro-CLI/server/types/GameAPI.d.ts:17494",
+        "origin/origin/origin/sync/ScriptVoxelSync.js:143"
+      ]
+    },
+    "voxels.setVoxelId": {
+      "signature": "setVoxelId(x:number,y:number,z:number,voxel:number):number",
+      "realUsage": { "calls": 63, "arity": { "4": 63 } },
+      "confirmedBehavior": [
+        "Coerces the supplied voxel id with JavaScript signed int32 semantics.",
+        "Accepts rotation bits when the masked base type exists in BlockInfo.",
+        "Floors valid coordinates before writing.",
+        "Returns the stored full id on success and 0 for invalid type or bounds.",
+        "A successful write is immediately visible to subsequent reads."
+      ],
+      "evidence": [
+        "dao3-docs-mirror/markdown/api/GameVoxels/operate.md:324",
+        "origin/third-party/ArenaPro-CLI/server/types/GameAPI.d.ts:17315",
+        "origin/origin/origin/sync/ScriptVoxelSync.js:125"
+      ]
+    },
+    "voxels.id": {
+      "signature": "id(name:string):number",
+      "realUsage": {
+        "calls": 27,
+        "arity": { "1": 27 },
+        "argumentKinds": { "stringLiteral": 21, "member": 5, "identifier": 1 }
+      },
+      "confirmedBehavior": [
+        "Uses the preserved BlockInfo name-to-id mapping.",
+        "Returns 0 for non-string or unknown names.",
+        "Name matching is exact and case-sensitive."
+      ],
+      "evidence": [
+        "dao3-docs-mirror/markdown/api/GameVoxels/operate.md:56",
+        "origin/third-party/ArenaPro-CLI/server/types/GameAPI.d.ts:17249",
+        "origin/origin/origin/sync/ScriptVoxelSync.js:111"
+      ],
+      "documentationConflict": "The prose at operate.md:58 reverses the direction, while its signature, parameter table, return table, ArenaPro declaration, captured declaration, and historical implementation all establish name-to-id."
+    },
+    "voxels.setVoxel": {
+      "signature": "setVoxel(x:number,y:number,z:number,voxel:number|string,rotation?:number|string):number",
+      "realUsage": { "calls": 17, "arity": { "4": 11, "5": 6 } },
+      "confirmedBehavior": [
+        "Coerces coordinates through JavaScript signed int32 semantics before delegating to setVoxelId.",
+        "String voxel values resolve through voxels.id.",
+        "Numeric voxel values are reduced to the base type before applying the explicit rotation.",
+        "Numeric rotation values are masked to two bits.",
+        "The historical string rotation aliases north/n/0, south/s/1, east/e/2, and west/w/3 are accepted.",
+        "Returns the full stored id, including explicit rotation bits."
+      ],
+      "evidence": [
+        "dao3-docs-mirror/markdown/api/GameVoxels/operate.md:90",
+        "origin/third-party/ArenaPro-CLI/server/types/GameAPI.d.ts:17344",
+        "origin/origin/origin/sync/ScriptVoxelSync.js:5",
+        "origin/origin/origin/sync/ScriptVoxelSync.js:15",
+        "origin/origin/origin/sync/ScriptVoxelSync.js:140"
+      ],
+      "unresolved": [
+        "The recovered source contains mojibake where four Chinese direction aliases were present. Those aliases remain unimplemented until their exact original strings are recovered from another source."
+      ]
+    }
+  }
+}

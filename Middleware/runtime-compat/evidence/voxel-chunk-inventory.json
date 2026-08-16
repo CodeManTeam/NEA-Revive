@@ -1,0 +1,106 @@
+{
+  "format": "nea-redacted-voxel-chunk-inventory",
+  "version": 1,
+  "generatedAt": "2026-08-01T14:04:02.763Z",
+  "privacy": {
+    "sourceValuesIncluded": false,
+    "sourcePathsIncluded": false,
+    "sourceNamesIncluded": false,
+    "sourceChunkBodiesIncluded": false
+  },
+  "provenance": {
+    "sourceClass": "approved-local-private-inspection",
+    "redactionStatus": "structural-statistics-only",
+    "publicStatus": "public-sanitized",
+    "reproducibilityLimit": "Original voxel shape values, chunk strings, work names, source paths, and chunk byte contents are intentionally unavailable."
+  },
+  "conversionReadiness": {
+    "targetFormat": "nea-terrain/v1",
+    "status": "evidence-blocked",
+    "playerArchiveDecoder": {
+      "input": "archive asset body",
+      "format": "varint palette and 32-cube box list",
+      "status": "confirmed-observed",
+      "reason": "The descriptor entry-to-body resolver and recovered archive body decoder are observed; block-id semantics and terrain coordinate mapping remain unverified."
+    },
+    "evidenceDeferred": [
+      "decoded chunk byte layout",
+      "voxel block id packing",
+      "voxel rotation packing",
+      "chunk coordinate ordering",
+      "empty chunk semantics"
+    ]
+  },
+  "samples": [
+    {
+      "sample": "sample-001",
+      "shape": {
+        "type": "object",
+        "axes": [
+          "x",
+          "y",
+          "z"
+        ],
+        "axisValueType": "number"
+      },
+      "chunks": {
+        "type": "array",
+        "count": 256,
+        "itemType": "string",
+        "encoding": "base64url",
+        "encodedLength": {
+          "min": 46,
+          "max": 46,
+          "distinct": 1
+        },
+        "decodedLength": {
+          "min": 34,
+          "max": 34,
+          "distinct": 1
+        },
+        "jsonEncoded": false
+      },
+      "resolver": {
+        "status": "confirmed-observed",
+        "resolvedEntries": 41,
+        "bodyBytes": {
+          "min": 2,
+          "max": 1748,
+          "distinct": 41
+        },
+        "response": {
+          "status": 200,
+          "mimeType": "application/octet-stream",
+          "entryLocation": "terminal-url-path"
+        },
+        "decoder": {
+          "status": "confirmed-observed",
+          "decodedEntries": 41,
+          "failedEntries": 0,
+          "errorCategories": {},
+          "paletteEntries": {
+            "min": 0,
+            "max": 22,
+            "distinct": 13
+          },
+          "boxes": {
+            "min": 0,
+            "max": 439,
+            "distinct": 35,
+            "total": 3607
+          },
+          "blockIds": {
+            "min": 93,
+            "max": 759,
+            "distinct": 39
+          },
+          "limits": {
+            "paletteEntries": 4096,
+            "boxes": 32768,
+            "chunkSize": 32
+          }
+        }
+      }
+    }
+  ]
+}

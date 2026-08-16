@@ -1,0 +1,90 @@
+diff --git a/Backend/local-player/backend/box3-server.cjs b/Backend/local-player/backend/box3-server.cjs
+--- a/Backend/local-player/backend/box3-server.cjs
++++ b/Backend/local-player/backend/box3-server.cjs
+@@ -10608,6 +10608,14 @@ function copyRuntimeRgb(color) {
+ function copyRuntimeRgba(color) {
+   return Object.freeze([color[0], color[1], color[2], color[3]]);
+ }
++function copyRuntimeAvatarSkin(value) {
++  const result = /* @__PURE__ */ Object.create(null);
++  for (const bodyPart of bodyParts) result[bodyPart] = value[bodyPart];
++  return Object.freeze(result);
++}
++function isRuntimeAvatarSkin(value) {
++  return value !== null && typeof value === "object" && !Array.isArray(value) && bodyParts.every((bodyPart) => Number.isInteger(value[bodyPart]) && value[bodyPart] >= 0 && value[bodyPart] <= 4294967295);
++}
+ function snapshotRuntimePlayer(player) {
+   return Object.freeze({
+     sessionId: player.sessionId,
+@@ -10633,7 +10641,8 @@ function snapshotRuntimePlayer(player) {
+     flyAcceleration: player.flyAcceleration,
+     swimAcceleration: player.swimAcceleration,
+     swimSpeed: player.swimSpeed,
+-    walkAcceleration: player.walkAcceleration
++    walkAcceleration: player.walkAcceleration,
++    ...player.avatarSkin === void 0 ? {} : { avatarSkin: copyRuntimeAvatarSkin(player.avatarSkin) }
+   });
+ }
+ function snapshotRuntimeEntityReplica(replica) {
+@@ -11026,6 +11035,7 @@ function applyTemporaryLegacyPositionTransform(player, command) {
+   if (command.swimAcceleration !== void 0) player.swimAcceleration = command.swimAcceleration;
+   if (command.swimSpeed !== void 0) player.swimSpeed = command.swimSpeed;
+   if (command.walkAcceleration !== void 0) player.walkAcceleration = command.walkAcceleration;
++  if (command.avatarSkin !== void 0) player.avatarSkin = copyRuntimeAvatarSkin(command.avatarSkin);
+ }
+ function copyTemporaryLegacyPositionTransform(command) {
+   return Object.freeze({
+@@ -11050,7 +11060,8 @@ function copyTemporaryLegacyPositionTransform(command) {
+     flyAcceleration: command.flyAcceleration,
+     swimAcceleration: command.swimAcceleration,
+     swimSpeed: command.swimSpeed,
+-    walkAcceleration: command.walkAcceleration
++    walkAcceleration: command.walkAcceleration,
++    avatarSkin: command.avatarSkin === void 0 ? void 0 : copyRuntimeAvatarSkin(command.avatarSkin)
+   });
+ }
+ function snapshotPlayer(player) {
+@@ -11078,7 +11089,8 @@ function snapshotPlayer(player) {
+     flyAcceleration: player.flyAcceleration,
+     swimAcceleration: player.swimAcceleration,
+     swimSpeed: player.swimSpeed,
+-    walkAcceleration: player.walkAcceleration
++    walkAcceleration: player.walkAcceleration,
++    avatarSkin: player.avatarSkin
+   });
+ }
+ function validateRegistration(registration) {
+@@ -11199,7 +11211,7 @@ var AuthoritativeGameRuntime = class {
+   }
+ };
+ function isTemporaryLegacyPositionTransformCommand(command) {
+-  return command.kind === "temporary-legacy-position-transform" && (command.tick === void 0 || isTick(command.tick)) && isVector2(command.position) && (command.velocity === void 0 || isVector2(command.velocity)) && (command.inputState === void 0 || isUint16(command.inputState)) && (command.inputAngle === void 0 || isByte2(command.inputAngle)) && (command.inputPitch === void 0 || isByte2(command.inputPitch)) && (command.inputCameraAngle === void 0 || isByte2(command.inputCameraAngle));
++  return command.kind === "temporary-legacy-position-transform" && (command.tick === void 0 || isTick(command.tick)) && isVector2(command.position) && (command.velocity === void 0 || isVector2(command.velocity)) && (command.inputState === void 0 || isUint16(command.inputState)) && (command.inputAngle === void 0 || isByte2(command.inputAngle)) && (command.inputPitch === void 0 || isByte2(command.inputPitch)) && (command.inputCameraAngle === void 0 || isByte2(command.inputCameraAngle)) && (command.avatarSkin === void 0 || isRuntimeAvatarSkin(command.avatarSkin));
+ }
+ function currentTick(gameClock2) {
+   const tick = gameClock2.currentTick();
+@@ -12979,7 +12991,7 @@ function createNetPublicState(input2) {
+     display.id = player.playerId;
+     display.name = name;
+     for (let index = 0; index < bodyParts.length; index += 1) {
+-      display.avatarSkin[bodyParts[index]] = localAvatarSkinPartIds[index];
++      display.avatarSkin[bodyParts[index]] = player.avatarSkin?.[bodyParts[index]] ?? localAvatarSkinPartIds[index];
+     }
+     target.replica.players.push(display);
+     target.replica.entities.push(player.playerId);
+@@ -17544,6 +17556,7 @@ async function startNeaControlBridge(server, logger) {
+         const state = body.state;
+         if (state.position !== void 0 && !isNeaVector(state.position)) throw new Error("position must be a finite vector");
+         if (state.velocity !== void 0 && !isNeaVector(state.velocity)) throw new Error("velocity must be a finite vector");
++        if (state.avatarSkin !== void 0 && !isRuntimeAvatarSkin(state.avatarSkin)) throw new Error("avatarSkin must contain unsigned ids for every body part");
+         for (const field of neaPlayerPublicNumberFields) {
+           if (state[field] !== void 0 && !isNeaPlayerPublicNumber(state[field])) throw new Error(field + " must be a finite number from 0 to 1024");
+         }
+@@ -17659,6 +17672,7 @@ function neaPlayerPublicState(source) {
+     const value = source[field];
+     if (isNeaPlayerPublicNumber(value)) state[field] = value;
+   }
++  if (isRuntimeAvatarSkin(source.avatarSkin)) state.avatarSkin = copyRuntimeAvatarSkin(source.avatarSkin);
+   return state;
+ }
+ main().catch((error) => {

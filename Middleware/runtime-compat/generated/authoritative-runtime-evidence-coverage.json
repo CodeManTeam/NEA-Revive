@@ -1,0 +1,225 @@
+{
+  "format": "nea-authoritative-runtime-evidence-coverage",
+  "version": 1,
+  "generatedAt": "2026-07-31T04:39:05.586Z",
+  "indexedSourceSets": [
+    {
+      "id": "origin-server-runtime",
+      "path": "origin/origin/origin",
+      "files": 87
+    },
+    {
+      "id": "lokibox-runtime-adapters",
+      "path": "Lokibox/lokibox-merged-bypass/src",
+      "files": 136
+    },
+    {
+      "id": "local-player-backend",
+      "path": "local-player/backend/box3-server.cjs",
+      "files": 1,
+      "bytes": 652833,
+      "sha256": "781760ff619c95c7eab835dabc198e08b3b445177ffa479a3893bf10e1b68b43"
+    },
+    {
+      "id": "archived-player-bundle",
+      "path": "local-player/archive/project/bedwars/client-runtime/assets/_next/static/chunks/734.8dcb480d99773395.js",
+      "files": 1,
+      "sha256": "35067ead851335f4a2c878350aea4c3fcbbfaf1d71a79a5525b9e303ec8b0707"
+    },
+    {
+      "id": "player-browser-profile",
+      "path": "local-player/.profile/Default",
+      "files": 400
+    },
+    {
+      "id": "legacy-worktree",
+      "path": "sibling-local-worktree",
+      "files": 8
+    },
+    {
+      "id": "posture-delta-frame-corpus",
+      "path": "runtime-compat/generated/posture-delta-corpus-inventory.json",
+      "files": 416
+    }
+  ],
+  "contactBinding": {
+    "originReferences": 1,
+    "originDefinitions": 0,
+    "perContactForceProduction": "confirmed",
+    "aggregateContactForce": "unresolved",
+    "status": "reference-only",
+    "conclusion": "The recovered origin runtime calls ContactBinding but does not contain its definition; per-contact force is recovered from Player physics, while GameEntity.contactForce aggregation remains unavailable."
+  },
+  "postureShapeProducer": {
+    "clientMotorShapeWrites": 0,
+    "lokiboxShapeWrites": [],
+    "backendShapeWrites": [
+      {
+        "receiver": "left",
+        "field": "rx"
+      },
+      {
+        "receiver": "left",
+        "field": "ry"
+      },
+      {
+        "receiver": "left",
+        "field": "rz"
+      },
+      {
+        "receiver": "left",
+        "field": "hsx"
+      },
+      {
+        "receiver": "left",
+        "field": "hsy"
+      },
+      {
+        "receiver": "left",
+        "field": "hsz"
+      },
+      {
+        "receiver": "target",
+        "field": "rx"
+      },
+      {
+        "receiver": "target",
+        "field": "ry"
+      },
+      {
+        "receiver": "target",
+        "field": "rz"
+      },
+      {
+        "receiver": "target",
+        "field": "hsx"
+      },
+      {
+        "receiver": "target",
+        "field": "hsy"
+      },
+      {
+        "receiver": "target",
+        "field": "hsz"
+      },
+      {
+        "receiver": "target",
+        "field": "rx"
+      },
+      {
+        "receiver": "target",
+        "field": "ry"
+      },
+      {
+        "receiver": "target",
+        "field": "rz"
+      },
+      {
+        "receiver": "target",
+        "field": "hsx"
+      },
+      {
+        "receiver": "target",
+        "field": "hsy"
+      },
+      {
+        "receiver": "target",
+        "field": "hsz"
+      },
+      {
+        "receiver": "body",
+        "field": "rx"
+      },
+      {
+        "receiver": "body",
+        "field": "ry"
+      },
+      {
+        "receiver": "body",
+        "field": "rz"
+      },
+      {
+        "receiver": "body",
+        "field": "hsx"
+      },
+      {
+        "receiver": "body",
+        "field": "hsy"
+      },
+      {
+        "receiver": "body",
+        "field": "hsz"
+      },
+      {
+        "receiver": "body",
+        "field": "rx"
+      },
+      {
+        "receiver": "body",
+        "field": "ry"
+      },
+      {
+        "receiver": "body",
+        "field": "rz"
+      },
+      {
+        "receiver": "body",
+        "field": "hsx"
+      },
+      {
+        "receiver": "body",
+        "field": "hsy"
+      },
+      {
+        "receiver": "body",
+        "field": "hsz"
+      }
+    ],
+    "backendPostureAdjacentShapeWrites": [],
+    "legacyPlayerShapeWrites": [],
+    "cachedPlayRoutes": [
+      {
+        "routeFamily": "/play/[id]",
+        "streamIndex": 0,
+        "responseKind": "html",
+        "entries": 1,
+        "bytes": 24787,
+        "queryNames": [
+          "contentId"
+        ]
+      }
+    ],
+    "publicFrameCount": 0,
+    "clientToServerBinaryFrames": 1864,
+    "frameCorpusStatus": "not-found-in-safe-local-frame-corpus",
+    "frameCorpusSourceSets": [
+      "box-go-captures",
+      "box-go-resource-archives",
+      "local-player-bootstrap",
+      "local-player-websocket-discovery-cache",
+      "legacy-static-replay",
+      "player-browser-profile",
+      "legacy-binary-candidates"
+    ],
+    "authoritativeDeltaStatus": "unresolved",
+    "unresolved": [
+      "server-authoritative crouch shape mutation",
+      "server-authoritative flying shape mutation"
+    ],
+    "status": "not-found-in-indexed-local-evidence",
+    "conclusion": "Indexed local sources contain standing-profile producers, client-side posture consumers and client-to-server input captures, but no server-to-client crouch/fly-conditioned write to rx/ry/rz or hsx/hsy/hsz."
+  },
+  "cacheClassification": {
+    "canonicalStreams": 400,
+    "ignoredTemporaryFiles": 1,
+    "playRouteResponseKinds": [
+      "html"
+    ],
+    "finding": "Cached /play/[id] entries are HTTP HTML responses, not persisted WebSocket PUBLIC frames."
+  },
+  "completionImpact": {
+    "phaseRequirement": "player-posture-shapes",
+    "status": "partial",
+    "reason": "The indexed evidence coverage is exhausted without the authoritative posture delta; substitute dimensions remain forbidden."
+  }
+}

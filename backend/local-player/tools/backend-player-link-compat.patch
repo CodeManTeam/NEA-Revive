@@ -1,0 +1,68 @@
+diff --git a/Backend/local-player/backend/box3-server.cjs b/Backend/local-player/backend/box3-server.cjs
+--- a/Backend/local-player/backend/box3-server.cjs
++++ b/Backend/local-player/backend/box3-server.cjs
+@@ -11330,0 +11331,32 @@ function requireBlock(value) {
++// legacy/box3-compat/src/session/ref-sessions.ts
++var RefSessions = class {
++  clients = /* @__PURE__ */ new Map();
++  connect(client) {
++    if (!client.sessionId) throw new Error("sessionId must not be empty");
++    this.clients.set(client.sessionId, client);
++  }
++  disconnect(client) {
++    if (!client.sessionId || this.clients.get(client.sessionId) !== client) return false;
++    this.clients.delete(client.sessionId);
++    return true;
++  }
++  delete(sessionId) {
++    return this.clients.delete(sessionId);
++  }
++  dispose() {
++    this.clients.clear();
++  }
++  open(sessionLabel, href, options) {
++    const exact = this.clients.get(sessionLabel);
++    const client = exact ?? [...this.clients.values()].find((candidate) => matchesSessionLabel(candidate.sessionId, sessionLabel));
++    if (!client) return false;
++    client.message.openLink({
++      href: String(href),
++      isConfirm: options?.isConfirm === void 0 ? true : Boolean(options.isConfirm),
++      isNewTab: options?.isNewTab === void 0 ? true : Boolean(options.isNewTab),
++      warning: false
++    });
++    return true;
++  }
++};
++
+@@ -14813,0 +14846,1 @@ var LegacyHistoricalProjectInstance = class {
++    this.refSessions = new RefSessions();
+@@ -14864,0 +14898,1 @@ var LegacyHistoricalProjectInstance = class {
++      refSessions: this.refSessions,
+@@ -14891,0 +14926,1 @@ var LegacyHistoricalProjectInstance = class {
++  refSessions;
+@@ -14921,0 +14957,3 @@ var LegacyHistoricalProjectInstance = class {
++  linkPlayer(sessionLabel, href, options) {
++    return this.refSessions.open(sessionLabel, href, options);
++  }
+@@ -14993,0 +15032,1 @@ var LegacyHistoricalProjectInstance = class {
++    this.refSessions.delete(sessionId);
+@@ -15038,0 +15078,1 @@ var LegacyHistoricalProjectInstance = class {
++      this.refSessions.dispose();
+@@ -16418,0 +16459,1 @@ function registerProtocols(server, contexts) {
++        if (schema === ref) context.refSessions.connect(client);
+@@ -16437,0 +16479,1 @@ function registerProtocols(server, contexts) {
++        if (schema === ref) context.refSessions.disconnect(client);
+@@ -16780,0 +16823,4 @@ var Box3Server = class {
++  linkPlayer(sessionLabel, href, options) {
++    if (!this.running) return false;
++    return this.historicalProjectInstance?.linkPlayer(sessionLabel, href, options) ?? false;
++  }
+@@ -17499,0 +17546,8 @@ async function startNeaControlBridge(server, logger) {
++      if (request.method === "POST" && url.pathname === "/__nea/control/player-link") {
++        if (typeof body.session !== "string" || body.session.length === 0 || typeof body.href !== "string") throw new Error("link session and href are required");
++        if (body.options !== void 0 && (!body.options || typeof body.options !== "object" || Array.isArray(body.options))) throw new Error("link options must be an object");
++        const delivered = server.linkPlayer(body.session, body.href, body.options);
++        response.statusCode = delivered ? 200 : 404;
++        response.end(JSON.stringify(delivered ? { ok: true, delivered: true } : { ok: false, error: "ref client not connected" }));
++        return;
++      }

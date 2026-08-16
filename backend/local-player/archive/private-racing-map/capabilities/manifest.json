@@ -1,0 +1,12 @@
+{
+ "format": "nea-project-capability-manifest",
+ "version": 14,
+ "apiVersion": "0.1.0",
+ "contracts": {
+  "client": "dao3-client-runtime/v1",
+  "server": "nea-server-runtime/v1"
+ },
+ "inputs": {
+  "modules": []
+ }
+}

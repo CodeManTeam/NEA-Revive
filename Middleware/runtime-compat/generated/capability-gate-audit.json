@@ -1,0 +1,1402 @@
+{
+  "format": "nea-capability-gate-audit",
+  "version": 1,
+  "inputs": {
+    "corpus": "Middleware/runtime-compat/generated/script-corpus-gap-report.json",
+    "matrix": "Middleware/runtime-compat/abi/compatibility-matrix.json",
+    "currentRuntime": "Middleware/runtime-compat/abi/current-runtime.json"
+  },
+  "summary": {
+    "requirements": 74,
+    "gatedRequirements": 59,
+    "ready": 34,
+    "partial": 22,
+    "blocked": 3,
+    "scriptOwned": 15,
+    "occurrences": 936,
+    "readyOccurrences": 619,
+    "partialOccurrences": 302,
+    "blockedOccurrences": 15
+  },
+  "requirements": [
+    {
+      "side": "server",
+      "usage": "world.onChat",
+      "occurrences": 12,
+      "sampleCount": 2,
+      "corpusCanonicalId": "server.world.onChat",
+      "canonicalId": "server.GameWorld.onChat",
+      "resolution": "matrix-owner",
+      "corpusState": "partial",
+      "compatibility": "partial",
+      "capability": "server.world.chat",
+      "executableBindingIds": [
+        "server.world.onChat"
+      ],
+      "launchState": "blocked",
+      "reasons": [
+        "The historical GameChatEvent consumer reads chatEvents.chats, while the recovered Player game-chat client-to-server surface only sends administrator noticeMessage {title,detail}; no Player chat producer reaches the local Server Script Runtime.",
+        "ScriptShell consumes chatEvents.chats, but the recovered Player game-chat client-to-server surface only carries administrator noticeMessage {title,detail}; no Player chat producer is recovered, so Capability Manifest blocks dependent projects.",
+        "The recovered GameChatEvent fields are represented by the Runtime signal shell."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.onPlayerPurchaseSuccess",
+      "occurrences": 2,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.onPlayerPurchaseSuccess",
+      "canonicalId": "server.GameWorld.onPlayerPurchaseSuccess",
+      "resolution": "matrix-owner",
+      "corpusState": "partial",
+      "compatibility": "partial",
+      "capability": "server.world.events",
+      "executableBindingIds": [
+        "server.world.onPlayerPurchaseSuccess"
+      ],
+      "launchState": "blocked",
+      "reasons": [
+        "Historical ScriptShell consumes tick.purchaseSuccessEvents {userId,productId,orderId,messageId} and acknowledges messageId, while the recovered Player market protocol only receives openMarketplace and has no client-to-server result message; no purchase producer reaches the local Server Script Runtime.",
+        "The Player market protocol only receives openMarketplace and exposes no client-to-server result message; no purchase-success producer or Server Runtime ingress is recovered, so Capability Manifest blocks dependent projects.",
+        "The recovered public event fields are tick, userId, productId, and orderId; ScriptShell separately acknowledges the internal messageId after dispatch."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "storage.getGroupStorage",
+      "occurrences": 1,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.GameStorage.getGroupStorage",
+      "canonicalId": "server.GameStorage.getGroupStorage",
+      "resolution": "matrix-exact",
+      "corpusState": "partial",
+      "compatibility": "partial",
+      "capability": "server.storage",
+      "executableBindingIds": [
+        "server.GameStorage.getGroupStorage"
+      ],
+      "launchState": "blocked",
+      "reasons": [
+        "The default local Runtime has no authoritative DAO3 group identity or group-scoped storage provider.",
+        "Capability Manifest v14 can bind a non-empty project package storage.groupId and the local provider isolates spaces by that id; DAO3 cloud scope, quotas, distributed consistency, and external group authority remain unrecovered.",
+        "The default project Runtime disables group storage when the historical groupId input is empty."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.querySelectorAll",
+      "occurrences": 119,
+      "sampleCount": 2,
+      "corpusCanonicalId": "server.world.querySelectorAll",
+      "canonicalId": "server.GameWorld.querySelectorAll",
+      "resolution": "matrix-owner",
+      "corpusState": "executable",
+      "compatibility": "partial",
+      "capability": "server.world.entities",
+      "executableBindingIds": [
+        "server.world.querySelectorAll"
+      ],
+      "launchState": "partial",
+      "reasons": [
+        "At least one evidence-backed behavioral gap remains on the executable binding.",
+        "Recovered ParsedSelector coercion, comma-union, universal/entity, player, id, tag, destroyed filtering, entity order, and fresh mutable result arrays are implemented.",
+        "The historical testComponent implementation for component names other than player/entity was not recovered and remains unsupported."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.say",
+      "occurrences": 72,
+      "sampleCount": 2,
+      "corpusCanonicalId": "server.world.say",
+      "canonicalId": "server.GameWorld.say",
+      "resolution": "matrix-owner",
+      "corpusState": "executable",
+      "compatibility": "partial",
+      "capability": "server.world.chat",
+      "executableBindingIds": [
+        "server.world.say"
+      ],
+      "launchState": "partial",
+      "reasons": [
+        "At least one evidence-backed behavioral gap remains on the executable binding.",
+        "Broadcast delivery now uses the recovered Player game-chat.log packet through connected MuDB sessions.",
+        "Destroyed sender/receiver endpoints are silently dropped and player removal follows the recovered leave/destroy ordering.",
+        "The recovered FIFO prefix/overflow/tick-drain algorithm and ordered Runtime-to-backend overflow batch are implemented with an evidence-deferred nullable limit; the numeric MAX_CHATS_PER_TICK value and Player display acknowledgement remain unavailable."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.onPlayerJoin",
+      "occurrences": 28,
+      "sampleCount": 2,
+      "corpusCanonicalId": "server.world.onPlayerJoin",
+      "canonicalId": "server.GameWorld.onPlayerJoin",
+      "resolution": "matrix-owner",
+      "corpusState": "executable",
+      "compatibility": "partial",
+      "capability": "server.world.events",
+      "executableBindingIds": [
+        "server.world.onPlayerJoin"
+      ],
+      "launchState": "partial",
+      "reasons": [
+        "At least one evidence-backed behavioral gap remains on the executable binding.",
+        "Event fields now match GameEntityEvent, but RuntimePlayer is still only a subset of GamePlayerEntity."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.createEntity",
+      "occurrences": 20,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.createEntity",
+      "canonicalId": "server.GameWorld.createEntity",
+      "resolution": "matrix-owner",
+      "corpusState": "executable",
+      "compatibility": "partial",
+      "capability": "server.world.entities",
+      "executableBindingIds": [
+        "server.world.createEntity"
+      ],
+      "launchState": "partial",
+      "reasons": [
+        "At least one evidence-backed behavioral gap remains on the executable binding.",
+        "Creation remains synchronous, obeys the recovered non-player entityLimit check, returns null at capacity, and emits the recovered entity-create lifecycle event. Captured mesh bindings can create an authoritative browser/backend replica with documented transform and model/body fields; unknown meshes deliberately remain script-local rather than receiving a fabricated placeholder.",
+        "Generic native gravity, collision response, and in-place Vector3 mutation replication are still unverified."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.onTick",
+      "occurrences": 12,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.onTick",
+      "canonicalId": "server.GameWorld.onTick",
+      "resolution": "matrix-owner",
+      "corpusState": "partial",
+      "compatibility": "partial",
+      "capability": "server.world.events",
+      "executableBindingIds": [
+        "server.world.onTick"
+      ],
+      "launchState": "partial",
+      "reasons": [
+        "At least one evidence-backed behavioral gap remains on the executable binding.",
+        "The local scheduler advances one tick per callback and has no authoritative multi-tick frame input, so native delayed-frame catch-up behavior remains unavailable.",
+        "The recovered Date.now wall-clock elapsedTimeMS formula and skip = tick - prevTick > 1 formula are implemented."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.querySelector",
+      "occurrences": 9,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.querySelector",
+      "canonicalId": "server.GameWorld.querySelector",
+      "resolution": "matrix-owner",
+      "corpusState": "executable",
+      "compatibility": "partial",
+      "capability": "server.world.entities",
+      "executableBindingIds": [
+        "server.world.querySelector"
+      ],
+      "launchState": "partial",
+      "reasons": [
+        "At least one evidence-backed behavioral gap remains on the executable binding.",
+        "Recovered ParsedSelector coercion, comma-union, universal/entity, player, id, tag, destroyed filtering, and first-match order are implemented.",
+        "The historical testComponent implementation for component names other than player/entity was not recovered and remains unsupported."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.raycast",
+      "occurrences": 8,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.raycast",
+      "canonicalId": "server.GameWorld.raycast",
+      "resolution": "matrix-owner",
+      "corpusState": "partial",
+      "compatibility": "partial",
+      "capability": "server.world.entities",
+      "executableBindingIds": [
+        "server.world.raycast"
+      ],
+      "launchState": "partial",
+      "reasons": [
+        "At least one evidence-backed behavioral gap remains on the executable binding.",
+        "The recovered engine raycastBoxes implementation and body-orientation semantics are not available locally; entity intersections therefore remain an explicit AABB approximation. GameWorld.useOBB is a separate world-physics property, not a GameRaycastOptions field.",
+        "Voxel DDA, fluid filtering, selector filtering, player/entity AABBs, recovered result fields, the historical Infinity maxDistance default, and zero-direction preservation are implemented and exercised by conformance tests and the anonymous captured-script corpus."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "storage.getDataStorage",
+      "occurrences": 5,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.GameStorage.getDataStorage",
+      "canonicalId": "server.GameStorage.getDataStorage",
+      "resolution": "matrix-exact",
+      "corpusState": "partial",
+      "compatibility": "partial",
+      "capability": "server.storage",
+      "executableBindingIds": [
+        "server.GameStorage.getDataStorage"
+      ],
+      "launchState": "partial",
+      "reasons": [
+        "At least one evidence-backed behavioral gap remains on the executable binding.",
+        "Local JSON persistence implements the recovered data-space operations; native cloud scope, quotas, consistency, and version semantics remain unverified."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.onVoxelContact",
+      "occurrences": 5,
+      "sampleCount": 2,
+      "corpusCanonicalId": "server.world.onVoxelContact",
+      "canonicalId": "server.GameWorld.onVoxelContact",
+      "resolution": "matrix-owner",
+      "corpusState": "partial",
+      "compatibility": "partial",
+      "capability": "server.world.events",
+      "executableBindingIds": [
+        "server.world.onVoxelContact"
+      ],
+      "launchState": "partial",
+      "reasons": [
+        "At least one evidence-backed behavioral gap remains on the executable binding.",
+        "The recovered impulse-derived GameVoxelContactEvent force is implemented; RuntimePlayer is still only a subset of GamePlayerEntity."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.onClick",
+      "occurrences": 4,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.onClick",
+      "canonicalId": "server.GameWorld.onClick",
+      "resolution": "matrix-owner",
+      "corpusState": "partial",
+      "compatibility": "partial",
+      "capability": "server.world.events",
+      "executableBindingIds": [
+        "server.world.onClick"
+      ],
+      "launchState": "partial",
+      "reasons": [
+        "At least one evidence-backed behavioral gap remains on the executable binding.",
+        "Non-player clicks require an authoritative backend entity binding; the latest capture still has two entities without sufficient model evidence for projection.",
+        "The game-net bridge reconstructs the declared GameClickEvent fields, applies the recovered PlayerFlags mask, and dispatches the same event to world and the clicked entity in historical order."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.onPlayerLeave",
+      "occurrences": 4,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.onPlayerLeave",
+      "canonicalId": "server.GameWorld.onPlayerLeave",
+      "resolution": "matrix-owner",
+      "corpusState": "executable",
+      "compatibility": "partial",
+      "capability": "server.world.events",
+      "executableBindingIds": [
+        "server.world.onPlayerLeave"
+      ],
+      "launchState": "partial",
+      "reasons": [
+        "At least one evidence-backed behavioral gap remains on the executable binding.",
+        "Event fields now match GameEntityEvent, but RuntimePlayer is still only a subset of GamePlayerEntity."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.onFluidEnter",
+      "occurrences": 3,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.onFluidEnter",
+      "canonicalId": "server.GameWorld.onFluidEnter",
+      "resolution": "matrix-owner",
+      "corpusState": "partial",
+      "compatibility": "partial",
+      "capability": "server.world.events",
+      "executableBindingIds": [
+        "server.world.onFluidEnter"
+      ],
+      "launchState": "partial",
+      "reasons": [
+        "At least one evidence-backed behavioral gap remains on the executable binding.",
+        "BlockInfo fluid ids, per-tick body overlap transitions, recovered {tick,entity,voxel} fields, and world-before-entity dispatch are implemented.",
+        "Native fluid solver timing, buoyancy, drag, and producer-side volume fraction remain unrecovered."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.addCollisionFilter",
+      "occurrences": 2,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.addCollisionFilter",
+      "canonicalId": "server.GameWorld.addCollisionFilter",
+      "resolution": "matrix-owner",
+      "corpusState": "partial",
+      "compatibility": "partial",
+      "capability": "server.world.entities",
+      "executableBindingIds": [
+        "server.world.addCollisionFilter"
+      ],
+      "launchState": "partial",
+      "reasons": [
+        "At least one evidence-backed behavioral gap remains on the executable binding.",
+        "Filter registration/list lifecycle is implemented; the local physics solver does not yet consume selector pairs."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.addZone",
+      "occurrences": 2,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.addZone",
+      "canonicalId": "server.GameWorld.addZone",
+      "resolution": "matrix-owner",
+      "corpusState": "partial",
+      "compatibility": "partial",
+      "capability": "server.world.events",
+      "executableBindingIds": [
+        "server.world.addZone"
+      ],
+      "launchState": "partial",
+      "reasons": [
+        "At least one evidence-backed behavioral gap remains on the executable binding.",
+        "Non-player/entity component selector tests remain unavailable because historical testComponent was not recovered; native physics-selector force application and client environment projection remain unavailable.",
+        "Zone creation, recovered selector normalization and mutation refresh, collides=false exclusion, polling, enter/leave events, and removal are implemented."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.onEntityContact",
+      "occurrences": 2,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.onEntityContact",
+      "canonicalId": "server.GameWorld.onEntityContact",
+      "resolution": "matrix-owner",
+      "corpusState": "partial",
+      "compatibility": "partial",
+      "capability": "server.world.events",
+      "executableBindingIds": [
+        "server.world.onEntityContact"
+      ],
+      "launchState": "partial",
+      "reasons": [
+        "At least one evidence-backed behavioral gap remains on the executable binding.",
+        "The event surface is dispatchable; full native GameEntityContactEvent production remains covered separately by the contact model."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.airFriction",
+      "occurrences": 1,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.airFriction",
+      "canonicalId": "server.GameWorld.airFriction",
+      "resolution": "matrix-owner",
+      "corpusState": "partial",
+      "compatibility": "partial",
+      "capability": "server.world.config",
+      "executableBindingIds": [
+        "server.world.airFriction"
+      ],
+      "launchState": "partial",
+      "reasons": [
+        "At least one evidence-backed behavioral gap remains on the executable binding.",
+        "Script writes reconfigure runtime-owned Player bodies from the next tick using the recovered airFriction-to-velocityDamping binding and exponential damping formula.",
+        "The local AuthoritativeGameRuntime only arbitrates transforms, and its Player game-net public state marks physics unused; no recovered mutable browser physics channel exists. Generic RuntimeEntity rigid-body integration also remains unavailable."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.fogColor",
+      "occurrences": 1,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.fogColor",
+      "canonicalId": "server.GameWorld.fogColor",
+      "resolution": "matrix-owner",
+      "corpusState": "partial",
+      "compatibility": "partial",
+      "capability": "server.world.config",
+      "executableBindingIds": [
+        "server.world.fogColor"
+      ],
+      "launchState": "partial",
+      "reasons": [
+        "At least one evidence-backed behavioral gap remains on the executable binding.",
+        "The recovered GameRGBColor property is script-visible; client rendering propagation remains unimplemented."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.gravity",
+      "occurrences": 1,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.gravity",
+      "canonicalId": "server.GameWorld.gravity",
+      "resolution": "matrix-owner",
+      "corpusState": "partial",
+      "compatibility": "partial",
+      "capability": "server.world.config",
+      "executableBindingIds": [
+        "server.world.gravity"
+      ],
+      "launchState": "partial",
+      "reasons": [
+        "At least one evidence-backed behavioral gap remains on the executable binding.",
+        "Script writes reconfigure runtime-owned Player bodies from the next tick using the recovered world-physics binding and fixed-tick unit conversion.",
+        "The local AuthoritativeGameRuntime only arbitrates transforms, and its Player game-net public state marks physics unused; no recovered mutable browser physics channel exists. Generic RuntimeEntity rigid-body integration also remains unavailable."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.onDie",
+      "occurrences": 1,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.onDie",
+      "canonicalId": "server.GameWorld.onDie",
+      "resolution": "matrix-owner",
+      "corpusState": "partial",
+      "compatibility": "partial",
+      "capability": "server.world.events",
+      "executableBindingIds": [
+        "server.world.onDie"
+      ],
+      "launchState": "partial",
+      "reasons": [
+        "At least one evidence-backed behavioral gap remains on the executable binding.",
+        "Script-produced hurt emits one GameDieEvent when hp crosses from positive to zero and queues the native game-net die effect; non-script engine death transitions remain unverified."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.onFluidLeave",
+      "occurrences": 1,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.onFluidLeave",
+      "canonicalId": "server.GameWorld.onFluidLeave",
+      "resolution": "matrix-owner",
+      "corpusState": "partial",
+      "compatibility": "partial",
+      "capability": "server.world.events",
+      "executableBindingIds": [
+        "server.world.onFluidLeave"
+      ],
+      "launchState": "partial",
+      "reasons": [
+        "At least one evidence-backed behavioral gap remains on the executable binding.",
+        "BlockInfo fluid ids, per-tick body overlap transitions, recovered {tick,entity,voxel} fields, and world-before-entity dispatch are implemented.",
+        "Native fluid solver timing, buoyancy, drag, and producer-side volume fraction remain unrecovered."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.onRespawn",
+      "occurrences": 1,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.onRespawn",
+      "canonicalId": "server.GameWorld.onRespawn",
+      "resolution": "matrix-owner",
+      "corpusState": "partial",
+      "compatibility": "partial",
+      "capability": "server.world.events",
+      "executableBindingIds": [
+        "server.world.onRespawn"
+      ],
+      "launchState": "partial",
+      "reasons": [
+        "At least one evidence-backed behavioral gap remains on the executable binding.",
+        "Local forceRespawn emits the recovered event shape; automatic engine respawn triggers remain unverified."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.onTakeDamage",
+      "occurrences": 1,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.onTakeDamage",
+      "canonicalId": "server.GameWorld.onTakeDamage",
+      "resolution": "matrix-owner",
+      "corpusState": "partial",
+      "compatibility": "partial",
+      "capability": "server.world.events",
+      "executableBindingIds": [
+        "server.world.onTakeDamage"
+      ],
+      "launchState": "partial",
+      "reasons": [
+        "At least one evidence-backed behavioral gap remains on the executable binding.",
+        "Script-produced GameEntity.hurt calls preserve enableDamage, healing, attacker, damageType, hp transitions, recovered GameDamageEvent fields, native replica.damage state, and game-net hurt effects; non-script engine damage ingress remains unverified."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "remoteChannel.sendClientEvent",
+      "occurrences": 168,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.remoteChannel.sendClientEvent",
+      "canonicalId": "server.remoteChannel.sendClientEvent",
+      "resolution": "matrix-exact",
+      "corpusState": "executable",
+      "compatibility": "compatible",
+      "capability": "server.remote-channel",
+      "executableBindingIds": [
+        "server.remoteChannel.sendClientEvent"
+      ],
+      "launchState": "ready",
+      "reasons": [
+        "RuntimePlayer remains a subset of historical GamePlayerEntity."
+      ]
+    },
+    {
+      "side": "client",
+      "usage": "ui.findChildByName",
+      "occurrences": 63,
+      "sampleCount": 1,
+      "corpusCanonicalId": "client.UiNode.findChildByName",
+      "canonicalId": "client.UiNode.findChildByName",
+      "resolution": "matrix-exact",
+      "corpusState": "executable",
+      "compatibility": "native",
+      "capability": "client.ui",
+      "executableBindingIds": [
+        "client.UiNode.findChildByName"
+      ],
+      "launchState": "ready",
+      "reasons": []
+    },
+    {
+      "side": "server",
+      "usage": "voxels.getVoxelId",
+      "occurrences": 62,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.GameVoxels.getVoxelId",
+      "canonicalId": "server.GameVoxels.getVoxelId",
+      "resolution": "matrix-exact",
+      "corpusState": "executable",
+      "compatibility": "compatible",
+      "capability": "server.world.voxels",
+      "executableBindingIds": [
+        "server.GameVoxels.getVoxelId"
+      ],
+      "launchState": "ready",
+      "reasons": []
+    },
+    {
+      "side": "client",
+      "usage": "remoteChannel.sendServerEvent",
+      "occurrences": 59,
+      "sampleCount": 1,
+      "corpusCanonicalId": "client.remoteChannel.sendServerEvent",
+      "canonicalId": "client.remoteChannel.sendServerEvent",
+      "resolution": "matrix-exact",
+      "corpusState": "executable",
+      "compatibility": "native",
+      "capability": "client.remote-channel",
+      "executableBindingIds": [
+        "client.remoteChannel.sendServerEvent"
+      ],
+      "launchState": "ready",
+      "reasons": []
+    },
+    {
+      "side": "server",
+      "usage": "voxels.setVoxelId",
+      "occurrences": 48,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.GameVoxels.setVoxelId",
+      "canonicalId": "server.GameVoxels.setVoxelId",
+      "resolution": "matrix-exact",
+      "corpusState": "executable",
+      "compatibility": "compatible",
+      "capability": "server.world.voxels",
+      "executableBindingIds": [
+        "server.GameVoxels.setVoxelId"
+      ],
+      "launchState": "ready",
+      "reasons": []
+    },
+    {
+      "side": "server",
+      "usage": "voxels.id",
+      "occurrences": 26,
+      "sampleCount": 2,
+      "corpusCanonicalId": "server.GameVoxels.id",
+      "canonicalId": "server.GameVoxels.id",
+      "resolution": "matrix-exact",
+      "corpusState": "executable",
+      "compatibility": "compatible",
+      "capability": "server.world.voxels",
+      "executableBindingIds": [
+        "server.GameVoxels.id"
+      ],
+      "launchState": "ready",
+      "reasons": []
+    },
+    {
+      "side": "client",
+      "usage": "remoteChannel.events",
+      "occurrences": 22,
+      "sampleCount": 1,
+      "corpusCanonicalId": "client.remoteChannel.events",
+      "canonicalId": "client.remoteChannel.events",
+      "resolution": "current-runtime-recovered",
+      "corpusState": "executable",
+      "compatibility": "native",
+      "capability": "client.remote-channel",
+      "executableBindingIds": [
+        "client.remoteChannel.events"
+      ],
+      "launchState": "ready",
+      "reasons": [
+        "Recovered canonical surface is outside the documented declaration matrix, but direct runtime evidence proves the executable contract.",
+        "Direct evidence resolves the recovered current-runtime canonical binding: client.remoteChannel.events."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "voxels.setVoxel",
+      "occurrences": 17,
+      "sampleCount": 2,
+      "corpusCanonicalId": "server.GameVoxels.setVoxel",
+      "canonicalId": "server.GameVoxels.setVoxel",
+      "resolution": "matrix-exact",
+      "corpusState": "executable",
+      "compatibility": "compatible",
+      "capability": "server.world.voxels",
+      "executableBindingIds": [
+        "server.GameVoxels.setVoxel"
+      ],
+      "launchState": "ready",
+      "reasons": [
+        "Four Chinese string rotation aliases remain unresolved because the recovered historical source contains mojibake at those switch cases."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.size",
+      "occurrences": 15,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.size",
+      "canonicalId": "server.world.size",
+      "resolution": "current-runtime-recovered",
+      "corpusState": "executable",
+      "compatibility": "emulated",
+      "capability": "server.world.voxels",
+      "executableBindingIds": [
+        "server.world.size"
+      ],
+      "launchState": "ready",
+      "reasons": [
+        "Recovered canonical surface is outside the documented declaration matrix, but direct runtime evidence proves the executable contract.",
+        "Direct evidence resolves the recovered current-runtime canonical binding: server.world.size."
+      ]
+    },
+    {
+      "side": "client",
+      "usage": "UiImage.create",
+      "occurrences": 14,
+      "sampleCount": 1,
+      "corpusCanonicalId": "client.UiImage.create",
+      "canonicalId": "client.UiImage.create",
+      "resolution": "matrix-exact",
+      "corpusState": "executable",
+      "compatibility": "native",
+      "capability": "client.ui",
+      "executableBindingIds": [
+        "client.UiImage.create"
+      ],
+      "launchState": "ready",
+      "reasons": []
+    },
+    {
+      "side": "client",
+      "usage": "UiText.create",
+      "occurrences": 14,
+      "sampleCount": 1,
+      "corpusCanonicalId": "client.UiText.create",
+      "canonicalId": "client.UiText.create",
+      "resolution": "matrix-exact",
+      "corpusState": "executable",
+      "compatibility": "native",
+      "capability": "client.ui",
+      "executableBindingIds": [
+        "client.UiText.create"
+      ],
+      "launchState": "ready",
+      "reasons": []
+    },
+    {
+      "side": "client",
+      "usage": "UiScreen.getAllScreen",
+      "occurrences": 13,
+      "sampleCount": 1,
+      "corpusCanonicalId": "client.UiScreen.getAllScreen",
+      "canonicalId": "client.UiScreen.getAllScreen",
+      "resolution": "matrix-exact",
+      "corpusState": "executable",
+      "compatibility": "native",
+      "capability": "client.ui",
+      "executableBindingIds": [
+        "client.UiScreen.getAllScreen"
+      ],
+      "launchState": "ready",
+      "reasons": []
+    },
+    {
+      "side": "client",
+      "usage": "input.unlockPointer",
+      "occurrences": 12,
+      "sampleCount": 1,
+      "corpusCanonicalId": "client.input.unlockPointer",
+      "canonicalId": "client.input.unlockPointer",
+      "resolution": "matrix-exact",
+      "corpusState": "executable",
+      "compatibility": "native",
+      "capability": "client.ui",
+      "executableBindingIds": [
+        "client.input.unlockPointer"
+      ],
+      "launchState": "ready",
+      "reasons": []
+    },
+    {
+      "side": "client",
+      "usage": "UiBox.create",
+      "occurrences": 12,
+      "sampleCount": 1,
+      "corpusCanonicalId": "client.UiBox.create",
+      "canonicalId": "client.UiBox.create",
+      "resolution": "matrix-exact",
+      "corpusState": "executable",
+      "compatibility": "native",
+      "capability": "client.ui",
+      "executableBindingIds": [
+        "client.UiBox.create"
+      ],
+      "launchState": "ready",
+      "reasons": []
+    },
+    {
+      "side": "server",
+      "usage": "remoteChannel.onServerEvent",
+      "occurrences": 10,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.remoteChannel.onServerEvent",
+      "canonicalId": "server.remoteChannel.onServerEvent",
+      "resolution": "matrix-exact",
+      "corpusState": "executable",
+      "compatibility": "compatible",
+      "capability": "server.remote-channel",
+      "executableBindingIds": [
+        "server.remoteChannel.onServerEvent"
+      ],
+      "launchState": "ready",
+      "reasons": []
+    },
+    {
+      "side": "server",
+      "usage": "world.onPress",
+      "occurrences": 8,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.onPress",
+      "canonicalId": "server.GameWorld.onPress",
+      "resolution": "matrix-owner",
+      "corpusState": "executable",
+      "compatibility": "compatible",
+      "capability": "server.world.events",
+      "executableBindingIds": [
+        "server.world.onPress"
+      ],
+      "launchState": "ready",
+      "reasons": []
+    },
+    {
+      "side": "client",
+      "usage": "input.lockPointer",
+      "occurrences": 7,
+      "sampleCount": 1,
+      "corpusCanonicalId": "client.input.lockPointer",
+      "canonicalId": "client.input.lockPointer",
+      "resolution": "matrix-exact",
+      "corpusState": "executable",
+      "compatibility": "native",
+      "capability": "client.ui",
+      "executableBindingIds": [
+        "client.input.lockPointer"
+      ],
+      "launchState": "ready",
+      "reasons": []
+    },
+    {
+      "side": "client",
+      "usage": "screen.findChildByName",
+      "occurrences": 6,
+      "sampleCount": 1,
+      "corpusCanonicalId": "client.UiNode.findChildByName",
+      "canonicalId": "client.UiNode.findChildByName",
+      "resolution": "matrix-exact",
+      "corpusState": "executable",
+      "compatibility": "native",
+      "capability": "client.ui",
+      "executableBindingIds": [
+        "client.UiNode.findChildByName"
+      ],
+      "launchState": "ready",
+      "reasons": []
+    },
+    {
+      "side": "server",
+      "usage": "gui.remove",
+      "occurrences": 5,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.GameGUI.remove",
+      "canonicalId": "server.GameGUI.remove",
+      "resolution": "current-runtime-recovered",
+      "corpusState": "executable",
+      "compatibility": "compatible",
+      "capability": "server.gui",
+      "executableBindingIds": [
+        "server.GameGUI.remove"
+      ],
+      "launchState": "ready",
+      "reasons": [
+        "Recovered canonical surface is outside the documented declaration matrix, but direct runtime evidence proves the executable contract.",
+        "Direct evidence resolves the recovered current-runtime canonical binding: server.GameGUI.remove."
+      ]
+    },
+    {
+      "side": "client",
+      "usage": "screen.name",
+      "occurrences": 5,
+      "sampleCount": 1,
+      "corpusCanonicalId": "client.UiNode.name",
+      "canonicalId": "client.UiNode.name",
+      "resolution": "matrix-exact",
+      "corpusState": "executable",
+      "compatibility": "native",
+      "capability": "client.ui",
+      "executableBindingIds": [
+        "client.UiNode.name"
+      ],
+      "launchState": "ready",
+      "reasons": []
+    },
+    {
+      "side": "client",
+      "usage": "UiScale.create",
+      "occurrences": 5,
+      "sampleCount": 1,
+      "corpusCanonicalId": "client.UiScale.create",
+      "canonicalId": "client.UiScale.create",
+      "resolution": "matrix-exact",
+      "corpusState": "executable",
+      "compatibility": "native",
+      "capability": "client.ui",
+      "executableBindingIds": [
+        "client.UiScale.create"
+      ],
+      "launchState": "ready",
+      "reasons": []
+    },
+    {
+      "side": "server",
+      "usage": "gui.setAttribute",
+      "occurrences": 4,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.GameGUI.setAttribute",
+      "canonicalId": "server.GameGUI.setAttribute",
+      "resolution": "current-runtime-recovered",
+      "corpusState": "executable",
+      "compatibility": "compatible",
+      "capability": "server.gui",
+      "executableBindingIds": [
+        "server.GameGUI.setAttribute"
+      ],
+      "launchState": "ready",
+      "reasons": [
+        "Recovered canonical surface is outside the documented declaration matrix, but direct runtime evidence proves the executable contract.",
+        "Direct evidence resolves the recovered current-runtime canonical binding: server.GameGUI.setAttribute."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "gui.init",
+      "occurrences": 3,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.GameGUI.init",
+      "canonicalId": "server.GameGUI.init",
+      "resolution": "current-runtime-recovered",
+      "corpusState": "executable",
+      "compatibility": "compatible",
+      "capability": "server.gui",
+      "executableBindingIds": [
+        "server.GameGUI.init"
+      ],
+      "launchState": "ready",
+      "reasons": [
+        "Recovered canonical surface is outside the documented declaration matrix, but direct runtime evidence proves the executable contract.",
+        "Direct evidence resolves the recovered current-runtime canonical binding: server.GameGUI.init."
+      ]
+    },
+    {
+      "side": "client",
+      "usage": "input.pointerLockEvents",
+      "occurrences": 3,
+      "sampleCount": 1,
+      "corpusCanonicalId": "client.input.pointerLockEvents",
+      "canonicalId": "client.input.pointerLockEvents",
+      "resolution": "current-runtime-recovered",
+      "corpusState": "executable",
+      "compatibility": "native",
+      "capability": "client.ui",
+      "executableBindingIds": [
+        "client.input.pointerLockEvents"
+      ],
+      "launchState": "ready",
+      "reasons": [
+        "Recovered canonical surface is outside the documented declaration matrix, but direct runtime evidence proves the executable contract.",
+        "Direct evidence resolves the recovered current-runtime canonical binding: client.input.pointerLockEvents."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "voxels.getVoxel",
+      "occurrences": 3,
+      "sampleCount": 2,
+      "corpusCanonicalId": "server.GameVoxels.getVoxel",
+      "canonicalId": "server.GameVoxels.getVoxel",
+      "resolution": "matrix-exact",
+      "corpusState": "executable",
+      "compatibility": "compatible",
+      "capability": "server.world.voxels",
+      "executableBindingIds": [
+        "server.GameVoxels.getVoxel"
+      ],
+      "launchState": "ready",
+      "reasons": []
+    },
+    {
+      "side": "server",
+      "usage": "gui.getAttribute",
+      "occurrences": 2,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.GameGUI.getAttribute",
+      "canonicalId": "server.GameGUI.getAttribute",
+      "resolution": "current-runtime-recovered",
+      "corpusState": "executable",
+      "compatibility": "compatible",
+      "capability": "server.gui",
+      "executableBindingIds": [
+        "server.GameGUI.getAttribute"
+      ],
+      "launchState": "ready",
+      "reasons": [
+        "Recovered canonical surface is outside the documented declaration matrix, but direct runtime evidence proves the executable contract.",
+        "Direct evidence resolves the recovered current-runtime canonical binding: server.GameGUI.getAttribute."
+      ]
+    },
+    {
+      "side": "client",
+      "usage": "screen.events",
+      "occurrences": 2,
+      "sampleCount": 1,
+      "corpusCanonicalId": "client.ClientScreen.events",
+      "canonicalId": "client.ClientScreen.events",
+      "resolution": "current-runtime-recovered",
+      "corpusState": "executable",
+      "compatibility": "native",
+      "capability": "client.ui",
+      "executableBindingIds": [
+        "client.ClientScreen.events"
+      ],
+      "launchState": "ready",
+      "reasons": [
+        "Recovered canonical surface is outside the documented declaration matrix, but direct runtime evidence proves the executable contract.",
+        "Direct evidence resolves the recovered current-runtime canonical binding: client.ClientScreen.events."
+      ]
+    },
+    {
+      "side": "client",
+      "usage": "screen.visible",
+      "occurrences": 2,
+      "sampleCount": 1,
+      "corpusCanonicalId": "client.UiScreen.visible",
+      "canonicalId": "client.UiScreen.visible",
+      "resolution": "matrix-exact",
+      "corpusState": "executable",
+      "compatibility": "native",
+      "capability": "client.ui",
+      "executableBindingIds": [
+        "client.UiScreen.visible"
+      ],
+      "launchState": "ready",
+      "reasons": []
+    },
+    {
+      "side": "client",
+      "usage": "UiScrollBox.create",
+      "occurrences": 2,
+      "sampleCount": 1,
+      "corpusCanonicalId": "client.UiScrollBox.create",
+      "canonicalId": "client.UiScrollBox.create",
+      "resolution": "matrix-exact",
+      "corpusState": "executable",
+      "compatibility": "native",
+      "capability": "client.ui",
+      "executableBindingIds": [
+        "client.UiScrollBox.create"
+      ],
+      "launchState": "ready",
+      "reasons": []
+    },
+    {
+      "side": "server",
+      "usage": "voxels.name",
+      "occurrences": 2,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.GameVoxels.name",
+      "canonicalId": "server.GameVoxels.name",
+      "resolution": "matrix-exact",
+      "corpusState": "executable",
+      "compatibility": "compatible",
+      "capability": "server.world.voxels",
+      "executableBindingIds": [
+        "server.GameVoxels.name"
+      ],
+      "launchState": "ready",
+      "reasons": []
+    },
+    {
+      "side": "server",
+      "usage": "world.onRelease",
+      "occurrences": 2,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.onRelease",
+      "canonicalId": "server.GameWorld.onRelease",
+      "resolution": "matrix-owner",
+      "corpusState": "executable",
+      "compatibility": "compatible",
+      "capability": "server.world.events",
+      "executableBindingIds": [
+        "server.world.onRelease"
+      ],
+      "launchState": "ready",
+      "reasons": []
+    },
+    {
+      "side": "server",
+      "usage": "remoteChannel.broadcastClientEvent",
+      "occurrences": 1,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.remoteChannel.broadcastClientEvent",
+      "canonicalId": "server.remoteChannel.broadcastClientEvent",
+      "resolution": "matrix-exact",
+      "corpusState": "executable",
+      "compatibility": "compatible",
+      "capability": "server.remote-channel",
+      "executableBindingIds": [
+        "server.remoteChannel.broadcastClientEvent"
+      ],
+      "launchState": "ready",
+      "reasons": [
+        "RuntimePlayer remains a subset of historical GamePlayerEntity."
+      ]
+    },
+    {
+      "side": "client",
+      "usage": "UiInput.create",
+      "occurrences": 1,
+      "sampleCount": 1,
+      "corpusCanonicalId": "client.UiInput.create",
+      "canonicalId": "client.UiInput.create",
+      "resolution": "matrix-exact",
+      "corpusState": "executable",
+      "compatibility": "native",
+      "capability": "client.ui",
+      "executableBindingIds": [
+        "client.UiInput.create"
+      ],
+      "launchState": "ready",
+      "reasons": []
+    },
+    {
+      "side": "server",
+      "usage": "voxels.getVoxelRotation",
+      "occurrences": 1,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.GameVoxels.getVoxelRotation",
+      "canonicalId": "server.GameVoxels.getVoxelRotation",
+      "resolution": "matrix-exact",
+      "corpusState": "executable",
+      "compatibility": "compatible",
+      "capability": "server.world.voxels",
+      "executableBindingIds": [
+        "server.GameVoxels.getVoxelRotation"
+      ],
+      "launchState": "ready",
+      "reasons": []
+    },
+    {
+      "side": "server",
+      "usage": "world.gameStarting",
+      "occurrences": 33,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.gameStarting",
+      "canonicalId": "server.world.gameStarting",
+      "resolution": "unresolved",
+      "corpusState": "custom-extension",
+      "compatibility": "custom-extension",
+      "capability": null,
+      "executableBindingIds": [],
+      "launchState": "script-owned",
+      "reasons": [
+        "Corpus assignment evidence identifies a script-owned extension, not a DAO3 Runtime requirement."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.gameTime",
+      "occurrences": 16,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.gameTime",
+      "canonicalId": "server.world.gameTime",
+      "resolution": "unresolved",
+      "corpusState": "custom-extension",
+      "compatibility": "custom-extension",
+      "capability": null,
+      "executableBindingIds": [],
+      "launchState": "script-owned",
+      "reasons": [
+        "Corpus assignment evidence identifies a script-owned extension, not a DAO3 Runtime requirement."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.team_has_bed",
+      "occurrences": 14,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.team_has_bed",
+      "canonicalId": "server.world.team_has_bed",
+      "resolution": "unresolved",
+      "corpusState": "custom-extension",
+      "compatibility": "custom-extension",
+      "capability": null,
+      "executableBindingIds": [],
+      "launchState": "script-owned",
+      "reasons": [
+        "Corpus assignment evidence identifies a script-owned extension, not a DAO3 Runtime requirement."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.hp",
+      "occurrences": 13,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.hp",
+      "canonicalId": "server.world.hp",
+      "resolution": "unresolved",
+      "corpusState": "custom-extension",
+      "compatibility": "custom-extension",
+      "capability": null,
+      "executableBindingIds": [],
+      "launchState": "script-owned",
+      "reasons": [
+        "Corpus assignment evidence identifies a script-owned extension, not a DAO3 Runtime requirement."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.time",
+      "occurrences": 5,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.time",
+      "canonicalId": "server.world.time",
+      "resolution": "unresolved",
+      "corpusState": "custom-extension",
+      "compatibility": "custom-extension",
+      "capability": null,
+      "executableBindingIds": [],
+      "launchState": "script-owned",
+      "reasons": [
+        "Corpus assignment evidence identifies a script-owned extension, not a DAO3 Runtime requirement."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "gui.message",
+      "occurrences": 4,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.gui.message",
+      "canonicalId": "server.gui.message",
+      "resolution": "unresolved",
+      "corpusState": "custom-extension",
+      "compatibility": "custom-extension",
+      "capability": null,
+      "executableBindingIds": [],
+      "launchState": "script-owned",
+      "reasons": [
+        "Corpus assignment evidence identifies a script-owned extension, not a DAO3 Runtime requirement."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "gui.YELLOW",
+      "occurrences": 3,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.gui.YELLOW",
+      "canonicalId": "server.gui.YELLOW",
+      "resolution": "unresolved",
+      "corpusState": "custom-extension",
+      "compatibility": "custom-extension",
+      "capability": null,
+      "executableBindingIds": [],
+      "launchState": "script-owned",
+      "reasons": [
+        "Corpus assignment evidence identifies a script-owned extension, not a DAO3 Runtime requirement."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.deadPeople",
+      "occurrences": 3,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.deadPeople",
+      "canonicalId": "server.world.deadPeople",
+      "resolution": "unresolved",
+      "corpusState": "custom-extension",
+      "compatibility": "custom-extension",
+      "capability": null,
+      "executableBindingIds": [],
+      "launchState": "script-owned",
+      "reasons": [
+        "Corpus assignment evidence identifies a script-owned extension, not a DAO3 Runtime requirement."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "gui.BLUE",
+      "occurrences": 2,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.gui.BLUE",
+      "canonicalId": "server.gui.BLUE",
+      "resolution": "unresolved",
+      "corpusState": "custom-extension",
+      "compatibility": "custom-extension",
+      "capability": null,
+      "executableBindingIds": [],
+      "launchState": "script-owned",
+      "reasons": [
+        "Corpus assignment evidence identifies a script-owned extension, not a DAO3 Runtime requirement."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "gui.GREY",
+      "occurrences": 2,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.gui.GREY",
+      "canonicalId": "server.gui.GREY",
+      "resolution": "unresolved",
+      "corpusState": "custom-extension",
+      "compatibility": "custom-extension",
+      "capability": null,
+      "executableBindingIds": [],
+      "launchState": "script-owned",
+      "reasons": [
+        "Corpus assignment evidence identifies a script-owned extension, not a DAO3 Runtime requirement."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "gui.Purple",
+      "occurrences": 2,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.gui.Purple",
+      "canonicalId": "server.gui.Purple",
+      "resolution": "unresolved",
+      "corpusState": "custom-extension",
+      "compatibility": "custom-extension",
+      "capability": null,
+      "executableBindingIds": [],
+      "launchState": "script-owned",
+      "reasons": [
+        "Corpus assignment evidence identifies a script-owned extension, not a DAO3 Runtime requirement."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "gui.RED",
+      "occurrences": 2,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.gui.RED",
+      "canonicalId": "server.gui.RED",
+      "resolution": "unresolved",
+      "corpusState": "custom-extension",
+      "compatibility": "custom-extension",
+      "capability": null,
+      "executableBindingIds": [],
+      "launchState": "script-owned",
+      "reasons": [
+        "Corpus assignment evidence identifies a script-owned extension, not a DAO3 Runtime requirement."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.meg_zym",
+      "occurrences": 2,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.meg_zym",
+      "canonicalId": "server.world.meg_zym",
+      "resolution": "unresolved",
+      "corpusState": "custom-extension",
+      "compatibility": "custom-extension",
+      "capability": null,
+      "executableBindingIds": [],
+      "launchState": "script-owned",
+      "reasons": [
+        "Corpus assignment evidence identifies a script-owned extension, not a DAO3 Runtime requirement."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "gui.GREEN",
+      "occurrences": 1,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.gui.GREEN",
+      "canonicalId": "server.gui.GREEN",
+      "resolution": "unresolved",
+      "corpusState": "custom-extension",
+      "compatibility": "custom-extension",
+      "capability": null,
+      "executableBindingIds": [],
+      "launchState": "script-owned",
+      "reasons": [
+        "Corpus assignment evidence identifies a script-owned extension, not a DAO3 Runtime requirement."
+      ]
+    },
+    {
+      "side": "server",
+      "usage": "world.meg_uns",
+      "occurrences": 1,
+      "sampleCount": 1,
+      "corpusCanonicalId": "server.world.meg_uns",
+      "canonicalId": "server.world.meg_uns",
+      "resolution": "unresolved",
+      "corpusState": "custom-extension",
+      "compatibility": "custom-extension",
+      "capability": null,
+      "executableBindingIds": [],
+      "launchState": "script-owned",
+      "reasons": [
+        "Corpus assignment evidence identifies a script-owned extension, not a DAO3 Runtime requirement."
+      ]
+    }
+  ]
+}

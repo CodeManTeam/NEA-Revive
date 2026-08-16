@@ -1,0 +1,15 @@
+{
+  "name": "nea-runtime-compat",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "extract": "node ../../Backend/local-player/tools/scan-runtime-abi.mjs && node tools/extract-doc-api.mjs && node tools/extract-origin-api.mjs && node tools/extract-protocol-abi.mjs && node tools/analyze-player-physics-bundle.mjs && node tools/analyze-player-network-body.mjs && node tools/analyze-contact-force-production.mjs && node tools/analyze-client-script-runtime.mjs && node tools/analyze-local-server-runtime.mjs && node tools/analyze-local-shared-runtime.mjs && node tools/build-server-object-model.mjs && node tools/build-runtime-entity-adapter-map.mjs && node tools/build-runtime-player-adapter-map.mjs && node tools/build-contact-event-model.mjs && node tools/build-script-runtime-boundaries.mjs && node tools/inventory-local-captures.mjs && node tools/inventory-player-profile.mjs && node tools/inventory-legacy-worktree-posture.mjs && node tools/inventory-posture-delta-corpus.mjs && node tools/build-authoritative-evidence-coverage.mjs && node tools/build-player-posture-model.mjs && node tools/compose-current-runtime.mjs && node tools/compose-runtime-catalogs.mjs && node tools/build-compatibility-matrix.mjs && node tools/build-runtime-contracts.mjs && node tools/build-api-abi-completeness.mjs",
+    "import-corpus": "node tools/import-script-corpus.mjs",
+    "corpus-report": "node tools/build-script-corpus-gap-report.mjs && node tools/build-capability-gate-audit.mjs",
+    "report": "node tools/generate-gap-report.mjs && npm run corpus-report",
+    "audit": "node tools/build-phase-5-audit.mjs",
+    "build": "npm run extract && npm run report && npm run audit",
+    "test": "node --test"
+  }
+}

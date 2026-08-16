@@ -1,0 +1,84 @@
+{
+  "format": "nea-physics-player-body-abi",
+  "version": 1,
+  "status": "partial",
+  "coordinateOrigin": "body-center",
+  "coordinateOriginStatus": "confirmed",
+  "shape": "axis-aligned-box",
+  "dimensions": [0.9, 2.2, 0.9],
+  "halfExtents": [0.45, 1.1, 0.45],
+  "boundsHalfExtents": [0.45, 1.1, 0.45],
+  "shapeHalfExtents": [0.45, 1.1, 0.45],
+  "dimensionStatus": "confirmed-player-bundle-default",
+  "bodyFields": {
+    "bounds": ["rx", "ry", "rz"],
+    "shapeHalfExtents": ["hsx", "hsy", "hsz"],
+    "networkRequirement": "Both field groups must be explicitly populated and propagated independently for an upright Player body."
+  },
+  "postures": {
+    "standing": { "status": "confirmed-default", "halfExtents": [0.45, 1.1, 0.45] },
+    "crouching": "unknown-server-authoritative-mutation",
+    "flying": "unknown-server-authoritative-mutation"
+  },
+  "contactRules": {
+    "wireQuantization": 0.00390625,
+    "contactCutoff": 0.0009765625,
+    "minimumRadius": 0.00390625,
+    "groundedAggregation": "confirmed: voxel axis 2 support plus strongest body contact with non-zero ny",
+    "sweep": "predicted body-center position expanded symmetrically by rigid-body rx/ry/rz",
+    "narrowphaseShape": "hsx/hsy/hsz are tracked separately from broadphase rx/ry/rz"
+  },
+  "rejectedAssumptions": [
+    { "dimensions": [0.6, 1.8, 0.6], "reason": "No historical Player, origin, protocol, or documentation evidence currently supports this value." }
+  ],
+  "evidence": [
+    {
+      "type": "protocol-schema",
+      "path": "origin/server-protocols.json",
+      "confidence": "direct",
+      "finding": "Rigid-body rx/ry/rz, position, and velocity use 1/256 quantization; schema identity values of 1 are generic defaults and do not prove player dimensions."
+    },
+    {
+      "type": "origin-source",
+      "path": "origin/origin/origin/RigidBody.js",
+      "confidence": "direct",
+      "finding": "Rigid-body bounds are stored as rx/ry/rz and used as half extents around px/py/pz. Constructor defaults are generic entity defaults, not confirmed player dimensions."
+    },
+    {
+      "type": "origin-source",
+      "path": "origin/origin/origin/ScriptParserAPI.js",
+      "confidence": "direct",
+      "finding": "Player script position and rigid-body position are identical in both conversion directions. Combined with the symmetric rigid-body sweep, this confirms body-center coordinates."
+    },
+    {
+      "type": "derived",
+      "path": "runtime-compat/generated/player-physics-bundle-analysis.json",
+      "confidence": "direct",
+      "finding": "Historical Player exports PLAYER_WIDTH=0.45 and PLAYER_HEIGHT=1.1. Camera and animation normalize body.ry by PLAYER_HEIGHT, and swept AABB expands center positions by rx/ry/rz, confirming upright default half extents 0.45x1.1x0.45."
+    },
+    {
+      "type": "lokibox-source",
+      "path": "Lokibox/lokibox-merged-bypass/src/core/bodies.ts",
+      "confidence": "direct",
+      "finding": "Lokibox independently identifies rx/ry/rz as boundingBox and hsx/hsy/hsz as halfExtents on live Player state, proving that both field groups must be tracked separately."
+    },
+    {
+      "type": "derived",
+      "path": "runtime-compat/evidence/legacy-player-body-producer.json",
+      "confidence": "direct",
+      "finding": "The compatibility backend previously bound Player and RigidBody by identical ids while inheriting generic 1/1/1 bounds and shape identities. Project-package Player sessions now require and propagate the recovered upright default profile across both field groups."
+    },
+    {
+      "type": "derived",
+      "path": "runtime-compat/generated/player-network-body-analysis.json",
+      "confidence": "direct",
+      "finding": "Initial handshake, initial PUBLIC state, authoritative registration, runtime frames, and later PUBLIC states propagate independent bounds and shape half extents; PUBLIC production writes rx/ry/rz and hsx/hsy/hsz from separate profile fields."
+    },
+    {
+      "type": "local-source",
+      "path": "demo-map/src/runtime/physics/player-body.mjs",
+      "confidence": "direct",
+      "finding": "The local body uses confirmed body-center coordinates, broadphase candidate bounds, and a separately tracked contact shape."
+    }
+  ]
+}

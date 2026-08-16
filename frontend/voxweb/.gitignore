@@ -1,0 +1,33 @@
+/target
+/dist
+*local*
+/asset-overrides/manifest.json
+/asset-overrides/files/
+/.claude/worktrees
+node_modules
+.wrangler
+.env
+
+# Private evidence and reverse-engineering workspaces
+Evidence/
+evidence/
+dump/
+dumps/
+archive/
+captures/
+private/
+deobfuscation/
+deobfuscate/
+*.har
+*.pcap
+*.pcapng
+*.7z
+
+# Local operator and generated state
+.workspace/
+.runtime-logs/
+coverage/
+
+# Local design notes and assistant context are not part of the public package.
+/docs/
+/CLAUDE.md

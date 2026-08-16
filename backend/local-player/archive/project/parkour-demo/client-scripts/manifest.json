@@ -1,0 +1,22 @@
+{
+  "format": "nea-recovered-client-scripts",
+  "version": 1,
+  "contract": {
+    "side": "client",
+    "id": "dao3-client-runtime/v1",
+    "apiVersion": "0.1.0"
+  },
+  "capabilities": [
+    "client.core",
+    "client.ui",
+    "client.remote-channel"
+  ],
+  "sourceMessage": "gameNet.syncClientScriptModules",
+  "files": [
+    {
+      "name": "clientIndex.js",
+      "bytes": 140,
+      "sha256": "bb2c3151dc59e5b5c1c31f9c210a1770cfcb00de5f6e3e0336a52494da8cd85a"
+    }
+  ]
+}

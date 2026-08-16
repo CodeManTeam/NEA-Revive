@@ -1,0 +1,2757 @@
+{
+  "generatedBy": "tools/parity/gen-netstate-schemas.mjs",
+  "note": "server-authoritative net-state RUNTIME schema tree (reduced contract)",
+  "structOrders": {
+    "netPublicRuntime": [
+      "frameSkip",
+      "tick",
+      "replica",
+      "state"
+    ],
+    "netPublicRuntime.replica": [
+      "running",
+      "sync",
+      "damage",
+      "entities",
+      "entityName",
+      "environment",
+      "interactive",
+      "keyframes",
+      "models",
+      "particles",
+      "players",
+      "sound"
+    ],
+    "netPublicRuntime.replica.damage[]": [
+      "hp",
+      "maxHp",
+      "id",
+      "showHealthBar"
+    ],
+    "netPublicRuntime.replica.entityName[]": [
+      "radius",
+      "id",
+      "color",
+      "name"
+    ],
+    "netPublicRuntime.replica.models[]": [
+      "emissive",
+      "metalness",
+      "offsetX",
+      "offsetY",
+      "offsetZ",
+      "scaleX",
+      "scaleY",
+      "scaleZ",
+      "shininess",
+      "id",
+      "meshId",
+      "alpha",
+      "blue",
+      "green",
+      "red",
+      "invisible",
+      "staticShadow",
+      "motion",
+      "name"
+    ],
+    "netPublicRuntime.replica.models[].motion": [
+      "pausedTick",
+      "startTick",
+      "paused",
+      "defaultMotionId",
+      "playback"
+    ],
+    "netPublicRuntime.replica.models[].motion.playback": [
+      "startTick",
+      "cycleCount",
+      "motions"
+    ],
+    "netPublicRuntime.replica.models[].motion.playback.motions[]": [
+      "cycleCount",
+      "motionId"
+    ],
+    "netPublicRuntime.replica.players[]": [
+      "emissive",
+      "metalness",
+      "scale",
+      "shininess",
+      "flags",
+      "id",
+      "tag",
+      "attachments",
+      "avatarSkin",
+      "avatar_hash",
+      "color",
+      "mapSkin",
+      "name",
+      "skinInvisible",
+      "userId"
+    ],
+    "netPublicRuntime.replica.players[].avatarSkin": [
+      "head",
+      "hips",
+      "leftFoot",
+      "leftHand",
+      "leftLowerArm",
+      "leftLowerLeg",
+      "leftShoulder",
+      "leftUpperArm",
+      "leftUpperLeg",
+      "neck",
+      "rightFoot",
+      "rightHand",
+      "rightLowerArm",
+      "rightLowerLeg",
+      "rightShoulder",
+      "rightUpperArm",
+      "rightUpperLeg",
+      "torso"
+    ],
+    "netPublicRuntime.replica.players[].mapSkin": [
+      "head",
+      "hips",
+      "leftFoot",
+      "leftHand",
+      "leftLowerArm",
+      "leftLowerLeg",
+      "leftShoulder",
+      "leftUpperArm",
+      "leftUpperLeg",
+      "neck",
+      "rightFoot",
+      "rightHand",
+      "rightLowerArm",
+      "rightLowerLeg",
+      "rightShoulder",
+      "rightUpperArm",
+      "rightUpperLeg",
+      "torso"
+    ],
+    "netPublicRuntime.replica.players[].skinInvisible": [
+      "head",
+      "hips",
+      "leftFoot",
+      "leftHand",
+      "leftLowerArm",
+      "leftLowerLeg",
+      "leftShoulder",
+      "leftUpperArm",
+      "leftUpperLeg",
+      "neck",
+      "rightFoot",
+      "rightHand",
+      "rightLowerArm",
+      "rightLowerLeg",
+      "rightShoulder",
+      "rightUpperArm",
+      "rightUpperLeg",
+      "torso"
+    ],
+    "netPublicRuntime.state": [
+      "bodies",
+      "collisionFilter",
+      "physics",
+      "playerInputs",
+      "players",
+      "zoneSelectors",
+      "zones"
+    ],
+    "netPublicRuntime.state.bodies[]": [],
+    "netPublicRuntime.state.playerInputs[]": [
+      "id",
+      "state",
+      "angle",
+      "cameraAngle",
+      "pitch"
+    ],
+    "netPublicRuntime.state.players[]": [
+      "crouchAcceleration",
+      "crouchSpeed",
+      "doubleJumpPower",
+      "flyAcceleration",
+      "flySpeed",
+      "jumpAccelerationFactor",
+      "jumpPower",
+      "jumpSpeedFactor",
+      "physFluid",
+      "platformX",
+      "platformY",
+      "platformZ",
+      "runAcceleration",
+      "runSpeed",
+      "stepHeight",
+      "swimAcceleration",
+      "swimSpeed",
+      "walkAcceleration",
+      "walkSpeed",
+      "flags",
+      "id",
+      "freezedForwardAngle",
+      "inputDirectionState",
+      "occupancy",
+      "physGround"
+    ],
+    "netStateRuntime": [
+      "bodies",
+      "collisionFilter",
+      "physics",
+      "playerInputs",
+      "players",
+      "zoneSelectors",
+      "zones"
+    ],
+    "netStateRuntime.bodies[]": [],
+    "netStateRuntime.playerInputs[]": [
+      "id",
+      "state",
+      "angle",
+      "cameraAngle",
+      "pitch"
+    ],
+    "netStateRuntime.players[]": [
+      "crouchAcceleration",
+      "crouchSpeed",
+      "doubleJumpPower",
+      "flyAcceleration",
+      "flySpeed",
+      "jumpAccelerationFactor",
+      "jumpPower",
+      "jumpSpeedFactor",
+      "physFluid",
+      "platformX",
+      "platformY",
+      "platformZ",
+      "runAcceleration",
+      "runSpeed",
+      "stepHeight",
+      "swimAcceleration",
+      "swimSpeed",
+      "walkAcceleration",
+      "walkSpeed",
+      "flags",
+      "id",
+      "freezedForwardAngle",
+      "inputDirectionState",
+      "occupancy",
+      "physGround"
+    ],
+    "gameReplicaRuntime": [
+      "running",
+      "sync",
+      "damage",
+      "entities",
+      "entityName",
+      "environment",
+      "interactive",
+      "keyframes",
+      "models",
+      "particles",
+      "players",
+      "sound"
+    ],
+    "gameReplicaRuntime.damage[]": [
+      "hp",
+      "maxHp",
+      "id",
+      "showHealthBar"
+    ],
+    "gameReplicaRuntime.entityName[]": [
+      "radius",
+      "id",
+      "color",
+      "name"
+    ],
+    "gameReplicaRuntime.models[]": [
+      "emissive",
+      "metalness",
+      "offsetX",
+      "offsetY",
+      "offsetZ",
+      "scaleX",
+      "scaleY",
+      "scaleZ",
+      "shininess",
+      "id",
+      "meshId",
+      "alpha",
+      "blue",
+      "green",
+      "red",
+      "invisible",
+      "staticShadow",
+      "motion",
+      "name"
+    ],
+    "gameReplicaRuntime.models[].motion": [
+      "pausedTick",
+      "startTick",
+      "paused",
+      "defaultMotionId",
+      "playback"
+    ],
+    "gameReplicaRuntime.models[].motion.playback": [
+      "startTick",
+      "cycleCount",
+      "motions"
+    ],
+    "gameReplicaRuntime.models[].motion.playback.motions[]": [
+      "cycleCount",
+      "motionId"
+    ],
+    "gameReplicaRuntime.players[]": [
+      "emissive",
+      "metalness",
+      "scale",
+      "shininess",
+      "flags",
+      "id",
+      "tag",
+      "attachments",
+      "avatarSkin",
+      "avatar_hash",
+      "color",
+      "mapSkin",
+      "name",
+      "skinInvisible",
+      "userId"
+    ],
+    "gameReplicaRuntime.players[].avatarSkin": [
+      "head",
+      "hips",
+      "leftFoot",
+      "leftHand",
+      "leftLowerArm",
+      "leftLowerLeg",
+      "leftShoulder",
+      "leftUpperArm",
+      "leftUpperLeg",
+      "neck",
+      "rightFoot",
+      "rightHand",
+      "rightLowerArm",
+      "rightLowerLeg",
+      "rightShoulder",
+      "rightUpperArm",
+      "rightUpperLeg",
+      "torso"
+    ],
+    "gameReplicaRuntime.players[].mapSkin": [
+      "head",
+      "hips",
+      "leftFoot",
+      "leftHand",
+      "leftLowerArm",
+      "leftLowerLeg",
+      "leftShoulder",
+      "leftUpperArm",
+      "leftUpperLeg",
+      "neck",
+      "rightFoot",
+      "rightHand",
+      "rightLowerArm",
+      "rightLowerLeg",
+      "rightShoulder",
+      "rightUpperArm",
+      "rightUpperLeg",
+      "torso"
+    ],
+    "gameReplicaRuntime.players[].skinInvisible": [
+      "head",
+      "hips",
+      "leftFoot",
+      "leftHand",
+      "leftLowerArm",
+      "leftLowerLeg",
+      "leftShoulder",
+      "leftUpperArm",
+      "leftUpperLeg",
+      "neck",
+      "rightFoot",
+      "rightHand",
+      "rightLowerArm",
+      "rightLowerLeg",
+      "rightShoulder",
+      "rightUpperArm",
+      "rightUpperLeg",
+      "torso"
+    ],
+    "rigidBodyRuntime": [],
+    "serverPlayerDisplay": [
+      "emissive",
+      "metalness",
+      "scale",
+      "shininess",
+      "flags",
+      "id",
+      "tag",
+      "attachments",
+      "avatarSkin",
+      "avatar_hash",
+      "color",
+      "mapSkin",
+      "name",
+      "skinInvisible",
+      "userId"
+    ],
+    "serverPlayerDisplay.avatarSkin": [
+      "head",
+      "hips",
+      "leftFoot",
+      "leftHand",
+      "leftLowerArm",
+      "leftLowerLeg",
+      "leftShoulder",
+      "leftUpperArm",
+      "leftUpperLeg",
+      "neck",
+      "rightFoot",
+      "rightHand",
+      "rightLowerArm",
+      "rightLowerLeg",
+      "rightShoulder",
+      "rightUpperArm",
+      "rightUpperLeg",
+      "torso"
+    ],
+    "serverPlayerDisplay.mapSkin": [
+      "head",
+      "hips",
+      "leftFoot",
+      "leftHand",
+      "leftLowerArm",
+      "leftLowerLeg",
+      "leftShoulder",
+      "leftUpperArm",
+      "leftUpperLeg",
+      "neck",
+      "rightFoot",
+      "rightHand",
+      "rightLowerArm",
+      "rightLowerLeg",
+      "rightShoulder",
+      "rightUpperArm",
+      "rightUpperLeg",
+      "torso"
+    ],
+    "serverPlayerDisplay.skinInvisible": [
+      "head",
+      "hips",
+      "leftFoot",
+      "leftHand",
+      "leftLowerArm",
+      "leftLowerLeg",
+      "leftShoulder",
+      "leftUpperArm",
+      "leftUpperLeg",
+      "neck",
+      "rightFoot",
+      "rightHand",
+      "rightLowerArm",
+      "rightLowerLeg",
+      "rightShoulder",
+      "rightUpperArm",
+      "rightUpperLeg",
+      "torso"
+    ],
+    "damageSet[]": [
+      "hp",
+      "maxHp",
+      "id",
+      "showHealthBar"
+    ],
+    "damage": [
+      "hp",
+      "maxHp",
+      "id",
+      "showHealthBar"
+    ],
+    "netModelSet[]": [
+      "emissive",
+      "metalness",
+      "offsetX",
+      "offsetY",
+      "offsetZ",
+      "scaleX",
+      "scaleY",
+      "scaleZ",
+      "shininess",
+      "id",
+      "meshId",
+      "alpha",
+      "blue",
+      "green",
+      "red",
+      "invisible",
+      "staticShadow",
+      "motion",
+      "name"
+    ],
+    "netModelSet[].motion": [
+      "pausedTick",
+      "startTick",
+      "paused",
+      "defaultMotionId",
+      "playback"
+    ],
+    "netModelSet[].motion.playback": [
+      "startTick",
+      "cycleCount",
+      "motions"
+    ],
+    "netModelSet[].motion.playback.motions[]": [
+      "cycleCount",
+      "motionId"
+    ],
+    "playerInput": [
+      "id",
+      "state",
+      "angle",
+      "cameraAngle",
+      "pitch"
+    ],
+    "player": [
+      "crouchAcceleration",
+      "crouchSpeed",
+      "doubleJumpPower",
+      "flyAcceleration",
+      "flySpeed",
+      "jumpAccelerationFactor",
+      "jumpPower",
+      "jumpSpeedFactor",
+      "physFluid",
+      "platformX",
+      "platformY",
+      "platformZ",
+      "runAcceleration",
+      "runSpeed",
+      "stepHeight",
+      "swimAcceleration",
+      "swimSpeed",
+      "walkAcceleration",
+      "walkSpeed",
+      "flags",
+      "id",
+      "freezedForwardAngle",
+      "inputDirectionState",
+      "occupancy",
+      "physGround"
+    ],
+    "playerSet[]": [
+      "crouchAcceleration",
+      "crouchSpeed",
+      "doubleJumpPower",
+      "flyAcceleration",
+      "flySpeed",
+      "jumpAccelerationFactor",
+      "jumpPower",
+      "jumpSpeedFactor",
+      "physFluid",
+      "platformX",
+      "platformY",
+      "platformZ",
+      "runAcceleration",
+      "runSpeed",
+      "stepHeight",
+      "swimAcceleration",
+      "swimSpeed",
+      "walkAcceleration",
+      "walkSpeed",
+      "flags",
+      "id",
+      "freezedForwardAngle",
+      "inputDirectionState",
+      "occupancy",
+      "physGround"
+    ]
+  },
+  "schemas": {
+    "netPublicRuntime": {
+      "type": "struct",
+      "subTypes": {
+        "frameSkip": {
+          "type": "rvarint",
+          "identity": 0
+        },
+        "tick": {
+          "type": "rvarint",
+          "identity": 0
+        },
+        "replica": {
+          "type": "struct",
+          "subTypes": {
+            "running": {
+              "type": "boolean",
+              "identity": false
+            },
+            "sync": {
+              "type": "boolean",
+              "identity": false
+            },
+            "damage": {
+              "type": "sorted-array",
+              "valueType": {
+                "type": "struct",
+                "subTypes": {
+                  "hp": {
+                    "type": "quantized-float",
+                    "precision": 0.00390625,
+                    "identity": 100
+                  },
+                  "maxHp": {
+                    "type": "quantized-float",
+                    "precision": 0.00390625,
+                    "identity": 100
+                  },
+                  "id": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "showHealthBar": {
+                    "type": "boolean",
+                    "identity": true
+                  }
+                }
+              },
+              "identity": "[]"
+            },
+            "entities": {
+              "type": "sorted-array",
+              "valueType": {
+                "type": "varint",
+                "identity": 0
+              },
+              "identity": "[]"
+            },
+            "entityName": {
+              "type": "sorted-array",
+              "valueType": {
+                "type": "struct",
+                "subTypes": {
+                  "radius": {
+                    "type": "quantized-float",
+                    "precision": 0.0625,
+                    "identity": 16
+                  },
+                  "id": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "color": {
+                    "type": "replica-quantized-vec3",
+                    "precision": 0.00390625,
+                    "identity": [
+                      1,
+                      1,
+                      1
+                    ]
+                  },
+                  "name": {
+                    "type": "utf8",
+                    "identity": ""
+                  }
+                }
+              },
+              "identity": "[]"
+            },
+            "environment": {
+              "type": "void"
+            },
+            "interactive": {
+              "type": "void"
+            },
+            "keyframes": {
+              "type": "void"
+            },
+            "models": {
+              "type": "sorted-array",
+              "valueType": {
+                "type": "struct",
+                "subTypes": {
+                  "emissive": {
+                    "type": "quantized-float",
+                    "precision": 0.00390625,
+                    "identity": 0
+                  },
+                  "metalness": {
+                    "type": "quantized-float",
+                    "precision": 0.00390625,
+                    "identity": 0
+                  },
+                  "offsetX": {
+                    "type": "quantized-float",
+                    "precision": 0.00390625,
+                    "identity": 0
+                  },
+                  "offsetY": {
+                    "type": "quantized-float",
+                    "precision": 0.00390625,
+                    "identity": 0
+                  },
+                  "offsetZ": {
+                    "type": "quantized-float",
+                    "precision": 0.00390625,
+                    "identity": 0
+                  },
+                  "scaleX": {
+                    "type": "quantized-float",
+                    "precision": 0.00390625,
+                    "identity": 1
+                  },
+                  "scaleY": {
+                    "type": "quantized-float",
+                    "precision": 0.00390625,
+                    "identity": 1
+                  },
+                  "scaleZ": {
+                    "type": "quantized-float",
+                    "precision": 0.00390625,
+                    "identity": 1
+                  },
+                  "shininess": {
+                    "type": "quantized-float",
+                    "precision": 0.00390625,
+                    "identity": 0
+                  },
+                  "id": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "meshId": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "alpha": {
+                    "type": "uint8",
+                    "identity": 255
+                  },
+                  "blue": {
+                    "type": "uint8",
+                    "identity": 255
+                  },
+                  "green": {
+                    "type": "uint8",
+                    "identity": 255
+                  },
+                  "red": {
+                    "type": "uint8",
+                    "identity": 255
+                  },
+                  "invisible": {
+                    "type": "boolean",
+                    "identity": false
+                  },
+                  "staticShadow": {
+                    "type": "boolean",
+                    "identity": false
+                  },
+                  "motion": {
+                    "type": "struct",
+                    "subTypes": {
+                      "pausedTick": {
+                        "type": "float64",
+                        "identity": 0
+                      },
+                      "startTick": {
+                        "type": "float64",
+                        "identity": 0
+                      },
+                      "paused": {
+                        "type": "boolean",
+                        "identity": false
+                      },
+                      "defaultMotionId": {
+                        "type": "ascii",
+                        "identity": ""
+                      },
+                      "playback": {
+                        "type": "struct",
+                        "subTypes": {
+                          "startTick": {
+                            "type": "float64",
+                            "identity": 0
+                          },
+                          "cycleCount": {
+                            "type": "int32",
+                            "identity": 1
+                          },
+                          "motions": {
+                            "type": "array",
+                            "valueType": {
+                              "type": "struct",
+                              "subTypes": {
+                                "cycleCount": {
+                                  "type": "int32",
+                                  "identity": 1
+                                },
+                                "motionId": {
+                                  "type": "ascii",
+                                  "identity": ""
+                                }
+                              }
+                            },
+                            "identity": "[]"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "name": {
+                    "type": "utf8",
+                    "identity": ""
+                  }
+                }
+              },
+              "identity": "[]"
+            },
+            "particles": {
+              "type": "void"
+            },
+            "players": {
+              "type": "sorted-array",
+              "valueType": {
+                "type": "struct",
+                "subTypes": {
+                  "emissive": {
+                    "type": "quantized-float",
+                    "precision": 0.00390625,
+                    "identity": 0
+                  },
+                  "metalness": {
+                    "type": "quantized-float",
+                    "precision": 0.00390625,
+                    "identity": 0
+                  },
+                  "scale": {
+                    "type": "quantized-float",
+                    "precision": 0.00390625,
+                    "identity": 1
+                  },
+                  "shininess": {
+                    "type": "quantized-float",
+                    "precision": 0.00390625,
+                    "identity": 0
+                  },
+                  "flags": {
+                    "type": "varint",
+                    "identity": 8
+                  },
+                  "id": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "tag": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "attachments": {
+                    "type": "void"
+                  },
+                  "avatarSkin": {
+                    "type": "struct",
+                    "subTypes": {
+                      "head": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "hips": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "leftFoot": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "leftHand": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "leftLowerArm": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "leftLowerLeg": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "leftShoulder": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "leftUpperArm": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "leftUpperLeg": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "neck": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "rightFoot": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "rightHand": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "rightLowerArm": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "rightLowerLeg": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "rightShoulder": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "rightUpperArm": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "rightUpperLeg": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "torso": {
+                        "type": "varint",
+                        "identity": 0
+                      }
+                    }
+                  },
+                  "avatar_hash": {
+                    "type": "void"
+                  },
+                  "color": {
+                    "type": "void"
+                  },
+                  "mapSkin": {
+                    "type": "struct",
+                    "subTypes": {
+                      "head": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "hips": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "leftFoot": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "leftHand": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "leftLowerArm": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "leftLowerLeg": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "leftShoulder": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "leftUpperArm": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "leftUpperLeg": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "neck": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "rightFoot": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "rightHand": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "rightLowerArm": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "rightLowerLeg": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "rightShoulder": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "rightUpperArm": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "rightUpperLeg": {
+                        "type": "varint",
+                        "identity": 0
+                      },
+                      "torso": {
+                        "type": "varint",
+                        "identity": 0
+                      }
+                    }
+                  },
+                  "name": {
+                    "type": "utf8",
+                    "identity": "player"
+                  },
+                  "skinInvisible": {
+                    "type": "struct",
+                    "subTypes": {
+                      "head": {
+                        "type": "boolean",
+                        "identity": false
+                      },
+                      "hips": {
+                        "type": "boolean",
+                        "identity": false
+                      },
+                      "leftFoot": {
+                        "type": "boolean",
+                        "identity": false
+                      },
+                      "leftHand": {
+                        "type": "boolean",
+                        "identity": false
+                      },
+                      "leftLowerArm": {
+                        "type": "boolean",
+                        "identity": false
+                      },
+                      "leftLowerLeg": {
+                        "type": "boolean",
+                        "identity": false
+                      },
+                      "leftShoulder": {
+                        "type": "boolean",
+                        "identity": false
+                      },
+                      "leftUpperArm": {
+                        "type": "boolean",
+                        "identity": false
+                      },
+                      "leftUpperLeg": {
+                        "type": "boolean",
+                        "identity": false
+                      },
+                      "neck": {
+                        "type": "boolean",
+                        "identity": false
+                      },
+                      "rightFoot": {
+                        "type": "boolean",
+                        "identity": false
+                      },
+                      "rightHand": {
+                        "type": "boolean",
+                        "identity": false
+                      },
+                      "rightLowerArm": {
+                        "type": "boolean",
+                        "identity": false
+                      },
+                      "rightLowerLeg": {
+                        "type": "boolean",
+                        "identity": false
+                      },
+                      "rightShoulder": {
+                        "type": "boolean",
+                        "identity": false
+                      },
+                      "rightUpperArm": {
+                        "type": "boolean",
+                        "identity": false
+                      },
+                      "rightUpperLeg": {
+                        "type": "boolean",
+                        "identity": false
+                      },
+                      "torso": {
+                        "type": "boolean",
+                        "identity": false
+                      }
+                    }
+                  },
+                  "userId": {
+                    "type": "void"
+                  }
+                }
+              },
+              "identity": "[]"
+            },
+            "sound": {
+              "type": "void"
+            }
+          }
+        },
+        "state": {
+          "type": "struct",
+          "subTypes": {
+            "bodies": {
+              "type": "sorted-array",
+              "valueType": {
+                "type": "struct",
+                "subTypes": {}
+              },
+              "identity": "[]"
+            },
+            "collisionFilter": {
+              "type": "void"
+            },
+            "physics": {
+              "type": "void"
+            },
+            "playerInputs": {
+              "type": "sorted-array",
+              "valueType": {
+                "type": "struct",
+                "subTypes": {
+                  "id": {
+                    "type": "uint32",
+                    "identity": 0
+                  },
+                  "state": {
+                    "type": "uint16",
+                    "identity": 1540
+                  },
+                  "angle": {
+                    "type": "uint8",
+                    "identity": 0
+                  },
+                  "cameraAngle": {
+                    "type": "uint8",
+                    "identity": 0
+                  },
+                  "pitch": {
+                    "type": "uint8",
+                    "identity": 0
+                  }
+                }
+              },
+              "identity": "[]"
+            },
+            "players": {
+              "type": "sorted-array",
+              "valueType": {
+                "type": "struct",
+                "subTypes": {
+                  "crouchAcceleration": {
+                    "type": "quantized-float",
+                    "precision": 0.0009765625,
+                    "identity": 0.08984375
+                  },
+                  "crouchSpeed": {
+                    "type": "quantized-float",
+                    "precision": 0.0009765625,
+                    "identity": 0.099609375
+                  },
+                  "doubleJumpPower": {
+                    "type": "quantized-float",
+                    "precision": 0.0009765625,
+                    "identity": 0.8994140625
+                  },
+                  "flyAcceleration": {
+                    "type": "quantized-float",
+                    "precision": 0.0009765625,
+                    "identity": 2
+                  },
+                  "flySpeed": {
+                    "type": "quantized-float",
+                    "precision": 0.0009765625,
+                    "identity": 2
+                  },
+                  "jumpAccelerationFactor": {
+                    "type": "quantized-float",
+                    "precision": 0.0009765625,
+                    "identity": 0.5498046875
+                  },
+                  "jumpPower": {
+                    "type": "quantized-float",
+                    "precision": 0.0009765625,
+                    "identity": 0.9599609375
+                  },
+                  "jumpSpeedFactor": {
+                    "type": "quantized-float",
+                    "precision": 0.0009765625,
+                    "identity": 0.849609375
+                  },
+                  "physFluid": {
+                    "type": "quantized-float",
+                    "precision": 0.03125,
+                    "identity": 0
+                  },
+                  "platformX": {
+                    "type": "quantized-float",
+                    "precision": 0.00390625,
+                    "identity": 0
+                  },
+                  "platformY": {
+                    "type": "quantized-float",
+                    "precision": 0.00390625,
+                    "identity": 0
+                  },
+                  "platformZ": {
+                    "type": "quantized-float",
+                    "precision": 0.00390625,
+                    "identity": 0
+                  },
+                  "runAcceleration": {
+                    "type": "quantized-float",
+                    "precision": 0.0009765625,
+                    "identity": 0.349609375
+                  },
+                  "runSpeed": {
+                    "type": "quantized-float",
+                    "precision": 0.0009765625,
+                    "identity": 0.3994140625
+                  },
+                  "stepHeight": {
+                    "type": "quantized-float",
+                    "precision": 0.0009765625,
+                    "identity": 1.25
+                  },
+                  "swimAcceleration": {
+                    "type": "quantized-float",
+                    "precision": 0.0009765625,
+                    "identity": 0.099609375
+                  },
+                  "swimSpeed": {
+                    "type": "quantized-float",
+                    "precision": 0.0009765625,
+                    "identity": 0.3994140625
+                  },
+                  "walkAcceleration": {
+                    "type": "quantized-float",
+                    "precision": 0.0009765625,
+                    "identity": 0.189453125
+                  },
+                  "walkSpeed": {
+                    "type": "quantized-float",
+                    "precision": 0.0009765625,
+                    "identity": 0.2197265625
+                  },
+                  "flags": {
+                    "type": "varint",
+                    "identity": 254
+                  },
+                  "id": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "freezedForwardAngle": {
+                    "type": "uint16",
+                    "identity": 0
+                  },
+                  "inputDirectionState": {
+                    "type": "uint8",
+                    "identity": 0
+                  },
+                  "occupancy": {
+                    "type": "uint8",
+                    "identity": 0
+                  },
+                  "physGround": {
+                    "type": "boolean",
+                    "identity": false
+                  }
+                }
+              },
+              "identity": "[]"
+            },
+            "zoneSelectors": {
+              "type": "void"
+            },
+            "zones": {
+              "type": "void"
+            }
+          }
+        }
+      }
+    },
+    "netStateRuntime": {
+      "type": "struct",
+      "subTypes": {
+        "bodies": {
+          "type": "sorted-array",
+          "valueType": {
+            "type": "struct",
+            "subTypes": {}
+          },
+          "identity": "[]"
+        },
+        "collisionFilter": {
+          "type": "void"
+        },
+        "physics": {
+          "type": "void"
+        },
+        "playerInputs": {
+          "type": "sorted-array",
+          "valueType": {
+            "type": "struct",
+            "subTypes": {
+              "id": {
+                "type": "uint32",
+                "identity": 0
+              },
+              "state": {
+                "type": "uint16",
+                "identity": 1540
+              },
+              "angle": {
+                "type": "uint8",
+                "identity": 0
+              },
+              "cameraAngle": {
+                "type": "uint8",
+                "identity": 0
+              },
+              "pitch": {
+                "type": "uint8",
+                "identity": 0
+              }
+            }
+          },
+          "identity": "[]"
+        },
+        "players": {
+          "type": "sorted-array",
+          "valueType": {
+            "type": "struct",
+            "subTypes": {
+              "crouchAcceleration": {
+                "type": "quantized-float",
+                "precision": 0.0009765625,
+                "identity": 0.08984375
+              },
+              "crouchSpeed": {
+                "type": "quantized-float",
+                "precision": 0.0009765625,
+                "identity": 0.099609375
+              },
+              "doubleJumpPower": {
+                "type": "quantized-float",
+                "precision": 0.0009765625,
+                "identity": 0.8994140625
+              },
+              "flyAcceleration": {
+                "type": "quantized-float",
+                "precision": 0.0009765625,
+                "identity": 2
+              },
+              "flySpeed": {
+                "type": "quantized-float",
+                "precision": 0.0009765625,
+                "identity": 2
+              },
+              "jumpAccelerationFactor": {
+                "type": "quantized-float",
+                "precision": 0.0009765625,
+                "identity": 0.5498046875
+              },
+              "jumpPower": {
+                "type": "quantized-float",
+                "precision": 0.0009765625,
+                "identity": 0.9599609375
+              },
+              "jumpSpeedFactor": {
+                "type": "quantized-float",
+                "precision": 0.0009765625,
+                "identity": 0.849609375
+              },
+              "physFluid": {
+                "type": "quantized-float",
+                "precision": 0.03125,
+                "identity": 0
+              },
+              "platformX": {
+                "type": "quantized-float",
+                "precision": 0.00390625,
+                "identity": 0
+              },
+              "platformY": {
+                "type": "quantized-float",
+                "precision": 0.00390625,
+                "identity": 0
+              },
+              "platformZ": {
+                "type": "quantized-float",
+                "precision": 0.00390625,
+                "identity": 0
+              },
+              "runAcceleration": {
+                "type": "quantized-float",
+                "precision": 0.0009765625,
+                "identity": 0.349609375
+              },
+              "runSpeed": {
+                "type": "quantized-float",
+                "precision": 0.0009765625,
+                "identity": 0.3994140625
+              },
+              "stepHeight": {
+                "type": "quantized-float",
+                "precision": 0.0009765625,
+                "identity": 1.25
+              },
+              "swimAcceleration": {
+                "type": "quantized-float",
+                "precision": 0.0009765625,
+                "identity": 0.099609375
+              },
+              "swimSpeed": {
+                "type": "quantized-float",
+                "precision": 0.0009765625,
+                "identity": 0.3994140625
+              },
+              "walkAcceleration": {
+                "type": "quantized-float",
+                "precision": 0.0009765625,
+                "identity": 0.189453125
+              },
+              "walkSpeed": {
+                "type": "quantized-float",
+                "precision": 0.0009765625,
+                "identity": 0.2197265625
+              },
+              "flags": {
+                "type": "varint",
+                "identity": 254
+              },
+              "id": {
+                "type": "varint",
+                "identity": 0
+              },
+              "freezedForwardAngle": {
+                "type": "uint16",
+                "identity": 0
+              },
+              "inputDirectionState": {
+                "type": "uint8",
+                "identity": 0
+              },
+              "occupancy": {
+                "type": "uint8",
+                "identity": 0
+              },
+              "physGround": {
+                "type": "boolean",
+                "identity": false
+              }
+            }
+          },
+          "identity": "[]"
+        },
+        "zoneSelectors": {
+          "type": "void"
+        },
+        "zones": {
+          "type": "void"
+        }
+      }
+    },
+    "gameReplicaRuntime": {
+      "type": "struct",
+      "subTypes": {
+        "running": {
+          "type": "boolean",
+          "identity": false
+        },
+        "sync": {
+          "type": "boolean",
+          "identity": false
+        },
+        "damage": {
+          "type": "sorted-array",
+          "valueType": {
+            "type": "struct",
+            "subTypes": {
+              "hp": {
+                "type": "quantized-float",
+                "precision": 0.00390625,
+                "identity": 100
+              },
+              "maxHp": {
+                "type": "quantized-float",
+                "precision": 0.00390625,
+                "identity": 100
+              },
+              "id": {
+                "type": "varint",
+                "identity": 0
+              },
+              "showHealthBar": {
+                "type": "boolean",
+                "identity": true
+              }
+            }
+          },
+          "identity": "[]"
+        },
+        "entities": {
+          "type": "sorted-array",
+          "valueType": {
+            "type": "varint",
+            "identity": 0
+          },
+          "identity": "[]"
+        },
+        "entityName": {
+          "type": "sorted-array",
+          "valueType": {
+            "type": "struct",
+            "subTypes": {
+              "radius": {
+                "type": "quantized-float",
+                "precision": 0.0625,
+                "identity": 16
+              },
+              "id": {
+                "type": "varint",
+                "identity": 0
+              },
+              "color": {
+                "type": "replica-quantized-vec3",
+                "precision": 0.00390625,
+                "identity": [
+                  1,
+                  1,
+                  1
+                ]
+              },
+              "name": {
+                "type": "utf8",
+                "identity": ""
+              }
+            }
+          },
+          "identity": "[]"
+        },
+        "environment": {
+          "type": "void"
+        },
+        "interactive": {
+          "type": "void"
+        },
+        "keyframes": {
+          "type": "void"
+        },
+        "models": {
+          "type": "sorted-array",
+          "valueType": {
+            "type": "struct",
+            "subTypes": {
+              "emissive": {
+                "type": "quantized-float",
+                "precision": 0.00390625,
+                "identity": 0
+              },
+              "metalness": {
+                "type": "quantized-float",
+                "precision": 0.00390625,
+                "identity": 0
+              },
+              "offsetX": {
+                "type": "quantized-float",
+                "precision": 0.00390625,
+                "identity": 0
+              },
+              "offsetY": {
+                "type": "quantized-float",
+                "precision": 0.00390625,
+                "identity": 0
+              },
+              "offsetZ": {
+                "type": "quantized-float",
+                "precision": 0.00390625,
+                "identity": 0
+              },
+              "scaleX": {
+                "type": "quantized-float",
+                "precision": 0.00390625,
+                "identity": 1
+              },
+              "scaleY": {
+                "type": "quantized-float",
+                "precision": 0.00390625,
+                "identity": 1
+              },
+              "scaleZ": {
+                "type": "quantized-float",
+                "precision": 0.00390625,
+                "identity": 1
+              },
+              "shininess": {
+                "type": "quantized-float",
+                "precision": 0.00390625,
+                "identity": 0
+              },
+              "id": {
+                "type": "varint",
+                "identity": 0
+              },
+              "meshId": {
+                "type": "varint",
+                "identity": 0
+              },
+              "alpha": {
+                "type": "uint8",
+                "identity": 255
+              },
+              "blue": {
+                "type": "uint8",
+                "identity": 255
+              },
+              "green": {
+                "type": "uint8",
+                "identity": 255
+              },
+              "red": {
+                "type": "uint8",
+                "identity": 255
+              },
+              "invisible": {
+                "type": "boolean",
+                "identity": false
+              },
+              "staticShadow": {
+                "type": "boolean",
+                "identity": false
+              },
+              "motion": {
+                "type": "struct",
+                "subTypes": {
+                  "pausedTick": {
+                    "type": "float64",
+                    "identity": 0
+                  },
+                  "startTick": {
+                    "type": "float64",
+                    "identity": 0
+                  },
+                  "paused": {
+                    "type": "boolean",
+                    "identity": false
+                  },
+                  "defaultMotionId": {
+                    "type": "ascii",
+                    "identity": ""
+                  },
+                  "playback": {
+                    "type": "struct",
+                    "subTypes": {
+                      "startTick": {
+                        "type": "float64",
+                        "identity": 0
+                      },
+                      "cycleCount": {
+                        "type": "int32",
+                        "identity": 1
+                      },
+                      "motions": {
+                        "type": "array",
+                        "valueType": {
+                          "type": "struct",
+                          "subTypes": {
+                            "cycleCount": {
+                              "type": "int32",
+                              "identity": 1
+                            },
+                            "motionId": {
+                              "type": "ascii",
+                              "identity": ""
+                            }
+                          }
+                        },
+                        "identity": "[]"
+                      }
+                    }
+                  }
+                }
+              },
+              "name": {
+                "type": "utf8",
+                "identity": ""
+              }
+            }
+          },
+          "identity": "[]"
+        },
+        "particles": {
+          "type": "void"
+        },
+        "players": {
+          "type": "sorted-array",
+          "valueType": {
+            "type": "struct",
+            "subTypes": {
+              "emissive": {
+                "type": "quantized-float",
+                "precision": 0.00390625,
+                "identity": 0
+              },
+              "metalness": {
+                "type": "quantized-float",
+                "precision": 0.00390625,
+                "identity": 0
+              },
+              "scale": {
+                "type": "quantized-float",
+                "precision": 0.00390625,
+                "identity": 1
+              },
+              "shininess": {
+                "type": "quantized-float",
+                "precision": 0.00390625,
+                "identity": 0
+              },
+              "flags": {
+                "type": "varint",
+                "identity": 8
+              },
+              "id": {
+                "type": "varint",
+                "identity": 0
+              },
+              "tag": {
+                "type": "varint",
+                "identity": 0
+              },
+              "attachments": {
+                "type": "void"
+              },
+              "avatarSkin": {
+                "type": "struct",
+                "subTypes": {
+                  "head": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "hips": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "leftFoot": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "leftHand": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "leftLowerArm": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "leftLowerLeg": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "leftShoulder": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "leftUpperArm": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "leftUpperLeg": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "neck": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "rightFoot": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "rightHand": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "rightLowerArm": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "rightLowerLeg": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "rightShoulder": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "rightUpperArm": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "rightUpperLeg": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "torso": {
+                    "type": "varint",
+                    "identity": 0
+                  }
+                }
+              },
+              "avatar_hash": {
+                "type": "void"
+              },
+              "color": {
+                "type": "void"
+              },
+              "mapSkin": {
+                "type": "struct",
+                "subTypes": {
+                  "head": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "hips": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "leftFoot": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "leftHand": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "leftLowerArm": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "leftLowerLeg": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "leftShoulder": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "leftUpperArm": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "leftUpperLeg": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "neck": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "rightFoot": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "rightHand": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "rightLowerArm": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "rightLowerLeg": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "rightShoulder": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "rightUpperArm": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "rightUpperLeg": {
+                    "type": "varint",
+                    "identity": 0
+                  },
+                  "torso": {
+                    "type": "varint",
+                    "identity": 0
+                  }
+                }
+              },
+              "name": {
+                "type": "utf8",
+                "identity": "player"
+              },
+              "skinInvisible": {
+                "type": "struct",
+                "subTypes": {
+                  "head": {
+                    "type": "boolean",
+                    "identity": false
+                  },
+                  "hips": {
+                    "type": "boolean",
+                    "identity": false
+                  },
+                  "leftFoot": {
+                    "type": "boolean",
+                    "identity": false
+                  },
+                  "leftHand": {
+                    "type": "boolean",
+                    "identity": false
+                  },
+                  "leftLowerArm": {
+                    "type": "boolean",
+                    "identity": false
+                  },
+                  "leftLowerLeg": {
+                    "type": "boolean",
+                    "identity": false
+                  },
+                  "leftShoulder": {
+                    "type": "boolean",
+                    "identity": false
+                  },
+                  "leftUpperArm": {
+                    "type": "boolean",
+                    "identity": false
+                  },
+                  "leftUpperLeg": {
+                    "type": "boolean",
+                    "identity": false
+                  },
+                  "neck": {
+                    "type": "boolean",
+                    "identity": false
+                  },
+                  "rightFoot": {
+                    "type": "boolean",
+                    "identity": false
+                  },
+                  "rightHand": {
+                    "type": "boolean",
+                    "identity": false
+                  },
+                  "rightLowerArm": {
+                    "type": "boolean",
+                    "identity": false
+                  },
+                  "rightLowerLeg": {
+                    "type": "boolean",
+                    "identity": false
+                  },
+                  "rightShoulder": {
+                    "type": "boolean",
+                    "identity": false
+                  },
+                  "rightUpperArm": {
+                    "type": "boolean",
+                    "identity": false
+                  },
+                  "rightUpperLeg": {
+                    "type": "boolean",
+                    "identity": false
+                  },
+                  "torso": {
+                    "type": "boolean",
+                    "identity": false
+                  }
+                }
+              },
+              "userId": {
+                "type": "void"
+              }
+            }
+          },
+          "identity": "[]"
+        },
+        "sound": {
+          "type": "void"
+        }
+      }
+    },
+    "rigidBodyRuntime": {
+      "type": "struct",
+      "subTypes": {}
+    },
+    "serverPlayerDisplay": {
+      "type": "struct",
+      "subTypes": {
+        "emissive": {
+          "type": "quantized-float",
+          "precision": 0.00390625,
+          "identity": 0
+        },
+        "metalness": {
+          "type": "quantized-float",
+          "precision": 0.00390625,
+          "identity": 0
+        },
+        "scale": {
+          "type": "quantized-float",
+          "precision": 0.00390625,
+          "identity": 1
+        },
+        "shininess": {
+          "type": "quantized-float",
+          "precision": 0.00390625,
+          "identity": 0
+        },
+        "flags": {
+          "type": "varint",
+          "identity": 8
+        },
+        "id": {
+          "type": "varint",
+          "identity": 0
+        },
+        "tag": {
+          "type": "varint",
+          "identity": 0
+        },
+        "attachments": {
+          "type": "void"
+        },
+        "avatarSkin": {
+          "type": "struct",
+          "subTypes": {
+            "head": {
+              "type": "varint",
+              "identity": 0
+            },
+            "hips": {
+              "type": "varint",
+              "identity": 0
+            },
+            "leftFoot": {
+              "type": "varint",
+              "identity": 0
+            },
+            "leftHand": {
+              "type": "varint",
+              "identity": 0
+            },
+            "leftLowerArm": {
+              "type": "varint",
+              "identity": 0
+            },
+            "leftLowerLeg": {
+              "type": "varint",
+              "identity": 0
+            },
+            "leftShoulder": {
+              "type": "varint",
+              "identity": 0
+            },
+            "leftUpperArm": {
+              "type": "varint",
+              "identity": 0
+            },
+            "leftUpperLeg": {
+              "type": "varint",
+              "identity": 0
+            },
+            "neck": {
+              "type": "varint",
+              "identity": 0
+            },
+            "rightFoot": {
+              "type": "varint",
+              "identity": 0
+            },
+            "rightHand": {
+              "type": "varint",
+              "identity": 0
+            },
+            "rightLowerArm": {
+              "type": "varint",
+              "identity": 0
+            },
+            "rightLowerLeg": {
+              "type": "varint",
+              "identity": 0
+            },
+            "rightShoulder": {
+              "type": "varint",
+              "identity": 0
+            },
+            "rightUpperArm": {
+              "type": "varint",
+              "identity": 0
+            },
+            "rightUpperLeg": {
+              "type": "varint",
+              "identity": 0
+            },
+            "torso": {
+              "type": "varint",
+              "identity": 0
+            }
+          }
+        },
+        "avatar_hash": {
+          "type": "void"
+        },
+        "color": {
+          "type": "void"
+        },
+        "mapSkin": {
+          "type": "struct",
+          "subTypes": {
+            "head": {
+              "type": "varint",
+              "identity": 0
+            },
+            "hips": {
+              "type": "varint",
+              "identity": 0
+            },
+            "leftFoot": {
+              "type": "varint",
+              "identity": 0
+            },
+            "leftHand": {
+              "type": "varint",
+              "identity": 0
+            },
+            "leftLowerArm": {
+              "type": "varint",
+              "identity": 0
+            },
+            "leftLowerLeg": {
+              "type": "varint",
+              "identity": 0
+            },
+            "leftShoulder": {
+              "type": "varint",
+              "identity": 0
+            },
+            "leftUpperArm": {
+              "type": "varint",
+              "identity": 0
+            },
+            "leftUpperLeg": {
+              "type": "varint",
+              "identity": 0
+            },
+            "neck": {
+              "type": "varint",
+              "identity": 0
+            },
+            "rightFoot": {
+              "type": "varint",
+              "identity": 0
+            },
+            "rightHand": {
+              "type": "varint",
+              "identity": 0
+            },
+            "rightLowerArm": {
+              "type": "varint",
+              "identity": 0
+            },
+            "rightLowerLeg": {
+              "type": "varint",
+              "identity": 0
+            },
+            "rightShoulder": {
+              "type": "varint",
+              "identity": 0
+            },
+            "rightUpperArm": {
+              "type": "varint",
+              "identity": 0
+            },
+            "rightUpperLeg": {
+              "type": "varint",
+              "identity": 0
+            },
+            "torso": {
+              "type": "varint",
+              "identity": 0
+            }
+          }
+        },
+        "name": {
+          "type": "utf8",
+          "identity": "player"
+        },
+        "skinInvisible": {
+          "type": "struct",
+          "subTypes": {
+            "head": {
+              "type": "boolean",
+              "identity": false
+            },
+            "hips": {
+              "type": "boolean",
+              "identity": false
+            },
+            "leftFoot": {
+              "type": "boolean",
+              "identity": false
+            },
+            "leftHand": {
+              "type": "boolean",
+              "identity": false
+            },
+            "leftLowerArm": {
+              "type": "boolean",
+              "identity": false
+            },
+            "leftLowerLeg": {
+              "type": "boolean",
+              "identity": false
+            },
+            "leftShoulder": {
+              "type": "boolean",
+              "identity": false
+            },
+            "leftUpperArm": {
+              "type": "boolean",
+              "identity": false
+            },
+            "leftUpperLeg": {
+              "type": "boolean",
+              "identity": false
+            },
+            "neck": {
+              "type": "boolean",
+              "identity": false
+            },
+            "rightFoot": {
+              "type": "boolean",
+              "identity": false
+            },
+            "rightHand": {
+              "type": "boolean",
+              "identity": false
+            },
+            "rightLowerArm": {
+              "type": "boolean",
+              "identity": false
+            },
+            "rightLowerLeg": {
+              "type": "boolean",
+              "identity": false
+            },
+            "rightShoulder": {
+              "type": "boolean",
+              "identity": false
+            },
+            "rightUpperArm": {
+              "type": "boolean",
+              "identity": false
+            },
+            "rightUpperLeg": {
+              "type": "boolean",
+              "identity": false
+            },
+            "torso": {
+              "type": "boolean",
+              "identity": false
+            }
+          }
+        },
+        "userId": {
+          "type": "void"
+        }
+      }
+    },
+    "damageSet": {
+      "type": "sorted-array",
+      "valueType": {
+        "type": "struct",
+        "subTypes": {
+          "hp": {
+            "type": "quantized-float",
+            "precision": 0.00390625,
+            "identity": 100
+          },
+          "maxHp": {
+            "type": "quantized-float",
+            "precision": 0.00390625,
+            "identity": 100
+          },
+          "id": {
+            "type": "varint",
+            "identity": 0
+          },
+          "showHealthBar": {
+            "type": "boolean",
+            "identity": true
+          }
+        }
+      },
+      "identity": "[]"
+    },
+    "damage": {
+      "type": "struct",
+      "subTypes": {
+        "hp": {
+          "type": "quantized-float",
+          "precision": 0.00390625,
+          "identity": 100
+        },
+        "maxHp": {
+          "type": "quantized-float",
+          "precision": 0.00390625,
+          "identity": 100
+        },
+        "id": {
+          "type": "varint",
+          "identity": 0
+        },
+        "showHealthBar": {
+          "type": "boolean",
+          "identity": true
+        }
+      }
+    },
+    "entitySet": {
+      "type": "sorted-array",
+      "valueType": {
+        "type": "varint",
+        "identity": 0
+      },
+      "identity": "[]"
+    },
+    "netModelSet": {
+      "type": "sorted-array",
+      "valueType": {
+        "type": "struct",
+        "subTypes": {
+          "emissive": {
+            "type": "quantized-float",
+            "precision": 0.00390625,
+            "identity": 0
+          },
+          "metalness": {
+            "type": "quantized-float",
+            "precision": 0.00390625,
+            "identity": 0
+          },
+          "offsetX": {
+            "type": "quantized-float",
+            "precision": 0.00390625,
+            "identity": 0
+          },
+          "offsetY": {
+            "type": "quantized-float",
+            "precision": 0.00390625,
+            "identity": 0
+          },
+          "offsetZ": {
+            "type": "quantized-float",
+            "precision": 0.00390625,
+            "identity": 0
+          },
+          "scaleX": {
+            "type": "quantized-float",
+            "precision": 0.00390625,
+            "identity": 1
+          },
+          "scaleY": {
+            "type": "quantized-float",
+            "precision": 0.00390625,
+            "identity": 1
+          },
+          "scaleZ": {
+            "type": "quantized-float",
+            "precision": 0.00390625,
+            "identity": 1
+          },
+          "shininess": {
+            "type": "quantized-float",
+            "precision": 0.00390625,
+            "identity": 0
+          },
+          "id": {
+            "type": "varint",
+            "identity": 0
+          },
+          "meshId": {
+            "type": "varint",
+            "identity": 0
+          },
+          "alpha": {
+            "type": "uint8",
+            "identity": 255
+          },
+          "blue": {
+            "type": "uint8",
+            "identity": 255
+          },
+          "green": {
+            "type": "uint8",
+            "identity": 255
+          },
+          "red": {
+            "type": "uint8",
+            "identity": 255
+          },
+          "invisible": {
+            "type": "boolean",
+            "identity": false
+          },
+          "staticShadow": {
+            "type": "boolean",
+            "identity": false
+          },
+          "motion": {
+            "type": "struct",
+            "subTypes": {
+              "pausedTick": {
+                "type": "float64",
+                "identity": 0
+              },
+              "startTick": {
+                "type": "float64",
+                "identity": 0
+              },
+              "paused": {
+                "type": "boolean",
+                "identity": false
+              },
+              "defaultMotionId": {
+                "type": "ascii",
+                "identity": ""
+              },
+              "playback": {
+                "type": "struct",
+                "subTypes": {
+                  "startTick": {
+                    "type": "float64",
+                    "identity": 0
+                  },
+                  "cycleCount": {
+                    "type": "int32",
+                    "identity": 1
+                  },
+                  "motions": {
+                    "type": "array",
+                    "valueType": {
+                      "type": "struct",
+                      "subTypes": {
+                        "cycleCount": {
+                          "type": "int32",
+                          "identity": 1
+                        },
+                        "motionId": {
+                          "type": "ascii",
+                          "identity": ""
+                        }
+                      }
+                    },
+                    "identity": "[]"
+                  }
+                }
+              }
+            }
+          },
+          "name": {
+            "type": "utf8",
+            "identity": ""
+          }
+        }
+      },
+      "identity": "[]"
+    },
+    "playerInput": {
+      "type": "struct",
+      "subTypes": {
+        "id": {
+          "type": "uint32",
+          "identity": 0
+        },
+        "state": {
+          "type": "uint16",
+          "identity": 1540
+        },
+        "angle": {
+          "type": "uint8",
+          "identity": 0
+        },
+        "cameraAngle": {
+          "type": "uint8",
+          "identity": 0
+        },
+        "pitch": {
+          "type": "uint8",
+          "identity": 0
+        }
+      }
+    },
+    "player": {
+      "type": "struct",
+      "subTypes": {
+        "crouchAcceleration": {
+          "type": "quantized-float",
+          "precision": 0.0009765625,
+          "identity": 0.08984375
+        },
+        "crouchSpeed": {
+          "type": "quantized-float",
+          "precision": 0.0009765625,
+          "identity": 0.099609375
+        },
+        "doubleJumpPower": {
+          "type": "quantized-float",
+          "precision": 0.0009765625,
+          "identity": 0.8994140625
+        },
+        "flyAcceleration": {
+          "type": "quantized-float",
+          "precision": 0.0009765625,
+          "identity": 2
+        },
+        "flySpeed": {
+          "type": "quantized-float",
+          "precision": 0.0009765625,
+          "identity": 2
+        },
+        "jumpAccelerationFactor": {
+          "type": "quantized-float",
+          "precision": 0.0009765625,
+          "identity": 0.5498046875
+        },
+        "jumpPower": {
+          "type": "quantized-float",
+          "precision": 0.0009765625,
+          "identity": 0.9599609375
+        },
+        "jumpSpeedFactor": {
+          "type": "quantized-float",
+          "precision": 0.0009765625,
+          "identity": 0.849609375
+        },
+        "physFluid": {
+          "type": "quantized-float",
+          "precision": 0.03125,
+          "identity": 0
+        },
+        "platformX": {
+          "type": "quantized-float",
+          "precision": 0.00390625,
+          "identity": 0
+        },
+        "platformY": {
+          "type": "quantized-float",
+          "precision": 0.00390625,
+          "identity": 0
+        },
+        "platformZ": {
+          "type": "quantized-float",
+          "precision": 0.00390625,
+          "identity": 0
+        },
+        "runAcceleration": {
+          "type": "quantized-float",
+          "precision": 0.0009765625,
+          "identity": 0.349609375
+        },
+        "runSpeed": {
+          "type": "quantized-float",
+          "precision": 0.0009765625,
+          "identity": 0.3994140625
+        },
+        "stepHeight": {
+          "type": "quantized-float",
+          "precision": 0.0009765625,
+          "identity": 1.25
+        },
+        "swimAcceleration": {
+          "type": "quantized-float",
+          "precision": 0.0009765625,
+          "identity": 0.099609375
+        },
+        "swimSpeed": {
+          "type": "quantized-float",
+          "precision": 0.0009765625,
+          "identity": 0.3994140625
+        },
+        "walkAcceleration": {
+          "type": "quantized-float",
+          "precision": 0.0009765625,
+          "identity": 0.189453125
+        },
+        "walkSpeed": {
+          "type": "quantized-float",
+          "precision": 0.0009765625,
+          "identity": 0.2197265625
+        },
+        "flags": {
+          "type": "varint",
+          "identity": 254
+        },
+        "id": {
+          "type": "varint",
+          "identity": 0
+        },
+        "freezedForwardAngle": {
+          "type": "uint16",
+          "identity": 0
+        },
+        "inputDirectionState": {
+          "type": "uint8",
+          "identity": 0
+        },
+        "occupancy": {
+          "type": "uint8",
+          "identity": 0
+        },
+        "physGround": {
+          "type": "boolean",
+          "identity": false
+        }
+      }
+    },
+    "playerSet": {
+      "type": "sorted-array",
+      "valueType": {
+        "type": "struct",
+        "subTypes": {
+          "crouchAcceleration": {
+            "type": "quantized-float",
+            "precision": 0.0009765625,
+            "identity": 0.08984375
+          },
+          "crouchSpeed": {
+            "type": "quantized-float",
+            "precision": 0.0009765625,
+            "identity": 0.099609375
+          },
+          "doubleJumpPower": {
+            "type": "quantized-float",
+            "precision": 0.0009765625,
+            "identity": 0.8994140625
+          },
+          "flyAcceleration": {
+            "type": "quantized-float",
+            "precision": 0.0009765625,
+            "identity": 2
+          },
+          "flySpeed": {
+            "type": "quantized-float",
+            "precision": 0.0009765625,
+            "identity": 2
+          },
+          "jumpAccelerationFactor": {
+            "type": "quantized-float",
+            "precision": 0.0009765625,
+            "identity": 0.5498046875
+          },
+          "jumpPower": {
+            "type": "quantized-float",
+            "precision": 0.0009765625,
+            "identity": 0.9599609375
+          },
+          "jumpSpeedFactor": {
+            "type": "quantized-float",
+            "precision": 0.0009765625,
+            "identity": 0.849609375
+          },
+          "physFluid": {
+            "type": "quantized-float",
+            "precision": 0.03125,
+            "identity": 0
+          },
+          "platformX": {
+            "type": "quantized-float",
+            "precision": 0.00390625,
+            "identity": 0
+          },
+          "platformY": {
+            "type": "quantized-float",
+            "precision": 0.00390625,
+            "identity": 0
+          },
+          "platformZ": {
+            "type": "quantized-float",
+            "precision": 0.00390625,
+            "identity": 0
+          },
+          "runAcceleration": {
+            "type": "quantized-float",
+            "precision": 0.0009765625,
+            "identity": 0.349609375
+          },
+          "runSpeed": {
+            "type": "quantized-float",
+            "precision": 0.0009765625,
+            "identity": 0.3994140625
+          },
+          "stepHeight": {
+            "type": "quantized-float",
+            "precision": 0.0009765625,
+            "identity": 1.25
+          },
+          "swimAcceleration": {
+            "type": "quantized-float",
+            "precision": 0.0009765625,
+            "identity": 0.099609375
+          },
+          "swimSpeed": {
+            "type": "quantized-float",
+            "precision": 0.0009765625,
+            "identity": 0.3994140625
+          },
+          "walkAcceleration": {
+            "type": "quantized-float",
+            "precision": 0.0009765625,
+            "identity": 0.189453125
+          },
+          "walkSpeed": {
+            "type": "quantized-float",
+            "precision": 0.0009765625,
+            "identity": 0.2197265625
+          },
+          "flags": {
+            "type": "varint",
+            "identity": 254
+          },
+          "id": {
+            "type": "varint",
+            "identity": 0
+          },
+          "freezedForwardAngle": {
+            "type": "uint16",
+            "identity": 0
+          },
+          "inputDirectionState": {
+            "type": "uint8",
+            "identity": 0
+          },
+          "occupancy": {
+            "type": "uint8",
+            "identity": 0
+          },
+          "physGround": {
+            "type": "boolean",
+            "identity": false
+          }
+        }
+      },
+      "identity": "[]"
+    }
+  }
+}

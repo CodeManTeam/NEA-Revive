@@ -1,0 +1,37 @@
+{
+  "format": "nea-runtime-evidence",
+  "version": 1,
+  "claim": "Historical player script positions use rigid-body center coordinates.",
+  "status": "confirmed",
+  "reasoning": [
+    "ScriptParserAPI returns player positions unchanged in both script-to-rigid-body and rigid-body-to-script conversions.",
+    "Historical rigid-body broadphase and terrain contact code expands px, py and pz symmetrically by rx, ry and rz.",
+    "Therefore the script-visible player position is the center of the collision AABB, not the foot center."
+  ],
+  "evidence": [
+    {
+      "type": "origin-source",
+      "path": "origin/origin/origin/ScriptParserAPI.js",
+      "symbols": ["positionToRigidBodyPosition", "rigidBodyPositionToPosition"],
+      "confidence": "direct"
+    },
+    {
+      "type": "origin-source",
+      "path": "origin/origin/origin/RigidBody.js",
+      "symbols": ["getBounds", "getPosition"],
+      "confidence": "direct"
+    },
+    {
+      "type": "player-bundle",
+      "path": "local-player/archive/project/bedwars/client-runtime/assets/_next/static/chunks/734.8dcb480d99773395.js",
+      "module": 62864,
+      "sourceNeedle": "P.minX=Math.min(l,I)-d,P.minY=Math.min(h,E)-p,P.minZ=Math.min(f,C)-g",
+      "confidence": "direct"
+    }
+  ],
+  "notProven": [
+    "standing rx/ry/rz values",
+    "whether crouching changes rx/ry/rz",
+    "whether flying changes rx/ry/rz"
+  ]
+}

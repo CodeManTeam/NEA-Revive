@@ -1,0 +1,28 @@
+{
+  "name": "box-server",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "bun run index.ts",
+    "analyze": "bun run index.ts analyze",
+    "packets": "bun run index.ts packets",
+    "browser-test": "node --import tsx src/browser-capture-cli.ts",
+    "dump:assets": "node --import tsx src/asset-archive-capture.ts",
+    "compat": "node --import tsx src/compat-server.ts",
+    "test:compat": "node --import tsx src/compat-server.test.ts",
+    "server": "bun run index.ts server",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "playwright": "^1.61.1",
+    "tsx": "^4.23.1"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "mudb": "1.0.1"
+  }
+}

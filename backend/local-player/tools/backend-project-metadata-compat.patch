@@ -1,0 +1,74 @@
+diff --git a/Backend/local-player/backend/box3-server.cjs b/Backend/local-player/backend/box3-server.cjs
+--- a/Backend/local-player/backend/box3-server.cjs
++++ b/Backend/local-player/backend/box3-server.cjs
+@@ -8218,6 +8218,7 @@ function isSafeModuleName(name) {
+   return name.length > 3 && name.endsWith(".js") && !name.includes("/") && !name.includes("\\") && !name.includes("\0") && name !== ".js" && name !== "..js";
+ }
+ var { loadClientUiState } = require("./client-ui-state.cjs");
++var { parsePlayerBodyProfile } = require("./player-body-profile.cjs");
+ var sha256Pattern = /^[0-9a-f]{64}$/;
+ async function loadClientScriptModules(assetRoot, manifestName = "project/bedwars/client-scripts/manifest.json") {
+   const root = (0, import_node_path.resolve)(assetRoot);
+@@ -17262,11 +17263,24 @@ async function main() {
+   const projectRoot = process.env.BOX3_PROJECT_ROOT;
+   const playerBodyProfile = parsePlayerBodyProfile(process.env.BOX3_PLAYER_BODY_PROFILE);
+   if (projectRoot && !playerBodyProfile) throw new Error("BOX3_PLAYER_BODY_PROFILE is required for project-package Player sessions");
++  const projectBlockInfo = process.env.BOX3_PROJECT_BLOCK_INFO;
++  if (projectBlockInfo && !projectRoot) {
++    throw new Error("BOX3_PROJECT_BLOCK_INFO requires BOX3_PROJECT_ROOT");
++  }
++  const projectResetCounter = optionalProjectResetCounter(process.env.BOX3_PROJECT_RESET_COUNTER);
++  const projectInnerAO = optionalProjectInnerAO(process.env.BOX3_PROJECT_INNER_AO);
++  if ((projectResetCounter !== void 0 || projectInnerAO !== void 0) && !projectRoot) {
++    throw new Error("Project terrain metadata requires BOX3_PROJECT_ROOT");
++  }
+   const projectionDescriptor = process.env.BOX3_PLAYER_PROJECTION_DESCRIPTOR;
+   if (projectionDescriptor && !projectRoot) {
+     throw new Error("BOX3_PLAYER_PROJECTION_DESCRIPTOR requires BOX3_PROJECT_ROOT");
+   }
+-  const projectWorld = projectRoot ? await loadProjectPackageCompatibilityWorld(projectRoot, config.assetRoot) : void 0;
++  const projectWorld = projectRoot ? await loadProjectPackageCompatibilityWorld(projectRoot, config.assetRoot, {
++    ...projectBlockInfo ? { blocks: projectBlockInfo } : {},
++    ...projectResetCounter === void 0 ? {} : { resetCounter: projectResetCounter },
++    ...projectInnerAO === void 0 ? {} : { innerAO: projectInnerAO }
++  }) : void 0;
+   const world = projectWorld ?? await ArchiveWorld.load(config.assetRoot, config.worldManifest);
+   const clientRuntimeManifest = process.env.BOX3_CLIENT_RUNTIME_MANIFEST;
+   const clientRuntime = await loadClientRuntime(config.assetRoot, clientRuntimeManifest);
+@@ -17306,26 +17320,17 @@ async function main() {
+   process.once("SIGINT", shutdown);
+   process.once("SIGTERM", shutdown);
+ }
+-function parsePlayerBodyProfile(value) {
++function optionalProjectResetCounter(value) {
+   if (value === void 0 || value === "") return void 0;
+-  const record = JSON.parse(value);
+-  if (!record || typeof record !== "object" || Array.isArray(record)) throw new Error("BOX3_PLAYER_BODY_PROFILE must be a JSON object");
+-  if (record.origin !== "body-center") throw new Error("BOX3_PLAYER_BODY_PROFILE origin must be body-center");
+-  if (typeof record.profileId !== "string" || record.profileId.length < 1) throw new Error("BOX3_PLAYER_BODY_PROFILE profileId is required");
+-  if (typeof record.sizeStatus !== "string" || record.sizeStatus.length < 1) throw new Error("BOX3_PLAYER_BODY_PROFILE sizeStatus is required");
+-  const legacyHalfExtents = record.halfExtents;
+-  const boundsHalfExtents = normalizePositiveVector(record.boundsHalfExtents ?? legacyHalfExtents, "BOX3_PLAYER_BODY_PROFILE boundsHalfExtents");
+-  const shapeHalfExtents = normalizePositiveVector(record.shapeHalfExtents ?? legacyHalfExtents, "BOX3_PLAYER_BODY_PROFILE shapeHalfExtents");
+-  if (shapeHalfExtents.some((component, index) => component > boundsHalfExtents[index])) throw new Error("BOX3_PLAYER_BODY_PROFILE shapeHalfExtents must fit inside boundsHalfExtents");
+-  return Object.freeze({
+-    profileId: record.profileId,
+-    origin: record.origin,
+-    originStatus: String(record.originStatus ?? "unknown"),
+-    sizeStatus: record.sizeStatus,
+-    boundsHalfExtents,
+-    shapeHalfExtents,
+-    halfExtents: shapeHalfExtents
+-  });
++  const parsed = Number(value);
++  if (!Number.isSafeInteger(parsed) || parsed < 0 || parsed > maxUint324) throw new Error("BOX3_PROJECT_RESET_COUNTER must be a uint32");
++  return parsed;
++}
++function optionalProjectInnerAO(value) {
++  if (value === void 0 || value === "") return void 0;
++  if (value === "true" || value === "1") return true;
++  if (value === "false" || value === "0") return false;
++  throw new Error("BOX3_PROJECT_INNER_AO must be a boolean");
+ }
+ async function startNeaControlBridge(server, logger) {
+   const token = process.env.BOX3_CONTROL_TOKEN;

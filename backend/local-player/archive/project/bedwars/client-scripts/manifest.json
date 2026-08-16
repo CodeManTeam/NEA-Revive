@@ -1,0 +1,17 @@
+{
+  "format": "nea-recovered-client-scripts",
+  "version": 1,
+  "sourceMessage": "gameNet.syncClientScriptModules",
+  "files": [
+    {
+      "name": "cilentData.js",
+      "bytes": 3351,
+      "sha256": "251231b3c95fb5471cd512a4469feafc31f59bba2760ba7ea651d556462d1757"
+    },
+    {
+      "name": "clientIndex.js",
+      "bytes": 26037,
+      "sha256": "3f3fd0763135bb0fa4570473b831e65d49a2720b340e224fb62ee169f3448041"
+    }
+  ]
+}

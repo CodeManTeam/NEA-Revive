@@ -1,0 +1,170 @@
+{
+  "format": "nea-script-runtime-boundaries",
+  "version": 1,
+  "generatedAt": "2026-07-31T04:39:04.209Z",
+  "invariant": "Client Script Runtime and Server Script Runtime are separate execution realms connected only through declared transport and authoritative state flows.",
+  "runtimes": [
+    {
+      "id": "dao3-client-runtime/v1",
+      "side": "client",
+      "provider": "archived-player",
+      "engine": "SES Compartment",
+      "entry": "clientIndex.js",
+      "moduleDelivery": "player.game-net.syncClientScriptModules",
+      "globals": [
+        "console",
+        "ui",
+        "UiNode",
+        "UiRenderable",
+        "UiComponent",
+        "UiBox",
+        "UiText",
+        "UiInput",
+        "UiImage",
+        "UiScale",
+        "UiScrollBox",
+        "UiScreen",
+        "PointerEventBehavior",
+        "ImageDisplayMode",
+        "UITextFontFamily",
+        "navigator",
+        "input",
+        "screen",
+        "world",
+        "http",
+        "media",
+        "FormData",
+        "ClientRemoteChannel",
+        "remoteChannel",
+        "setInterval",
+        "clearInterval",
+        "setTimeout",
+        "clearTimeout",
+        "sleep",
+        "EventEmitter",
+        "Coord2",
+        "Vec3",
+        "Vec2",
+        "screenWidth",
+        "screenHeight",
+        "Math",
+        "Date",
+        "Audio",
+        "MediaErrorCode",
+        "MediaError",
+        "DeviceType",
+        "call",
+        "callAsync"
+      ],
+      "authority": [
+        "UI",
+        "input observation",
+        "client media",
+        "client HTTP",
+        "client presentation state"
+      ],
+      "forbiddenAuthority": [
+        "authoritative player position",
+        "authoritative rigid-body dimensions",
+        "server world mutation",
+        "server-only API globals"
+      ],
+      "remoteSend": "player.remote-channel.sendServerEvent",
+      "remoteReceive": "player.remote-channel.sendClientEvent",
+      "evidence": [
+        {
+          "path": "local-player/archive/project/bedwars/client-runtime/assets/_next/static/chunks/474.c17d0cc8a4489c84.js",
+          "bytes": 40625,
+          "sha256": "6d9c8fa321f35bdce1031f9f8255851e2c6cce771ccd108e66033fe288fa6fe2",
+          "webpackModule": 93474
+        },
+        {
+          "path": "local-player/archive/project/bedwars/client-runtime/assets/_next/static/chunks/734.8dcb480d99773395.js",
+          "bytes": 1543176,
+          "sha256": "35067ead851335f4a2c878350aea4c3fcbbfaf1d71a79a5525b9e303ec8b0707",
+          "webpackModule": 76459
+        }
+      ]
+    },
+    {
+      "id": "nea-server-runtime/v1",
+      "side": "server",
+      "provider": "local-vm-script-runtime",
+      "engine": "Node vm.Context",
+      "entry": "scripts/server.js",
+      "globals": [
+        "GameButtonType",
+        "GameGUI",
+        "GameStorage",
+        "GameVoxels",
+        "RuntimeChatEvent",
+        "RuntimeClickEvent",
+        "RuntimeDamageEvent",
+        "RuntimeDataStorage",
+        "RuntimeDieEvent",
+        "RuntimeEntity",
+        "RuntimeEntityEvent",
+        "RuntimeFluidContactEvent",
+        "RuntimeGameZone",
+        "RuntimeInputEvent",
+        "RuntimeInteractEvent",
+        "RuntimeKeyBoardEvent",
+        "RuntimePlayer",
+        "RuntimePurchaseSuccessEvent",
+        "RuntimeQueryList",
+        "RuntimeRaycastResult",
+        "RuntimeRespawnEvent",
+        "RuntimeTickEvent",
+        "RuntimeVoxelContactEvent",
+        "global",
+        "remoteChannel",
+        "world"
+      ],
+      "authority": [
+        "map script ticks",
+        "world event dispatch",
+        "player mutation requests",
+        "server remote events"
+      ],
+      "forbiddenAuthority": [
+        "direct DOM/UI access",
+        "client input polling",
+        "direct MuDB socket access",
+        "unversioned authoritative body mutation"
+      ],
+      "remoteSend": "player.remote-channel.sendClientEvent",
+      "remoteReceive": "player.remote-channel.sendServerEvent",
+      "evidence": [
+        {
+          "path": "demo-map/src/runtime/script-runtime.mjs",
+          "bytes": 68368,
+          "sha256": "612f334de1ab3afa501d8ae1cb45fb7610f4fbfe6f28022ad8779d9bb1de10a2"
+        }
+      ]
+    }
+  ],
+  "bridges": [
+    {
+      "id": "remote-channel",
+      "protocol": "player.remote-channel",
+      "encoding": "MuDB struct {tick: varint, args: utf8 JSON text}",
+      "directions": [
+        "client-to-server",
+        "server-to-client"
+      ]
+    },
+    {
+      "id": "authoritative-state",
+      "protocol": "nea-control.player-state -> player.game-net.PUBLIC",
+      "directions": [
+        "server-script-to-authoritative-runtime",
+        "authoritative-runtime-to-player"
+      ],
+      "rule": "Server scripts request state changes; the authoritative runtime owns accepted rigid-body state and PUBLIC snapshots."
+    }
+  ],
+  "sharedValues": {
+    "rule": "Names such as GameVector3 may exist in both realms, but object identity and mutable instances never cross realms directly.",
+    "transportForm": "serialized values only"
+  }
+}

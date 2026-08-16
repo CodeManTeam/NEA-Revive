@@ -1,0 +1,22 @@
+[package]
+name = "voxweb-render"
+version.workspace = true
+edition.workspace = true
+description = "VoxWeb WebGPU 渲染层：Render Graph、多 Pass、贪婪网格化"
+
+[dependencies]
+voxweb-protocol = { path = "../protocol" }
+voxweb-core.workspace = true
+wgpu.workspace = true
+glam.workspace = true
+bytemuck.workspace = true
+serde.workspace = true
+web-sys.workspace = true
+futures-channel.workspace = true
+
+[dev-dependencies]
+serde_json = "1"
+log.workspace = true
+
+[lints]
+workspace = true

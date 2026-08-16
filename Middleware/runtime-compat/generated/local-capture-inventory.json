@@ -1,0 +1,130 @@
+{
+  "format": "nea-local-capture-inventory",
+  "version": 1,
+  "generatedAt": "2026-07-31T04:39:04.343Z",
+  "captureCount": 9,
+  "captures": [
+    {
+      "name": "box-go-2026-07-21T11-47-03-088Z.json",
+      "bytes": 12271,
+      "format": "box-go-capture",
+      "version": 1,
+      "socketCount": 0,
+      "messageCount": 21,
+      "messageCounts": {
+        "send:text": 21
+      },
+      "hasReceivedBinary": false,
+      "hasSentBinary": false
+    },
+    {
+      "name": "box-go-2026-07-21T11-55-07-529Z.json",
+      "bytes": 13137,
+      "format": "box-go-capture",
+      "version": 1,
+      "socketCount": 0,
+      "messageCount": 22,
+      "messageCounts": {
+        "send:text": 22
+      },
+      "hasReceivedBinary": false,
+      "hasSentBinary": false
+    },
+    {
+      "name": "box-go-2026-07-21T11-55-15-858Z.json",
+      "bytes": 181720,
+      "format": "box-go-capture",
+      "version": 1,
+      "socketCount": 0,
+      "messageCount": 1156,
+      "messageCounts": {
+        "send:binary": 1156
+      },
+      "hasReceivedBinary": false,
+      "hasSentBinary": true
+    },
+    {
+      "name": "box-go-2026-07-21T12-03-01-177Z.json",
+      "bytes": 13061,
+      "format": "box-go-capture",
+      "version": 1,
+      "socketCount": 1,
+      "messageCount": 23,
+      "messageCounts": {
+        "send:text": 21,
+        "receive:text": 2
+      },
+      "hasReceivedBinary": false,
+      "hasSentBinary": false
+    },
+    {
+      "name": "box-go-2026-07-21T12-03-06-441Z.json",
+      "bytes": 85655,
+      "format": "box-go-capture",
+      "version": 1,
+      "socketCount": 1,
+      "messageCount": 356,
+      "messageCounts": {
+        "send:binary": 356
+      },
+      "hasReceivedBinary": false,
+      "hasSentBinary": true
+    },
+    {
+      "name": "box-go-2026-07-21T12-07-13-578Z.json",
+      "bytes": 13037,
+      "format": "box-go-capture",
+      "version": 1,
+      "socketCount": 1,
+      "messageCount": 23,
+      "messageCounts": {
+        "send:text": 21,
+        "receive:text": 2
+      },
+      "hasReceivedBinary": false,
+      "hasSentBinary": false
+    },
+    {
+      "name": "box-go-2026-07-21T12-07-18-036Z.json",
+      "bytes": 86428,
+      "format": "box-go-capture",
+      "version": 1,
+      "socketCount": 1,
+      "messageCount": 352,
+      "messageCounts": {
+        "send:binary": 352
+      },
+      "hasReceivedBinary": false,
+      "hasSentBinary": true
+    },
+    {
+      "name": "box-go-browser-2026-07-21T12-39-26-900Z.json",
+      "bytes": 25110,
+      "format": "box-go-capture",
+      "version": 1,
+      "socketCount": 1,
+      "messageCount": 5,
+      "messageCounts": {
+        "send:text": 3,
+        "receive:text": 2
+      },
+      "hasReceivedBinary": false,
+      "hasSentBinary": false
+    },
+    {
+      "name": "box-go-browser-2026-07-21T12-43-00-177Z.json",
+      "bytes": 25654,
+      "format": "box-go-capture",
+      "version": 1,
+      "socketCount": 1,
+      "messageCount": 5,
+      "messageCounts": {
+        "send:text": 3,
+        "receive:text": 2
+      },
+      "hasReceivedBinary": false,
+      "hasSentBinary": false
+    }
+  ],
+  "conclusion": "No inventoried capture contains binary server-to-client frames; player body dimensions cannot be decoded directly from these exports."
+}

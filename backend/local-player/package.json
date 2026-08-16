@@ -1,0 +1,13 @@
+﻿{
+  "name": "nea-local-player",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "extract": "node tools/extract-cache.mjs && node tools/extract-blockfile-cache.mjs",
+    "abi": "node tools/scan-abi.mjs && node tools/scan-runtime-abi.mjs",
+    "build": "npm run extract && npm run abi",
+    "start": "node backend/start.cjs",
+    "start:recovery": "node src/server.mjs"
+  }
+}

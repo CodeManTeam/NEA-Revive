@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link data-trunk rel="copy-dir" href="asset-overrides" />
+  <link data-trunk rel="copy-file" href="launch-nea-edge.cmd" />
+  <title>VoxWeb</title>
+
+  <!--
+    浏览器能力前置检测。
+    必须在 trunk 注入的 `<script type="module">` 解析之前同步运行；
+    不通过时 `window.stop()` 中止 wasm 预加载并用 `document.write` 替换整个文档。
+    详见 docs/features/persistence.md §十五 / docs/reference.md §浏览器能力前置检测。
+  -->
+  <script>
+    window.__VOXWEB_BOOT_COMPLETE = false;
+    window.addEventListener('TrunkApplicationStarted', function () {
+      window.__VOXWEB_BOOT_COMPLETE = true;
+    });
+    window.addEventListener('unhandledrejection', function (event) {
+      if (window.__VOXWEB_BOOT_COMPLETE) return;
+      var error = document.createElement('div');
+      error.style.cssText = 'min-height:100vh;padding:40px;background:#1a1a2e;color:#e8e3da;font:15px/1.6 Segoe UI,sans-serif;box-sizing:border-box';
+      var heading = document.createElement('h1');
+      heading.textContent = '游戏启动失败';
+      heading.style.color = '#ff8a8a';
+      var detail = document.createElement('pre');
+      detail.textContent = String(event.reason || 'Unknown startup error');
+      detail.style.cssText = 'white-space:pre-wrap;overflow-wrap:anywhere;padding:16px;background:#11121d;color:#ffcf9f';
+      var hint = document.createElement('p');
+      hint.textContent = '请确认 Edge 已重启、图形加速已开启，并在 edge://gpu 中检查 WebGPU 状态。';
+      error.appendChild(heading);
+      error.appendChild(hint);
+      error.appendChild(detail);
+      document.body.replaceChildren(error);
+    });
+
+    (function () {
+      // 开发模式跳过：URL 加 ?force=1
+      if (new URLSearchParams(location.search).get('force') === '1') {
+        return;
+      }
+
+      var checks = {
+        wasm: function () {
+          return typeof WebAssembly === 'object'
+              && typeof WebAssembly.instantiate === 'function';
+        },
+        webgpu: function () {
+          return 'gpu' in navigator;
+        },
+        opfs: function () {
+          return !!(navigator.storage
+                 && typeof navigator.storage.getDirectory === 'function');
+        },
+        webrtc: function () {
+          return typeof RTCPeerConnection === 'function'
+              && 'createDataChannel' in RTCPeerConnection.prototype;
+        },
+        websocket: function () {
+          return typeof WebSocket === 'function';
+        },
+        pointerlock: function () {
+          return 'requestPointerLock' in HTMLElement.prototype;
+        }
+      };
+
+      var required = ['wasm', 'webgpu', 'opfs', 'webrtc', 'websocket', 'pointerlock'];
+      var missing = required.filter(function (k) { return !checks[k](); });
+
+      // 检测移动设备：Android / iOS 手机和平板
+      // 现代 Android Chrome 虽通过所有 API 检测，但游戏无触屏控件，不适用于移动端
+      var ua = navigator.userAgent || '';
+      var isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(ua)
+        || (navigator.maxTouchPoints > 2 && /Macintosh/i.test(ua));
+
+      // 全部满足 + 非移动设备：放行后续 trunk 注入的 wasm 加载
+      if (missing.length === 0 && !isMobile) return;
+
+      // 仅 WebRTC 缺失 + 非移动设备：允许进入单机模式，仅设 flag 供 Rust 端读取
+      if (!isMobile && missing.length === 1 && missing[0] === 'webrtc') {
+        window.__VOXWEB_FORCE_LOCAL_ONLY = true;
+        return;
+      }
+
+      var messages = {
+        wasm:        '不支持 WebAssembly。请升级浏览器。',
+        webgpu:      '不支持 WebGPU。Firefox 用户需切换 nightly；Safari 需升级到 17 以上。',
+        opfs:        '不支持 OPFS（存档系统所需）。请升级到 Chrome / Edge 102+、Firefox 111+、Safari 17+。',
+        webrtc:      '不支持 WebRTC。无法多人联机。',
+        websocket:   '不支持 WebSocket。无法连接信令服务器。',
+        pointerlock: '不支持指针锁。第一人称视角无法启用。'
+      };
+
+      // 构建检测失败行：移动设备优先显示
+      var rowKeys = missing.slice();
+      if (isMobile) rowKeys.unshift('mobile');
+      var rows = rowKeys.map(function (k) {
+        if (k === 'mobile') {
+          return '<tr><td class="key">mobile</td><td class="msg">检测到移动设备。VoxWeb 暂不支持触屏操作，请使用桌面浏览器。</td></tr>';
+        }
+        return '<tr><td class="key">' + k + '</td><td class="msg">' + messages[k] + '</td></tr>';
+      }).join('');
+
+      var html = [
+        '<!DOCTYPE html>',
+        '<html lang="zh-Hans"><head>',
+          '<meta charset="UTF-8">',
+          '<meta name="viewport" content="width=device-width, initial-scale=1.0">',
+          '<title>VoxWeb 不兼容此浏览器</title>',
+          '<style>',
+            'html, body { margin: 0; min-height: 100vh; background: #1a1a2e;',
+            '             color: #e8e3da; font-family: "Segoe UI", "Helvetica Neue", sans-serif; }',
+            'body { display: flex; align-items: center; justify-content: center; padding: 24px; }',
+            '.box { max-width: 640px; width: 100%; padding: 40px;',
+            '       background: rgba(255,255,255,0.04);',
+            '       border: 1px solid rgba(255,255,255,0.08); border-radius: 4px; }',
+            'h1 { margin: 0 0 8px; font-size: 1.4rem; font-weight: 500; color: #ff8a8a; }',
+            '.lead { margin: 0 0 20px; color: #9a9290; line-height: 1.6; }',
+            'table { width: 100%; border-collapse: collapse; margin: 0 0 20px; font-size: 0.9rem; }',
+            'td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.06); vertical-align: top; }',
+            'td.key { width: 110px; color: #ffb37a; font-family: ui-monospace, Consolas, monospace; font-weight: 600; }',
+            'td.msg { color: #d6cfc6; line-height: 1.5; }',
+            '.hint { margin: 0; font-size: 0.85rem; color: #8a8380; line-height: 1.6; }',
+            '.hint + .hint { margin-top: 10px; }',
+            '.guide { margin: 18px 0; padding: 16px 18px; border: 1px solid rgba(255,255,255,0.1);',
+            '         background: rgba(0,0,0,0.18); color: #d6cfc6; line-height: 1.65; }',
+            '.guide p { margin: 0 0 8px; }',
+            '.guide ol { margin: 0 0 8px 20px; padding: 0; }',
+            '.guide code { color: #ffcf9f; overflow-wrap: anywhere; }',
+            '.copy-row { display: flex; gap: 8px; margin: 8px 0; }',
+            '.copy-row input { min-width: 0; flex: 1; padding: 9px 10px; border: 1px solid rgba(255,255,255,0.14);',
+            '                  background: #11121d; color: #ffcf9f; font: 13px ui-monospace,Consolas,monospace; }',
+            '.copy-row button { flex: 0 0 auto; padding: 8px 12px; border: 1px solid #a6b3d6;',
+            '                   background: rgba(166,179,214,0.16); color: #eef2ff; cursor: pointer; }',
+            '.force-button { display: inline-block; margin-top: 14px; padding: 11px 18px;',
+            '                border: 1px solid #a6b3d6; border-radius: 4px; color: #eef2ff;',
+            '                background: rgba(166,179,214,0.16); text-decoration: none; }',
+            '.force-button:hover { background: rgba(166,179,214,0.28); }',
+            '.launcher { display: inline-block; margin-top: 10px; color: #ffcf9f; }',
+            '.hint strong { color: #c0bab1; font-weight: 500; }',
+          '</style>',
+        '</head><body>',
+        '<div class="box">',
+          '<h1>很抱歉，你的浏览器不支持运行 VoxWeb</h1>',
+          '<p class="lead">VoxWeb 需要现代浏览器的以下能力：</p>',
+          '<table>', rows, '</table>',
+          '<p class="hint">推荐使用桌面端 <strong>Chrome / Edge ≥ 113</strong>、<strong>Firefox ≥ 115（WebGPU 需 nightly）</strong>、<strong>Safari ≥ 17</strong>。移动端浏览器暂不支持（需要键盘与鼠标操作）。</p>',
+          missing.indexOf('webgpu') !== -1 && location.protocol === 'http:' ? [
+            '<div class="guide">',
+              '<p><strong>公网 HTTP 会让 Edge/Chrome 默认关闭 WebGPU。测试时请执行：</strong></p>',
+              '<p>1. 复制下面的设置地址，粘贴到 Edge 地址栏。浏览器禁止网页直接打开 <code>edge://</code> 页面。</p>',
+              '<div class="copy-row"><input readonly value="edge://flags/#unsafely-treat-insecure-origin-as-secure">',
+                '<button type="button" onclick="var i=this.previousElementSibling;i.select();i.setSelectionRange(0,9999);document.execCommand(&quot;copy&quot;);this.textContent=&quot;已复制&quot;">复制设置地址</button></div>',
+              '<p>2. 将该选项设为 <strong>Enabled</strong>，复制并填写下面的站点地址：</p>',
+              '<div class="copy-row"><input readonly value="' + location.origin + '">',
+                '<button type="button" onclick="var i=this.previousElementSibling;i.select();i.setSelectionRange(0,9999);document.execCommand(&quot;copy&quot;);this.textContent=&quot;已复制&quot;">复制站点地址</button></div>',
+              '<p>3. 重启 Edge，然后重新访问本页。</p>',
+              '<p><a class="launcher" href="/launch-nea-edge.cmd" download>下载 Windows 一键启动器</a>（下载后双击运行，会使用独立的 Edge 测试配置。）</p>',
+              '<p>如果仍然失败，请启用 Edge 图形加速并检查 <code>edge://gpu</code>。</p>',
+            '</div>'
+          ].join('') : '',
+          '<p class="hint">下面的按钮只绕过本页面检测；浏览器未开放 WebGPU 时，游戏仍可能启动失败。</p>',
+          '<a class="force-button" href="?force=1">仍然尝试进入</a>',
+        '</div>',
+        '</body></html>'
+      ].join('');
+
+      // 中止 trunk 已发起的预加载请求（含 wasm 二进制）
+      window.stop();
+      // 同步替换整个文档：解析器到达 trunk 注入的 <script> 之前完成
+      document.open();
+      document.write(html);
+      document.close();
+    })();
+  </script>
+
+  <!-- 构建时复制 index.html -->
+  <link data-trunk rel="copy-file" href="index.html" />
+
+  <!-- trunk 入口：编译期注入 wasm-bindgen 生成的 JS 胶水 + WASM 二进制 -->
+  <link data-trunk rel="rust" href="Cargo.toml" data-type="main"
+        data-wasm-opt="z"
+        data-wasm-opt-params="--enable-bulk-memory --enable-nontrapping-float-to-int --enable-sign-ext --enable-mutable-globals --enable-reference-types --enable-multivalue"
+        data-no-import="false" />
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #1a1a2e;
+    }
+
+    /* 游戏画布：始终铺满全屏 */
+    #game {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      display: block;
+      background: transparent;
+    }
+  </style>
+</head>
+<body>
+  <!-- 游戏画布：trunk 编译的 WASM 加载后会绑定到这里 -->
+  <canvas id="game"></canvas>
+</body>
+</html>

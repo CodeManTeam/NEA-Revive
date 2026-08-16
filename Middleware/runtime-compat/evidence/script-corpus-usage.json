@@ -1,0 +1,537 @@
+{
+  "format": "nea-redacted-script-corpus-usage",
+  "version": 2,
+  "generatedAt": "2026-07-29T14:40:38.045Z",
+  "provenance": {
+    "sourceClass": "approved-local-private-inspection",
+    "redactionStatus": "anonymous-aggregate",
+    "publicStatus": "public-sanitized",
+    "reproducibilityLimit": "Requires an approved local private source; this aggregate cannot recreate source code, source paths, work identities, member-assignment paths, or event type names."
+  },
+  "privacy": {
+    "sourceCodeIncluded": false,
+    "sourcePathsIncluded": false,
+    "memberAssignmentPathsIncluded": false,
+    "eventTypeNamesIncluded": false
+  },
+  "samples": [
+    {
+      "sample": "sample-001",
+      "counts": {
+        "serverFiles": 40,
+        "clientFiles": 23,
+        "serverApiMembers": 57,
+        "clientApiMembers": 17,
+        "serverOutboundTypes": 36,
+        "clientOutboundTypes": 32
+      },
+      "sides": {
+        "client": {
+          "api": [
+            {
+              "name": "input.lockPointer",
+              "count": 7
+            },
+            {
+              "name": "input.pointerLockEvents",
+              "count": 3
+            },
+            {
+              "name": "input.unlockPointer",
+              "count": 12
+            },
+            {
+              "name": "remoteChannel.events",
+              "count": 22
+            },
+            {
+              "name": "remoteChannel.sendServerEvent",
+              "count": 59
+            },
+            {
+              "name": "screen.events",
+              "count": 2
+            },
+            {
+              "name": "screen.findChildByName",
+              "count": 6
+            },
+            {
+              "name": "screen.name",
+              "count": 5
+            },
+            {
+              "name": "screen.visible",
+              "count": 2
+            },
+            {
+              "name": "ui.findChildByName",
+              "count": 63
+            },
+            {
+              "name": "UiBox.create",
+              "count": 12
+            },
+            {
+              "name": "UiImage.create",
+              "count": 14
+            },
+            {
+              "name": "UiInput.create",
+              "count": 1
+            },
+            {
+              "name": "UiScale.create",
+              "count": 5
+            },
+            {
+              "name": "UiScreen.getAllScreen",
+              "count": 13
+            },
+            {
+              "name": "UiScrollBox.create",
+              "count": 2
+            },
+            {
+              "name": "UiText.create",
+              "count": 14
+            }
+          ],
+          "memberAssignments": [],
+          "remote": {
+            "sendsClientEvent": {
+              "entries": 0,
+              "occurrences": 0
+            },
+            "sendsServerEvent": {
+              "entries": 32,
+              "occurrences": 54
+            },
+            "handledTypes": {
+              "entries": 41,
+              "occurrences": 53
+            },
+            "registrations": {
+              "entries": 1,
+              "occurrences": 22
+            }
+          }
+        },
+        "server": {
+          "api": [
+            {
+              "name": "gui.BLUE",
+              "count": 2
+            },
+            {
+              "name": "gui.getAttribute",
+              "count": 2
+            },
+            {
+              "name": "gui.GREEN",
+              "count": 1
+            },
+            {
+              "name": "gui.GREY",
+              "count": 2
+            },
+            {
+              "name": "gui.init",
+              "count": 3
+            },
+            {
+              "name": "gui.message",
+              "count": 4
+            },
+            {
+              "name": "gui.Purple",
+              "count": 2
+            },
+            {
+              "name": "gui.RED",
+              "count": 2
+            },
+            {
+              "name": "gui.remove",
+              "count": 5
+            },
+            {
+              "name": "gui.setAttribute",
+              "count": 4
+            },
+            {
+              "name": "gui.YELLOW",
+              "count": 3
+            },
+            {
+              "name": "remoteChannel.broadcastClientEvent",
+              "count": 1
+            },
+            {
+              "name": "remoteChannel.onServerEvent",
+              "count": 10
+            },
+            {
+              "name": "remoteChannel.sendClientEvent",
+              "count": 168
+            },
+            {
+              "name": "storage.getDataStorage",
+              "count": 5
+            },
+            {
+              "name": "storage.getGroupStorage",
+              "count": 1
+            },
+            {
+              "name": "voxels.getVoxel",
+              "count": 1
+            },
+            {
+              "name": "voxels.getVoxelId",
+              "count": 62
+            },
+            {
+              "name": "voxels.getVoxelRotation",
+              "count": 1
+            },
+            {
+              "name": "voxels.id",
+              "count": 20
+            },
+            {
+              "name": "voxels.name",
+              "count": 2
+            },
+            {
+              "name": "voxels.setVoxel",
+              "count": 16
+            },
+            {
+              "name": "voxels.setVoxelId",
+              "count": 48
+            },
+            {
+              "name": "world.addCollisionFilter",
+              "count": 2
+            },
+            {
+              "name": "world.addZone",
+              "count": 2
+            },
+            {
+              "name": "world.airFriction",
+              "count": 1
+            },
+            {
+              "name": "world.createEntity",
+              "count": 20
+            },
+            {
+              "name": "world.deadPeople",
+              "count": 3
+            },
+            {
+              "name": "world.fogColor",
+              "count": 1
+            },
+            {
+              "name": "world.gameStarting",
+              "count": 33
+            },
+            {
+              "name": "world.gameTime",
+              "count": 16
+            },
+            {
+              "name": "world.gravity",
+              "count": 1
+            },
+            {
+              "name": "world.hp",
+              "count": 13
+            },
+            {
+              "name": "world.meg_uns",
+              "count": 1
+            },
+            {
+              "name": "world.meg_zym",
+              "count": 2
+            },
+            {
+              "name": "world.onChat",
+              "count": 11
+            },
+            {
+              "name": "world.onClick",
+              "count": 4
+            },
+            {
+              "name": "world.onDie",
+              "count": 1
+            },
+            {
+              "name": "world.onEntityContact",
+              "count": 2
+            },
+            {
+              "name": "world.onFluidEnter",
+              "count": 3
+            },
+            {
+              "name": "world.onFluidLeave",
+              "count": 1
+            },
+            {
+              "name": "world.onPlayerJoin",
+              "count": 27
+            },
+            {
+              "name": "world.onPlayerLeave",
+              "count": 4
+            },
+            {
+              "name": "world.onPlayerPurchaseSuccess",
+              "count": 2
+            },
+            {
+              "name": "world.onPress",
+              "count": 8
+            },
+            {
+              "name": "world.onRelease",
+              "count": 2
+            },
+            {
+              "name": "world.onRespawn",
+              "count": 1
+            },
+            {
+              "name": "world.onTakeDamage",
+              "count": 1
+            },
+            {
+              "name": "world.onTick",
+              "count": 12
+            },
+            {
+              "name": "world.onVoxelContact",
+              "count": 4
+            },
+            {
+              "name": "world.querySelector",
+              "count": 9
+            },
+            {
+              "name": "world.querySelectorAll",
+              "count": 116
+            },
+            {
+              "name": "world.raycast",
+              "count": 8
+            },
+            {
+              "name": "world.say",
+              "count": 43
+            },
+            {
+              "name": "world.size",
+              "count": 15
+            },
+            {
+              "name": "world.team_has_bed",
+              "count": 14
+            },
+            {
+              "name": "world.time",
+              "count": 5
+            }
+          ],
+          "memberAssignments": [
+            {
+              "name": "world.hp",
+              "count": 7
+            },
+            {
+              "name": "world.gameStarting",
+              "count": 5
+            },
+            {
+              "name": "world.gameTime",
+              "count": 4
+            },
+            {
+              "name": "world.ucnt",
+              "count": 4
+            },
+            {
+              "name": "world.kd",
+              "count": 3
+            },
+            {
+              "name": "world.team_has_bed",
+              "count": 3
+            },
+            {
+              "name": "world.deadPeople",
+              "count": 2
+            },
+            {
+              "name": "world.time",
+              "count": 2
+            },
+            {
+              "name": "gui.BLUE",
+              "count": 1
+            },
+            {
+              "name": "gui.GREEN",
+              "count": 1
+            },
+            {
+              "name": "gui.GREY",
+              "count": 1
+            },
+            {
+              "name": "gui.message",
+              "count": 1
+            },
+            {
+              "name": "gui.Purple",
+              "count": 1
+            },
+            {
+              "name": "gui.RED",
+              "count": 1
+            },
+            {
+              "name": "gui.YELLOW",
+              "count": 1
+            },
+            {
+              "name": "world.meg_uns",
+              "count": 1
+            },
+            {
+              "name": "world.meg_zym",
+              "count": 1
+            },
+            {
+              "name": "world.sunPhase",
+              "count": 1
+            }
+          ],
+          "remote": {
+            "sendsClientEvent": {
+              "entries": 36,
+              "occurrences": 163
+            },
+            "sendsServerEvent": {
+              "entries": 0,
+              "occurrences": 0
+            },
+            "handledTypes": {
+              "entries": 34,
+              "occurrences": 47
+            },
+            "registrations": {
+              "entries": 4,
+              "occurrences": 10
+            }
+          }
+        }
+      }
+    },
+    {
+      "sample": "sample-002",
+      "counts": {
+        "serverFiles": 1,
+        "clientFiles": 2,
+        "serverApiMembers": 8,
+        "clientApiMembers": 0,
+        "serverOutboundTypes": 0,
+        "clientOutboundTypes": 0
+      },
+      "sides": {
+        "client": {
+          "api": [],
+          "memberAssignments": [],
+          "remote": {
+            "sendsClientEvent": {
+              "entries": 0,
+              "occurrences": 0
+            },
+            "sendsServerEvent": {
+              "entries": 0,
+              "occurrences": 0
+            },
+            "handledTypes": {
+              "entries": 0,
+              "occurrences": 0
+            },
+            "registrations": {
+              "entries": 0,
+              "occurrences": 0
+            }
+          }
+        },
+        "server": {
+          "api": [
+            {
+              "name": "voxels.getVoxel",
+              "count": 2
+            },
+            {
+              "name": "voxels.id",
+              "count": 6
+            },
+            {
+              "name": "voxels.setVoxel",
+              "count": 1
+            },
+            {
+              "name": "world.onChat",
+              "count": 1
+            },
+            {
+              "name": "world.onPlayerJoin",
+              "count": 1
+            },
+            {
+              "name": "world.onVoxelContact",
+              "count": 1
+            },
+            {
+              "name": "world.querySelectorAll",
+              "count": 3
+            },
+            {
+              "name": "world.say",
+              "count": 29
+            }
+          ],
+          "memberAssignments": [],
+          "remote": {
+            "sendsClientEvent": {
+              "entries": 0,
+              "occurrences": 0
+            },
+            "sendsServerEvent": {
+              "entries": 0,
+              "occurrences": 0
+            },
+            "handledTypes": {
+              "entries": 0,
+              "occurrences": 0
+            },
+            "registrations": {
+              "entries": 0,
+              "occurrences": 0
+            }
+          }
+        }
+      }
+    }
+  ]
+}

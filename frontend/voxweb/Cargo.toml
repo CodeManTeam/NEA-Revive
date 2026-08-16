@@ -1,0 +1,146 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/core",
+    "crates/render",
+    "crates/server",
+    "crates/net",
+    "crates/client",
+    "crates/protocol",
+    "crates/physics",
+]
+
+[package]
+name = "nea-web"
+version.workspace = true
+edition.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+path = "crates/web_entry.rs"
+
+[dependencies]
+voxweb-client = { path = "crates/client" }
+
+[workspace.package]
+version = "0.7.0-alpha.5"
+edition = "2024"
+
+[workspace.lints.rust]
+unsafe_code = "warn"
+
+[workspace.dependencies]
+# --- 图形 (WASM 目标: winit 启用 web feature) ---
+wgpu = "29"
+winit = { version = "0.30", default-features = false, features = ["x11"] }
+egui = "0.34"
+egui-wgpu = "0.34"
+egui-winit = { version = "0.34", default-features = false }
+
+# --- 数学 ---
+glam = { version = "0.32", features = ["bytemuck", "serde"] }
+
+# --- 序列化 ---
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+bincode = { version = "2", features = ["serde"] }
+bytemuck = { version = "1", features = ["derive"] }
+
+# --- 噪声 (地形生成) ---
+noise = "0.9"
+
+# --- WASM 平台绑定 ---
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3", features = [
+    "Window",
+    "Request",
+    "RequestInit",
+    "Response",
+    "Headers",
+    "Document",
+    "HtmlCanvasElement",
+    "HtmlElement",
+    "Node",
+    "Performance",
+    "Storage",
+    "Location",
+    "Navigator",
+    "StorageManager",
+    "ResizeObserver",
+    "WebSocket",
+    "console",
+    "MessageEvent",
+    "BinaryType",
+    "ErrorEvent",
+    "RtcPeerConnection",
+    "RtcConfiguration",
+    "RtcDataChannel",
+    "RtcDataChannelInit",
+    "RtcDataChannelEvent",
+    "RtcDataChannelState",
+    "RtcDataChannelType",
+    "RtcSessionDescription",
+    "RtcSessionDescriptionInit",
+    "RtcIceCandidate",
+    "RtcIceCandidateInit",
+    "RtcPeerConnectionIceEvent",
+    "RtcPeerConnectionState",
+    "RtcIceConnectionState",
+    "RtcIceGatheringState",
+    "RtcSdpType",
+    "CloseEvent",
+    "HtmlMetaElement",
+    "History",
+    "UrlSearchParams",
+    "PointerEvent",
+    "KeyboardEvent",
+    "MouseEvent",
+    "WheelEvent",
+    "Element",
+    "EventTarget",
+    "Gpu",
+    "GpuAdapter",
+    "Blob",
+    "File",
+    "FileSystemDirectoryHandle",
+    "FileSystemFileHandle",
+    "FileSystemGetDirectoryOptions",
+    "FileSystemGetFileOptions",
+    "FileSystemHandle",
+    "FileSystemRemoveOptions",
+    "FileSystemWritableFileStream",
+    "WritableStream",
+] }
+js-sys = "0.3"
+
+# --- 异步通信 ---
+futures-channel = "0.3"
+
+# --- 日志与调试 ---
+console_error_panic_hook = "0.1"
+tracing = "0.1"
+tracing-wasm = "0.2"
+log = "0.4"
+
+# --- 工具 ---
+bitflags = "2"
+getrandom = { version = "0.2", features = ["js"] }
+
+# --- 内部 crate ---
+voxweb-core = { path = "crates/core" }
+voxweb-render = { path = "crates/render" }
+voxweb-server = { path = "crates/server" }
+voxweb-net = { path = "crates/net" }
+
+[profile.release]
+opt-level = "z"
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+
+[profile.dev]
+opt-level = 1
+panic = "abort"

@@ -1,0 +1,15 @@
+{
+ "shape": [
+  256,
+  128,
+  256
+ ],
+ "spawn": [
+  127,
+  123,
+  127
+ ],
+ "entityLimit": 512,
+ "entities": "world/entities/entities.json",
+ "terrain": "world/terrain/terrain.json"
+}

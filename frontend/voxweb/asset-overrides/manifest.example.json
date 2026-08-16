@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "replacements": {
+    "terrain.color.0": "/asset-overrides/files/terrain-color-level-0.png",
+    "terrain.material.0": "/asset-overrides/files/terrain-material-level-0.png",
+    "terrain.bump.0": "/asset-overrides/files/terrain-bump-level-0.png",
+    "water.bump": "/asset-overrides/files/water-bump.png",
+    "avatar.head": "/asset-overrides/files/avatar-head.bin"
+  }
+}

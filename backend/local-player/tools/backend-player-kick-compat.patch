@@ -1,0 +1,30 @@
+diff --git a/Backend/local-player/backend/box3-server.cjs b/Backend/local-player/backend/box3-server.cjs
+--- a/Backend/local-player/backend/box3-server.cjs
++++ b/Backend/local-player/backend/box3-server.cjs
+@@ -13453,0 +13454,9 @@ var GameNetPublicSessions = class {
++  kick(sessionLabel) {
++    requireSessionId6(sessionLabel);
++    const exact = this.sessions.get(sessionLabel);
++    const session = exact ?? [...this.sessions.values()].find((candidate) => matchesSessionLabel(candidate.sessionId, sessionLabel));
++    const client = session?.client;
++    if (!client) return false;
++    client.close();
++    return true;
++  }
+@@ -14909,0 +14919,3 @@ var LegacyHistoricalProjectInstance = class {
++  kickPlayer(sessionLabel) {
++    return this.gameNetPublicSessions.kick(sessionLabel);
++  }
+@@ -16764,0 +16777,4 @@ var Box3Server = class {
++  kickPlayer(sessionLabel) {
++    if (!this.running) return false;
++    return this.historicalProjectInstance?.kickPlayer(sessionLabel) ?? false;
++  }
+@@ -17476,0 +17493,7 @@ async function startNeaControlBridge(server, logger) {
++      if (request.method === "POST" && url.pathname === "/__nea/control/player-kick") {
++        if (typeof body.session !== "string" || body.session.length === 0) throw new Error("kick session is required");
++        const kicked = server.kickPlayer(body.session);
++        response.statusCode = kicked ? 202 : 404;
++        response.end(JSON.stringify(kicked ? { ok: true, kicked: true } : { ok: false, error: "player session not found" }));
++        return;
++      }

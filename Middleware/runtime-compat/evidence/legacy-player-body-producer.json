@@ -1,0 +1,23 @@
+{
+  "format": "nea-runtime-evidence",
+  "version": 1,
+  "subject": "compatibility backend player rigid-body producer and remediation",
+  "sources": [
+    {
+      "path": "local-player/backend/box3-server.cjs",
+      "role": "current executable backend"
+    },
+    {
+      "path": "Frontend/demo-map/project/world/physics.json",
+      "role": "explicit project-package fallback profile"
+    }
+  ],
+  "finding": {
+    "binding": "The compatibility backend creates a RigidBody with the same id as each Player entry.",
+    "rootCause": "The active backend previously cloned the generic RigidBody identity without overriding either rx/ry/rz bounds or hsx/hsy/hsz shape half extents, producing a generic 1/1/1 body in both broadphase and narrowphase state.",
+    "remediation": "Project-package startup now requires BOX3_PLAYER_BODY_PROFILE, and the selected profile is propagated through handshake, initial PUBLIC state, authoritative player registration, runtime snapshots, and later PUBLIC states before assigning both body field groups.",
+    "dimensions": "The former generic RigidBody schema identity 1/1/1 is rejected. Historical Player constants and scale usage confirm upright default half extents 0.45/1.1/0.45.",
+    "classification": "rejected-as-historical-player-size-evidence"
+  },
+  "reason": "The repair removes accidental schema identities from both broadphase and shape state. Standing dimensions are recovered; server-authoritative crouch and flying shape changes remain unresolved."
+}

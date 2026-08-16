@@ -1,0 +1,15 @@
+diff --git a/legacy/box3-compat/dist/box3-server.cjs b/legacy/box3-compat/dist/box3-server.cjs
+--- a/legacy/box3-compat/dist/box3-server.cjs
++++ b/legacy/box3-compat/dist/box3-server.cjs
+@@ -10377,7 +10377,10 @@ function parseRuntimeMesh(value, index) {
+   return Object.freeze({
+     name: requireText(record.name, "Local Player runtime mesh name"),
+     bounds: requirePositiveVector(record.bounds, "Local Player runtime mesh bounds"),
+-    ...parseMeshBinding(record, index)
++    ...parseMeshBinding({
++      bootstrapMeshIndex: record.bootstrapMeshIndex,
++      bootstrapMeshHash: record.bootstrapMeshHash
++    }, index)
+   });
+ }
+ function parseMapping(value, index) {

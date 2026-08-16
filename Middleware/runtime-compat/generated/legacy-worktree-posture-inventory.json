@@ -1,0 +1,368 @@
+{
+  "format": "nea-legacy-worktree-posture-inventory",
+  "version": 1,
+  "generatedAt": "2026-07-31T04:39:05.239Z",
+  "sourceRoot": "sibling-local-worktree",
+  "sources": {
+    "archivedBundle": {
+      "path": "archive/project/bedwars/client-runtime/assets/_next/static/chunks/734.8dcb480d99773395.js",
+      "bytes": 1543176,
+      "sha256": "35067ead851335f4a2c878350aea4c3fcbbfaf1d71a79a5525b9e303ec8b0707"
+    },
+    "beautifiedBundle": {
+      "path": "others/box-go-src/734.8dcb480d99773395.js",
+      "bytes": 3154632,
+      "sha256": "7e458b0da7ffc8a0b1c63c7e7ed13b9286cddbacd8dfba0a5b4aab8734353429"
+    },
+    "replayData": {
+      "path": "others/box-go-src/replay-data.ts",
+      "bytes": 1324421,
+      "sha256": "221e5cc0cc6c8818408c3927ccb63a424949764f85a14b75adb5506e8754f215"
+    },
+    "fakeServer": {
+      "path": "others/box-go-src/fake-server.ts",
+      "bytes": 29004,
+      "sha256": "e839e9e6f40c0c01e44db492bf584dc7f8e1c2caf9e2ed37159c371d0cabc205"
+    },
+    "publicProducer": {
+      "path": "legacy/box3-compat/src/wire/net-public-state.ts",
+      "bytes": 27758,
+      "sha256": "135650d455c0739ba863069db988ee0b093bb48605e195d1ab03f7c2cd03a1fb"
+    },
+    "playerMotor": {
+      "path": "legacy/box3-compat/src/game/runtime/player-motor.ts",
+      "bytes": 16285,
+      "sha256": "3d306529706ebc2bd13b3199e4fc1a35864d7e513a0d8fb7988669eff384ed88"
+    },
+    "fixedPreparation": {
+      "path": "legacy/box3-compat/src/game/runtime/historical-physics-fixed-preparation.ts",
+      "bytes": 6252,
+      "sha256": "e47ff4e7db84faeb7dfed24ce1e0bc2bc406eead5ded106a7ad62d41d334b8df"
+    },
+    "activePreparation": {
+      "path": "legacy/box3-compat/src/game/runtime/historical-physics-active-preparation.ts",
+      "bytes": 14254,
+      "sha256": "e87b0b8e3cb242b35cc43605854a3709ba6e45c86570c076ff0da3ab15347bcb"
+    }
+  },
+  "archivedPlayerMotor": {
+    "module": 7166,
+    "archivedModuleSha256": "0c304d49011a64be9cfc6966cbea39d3b152fe321025a9f1a630d9f7a5bb9205",
+    "beautifiedModuleSha256": "abf99673c282df3d170cc906bfb3a11be2d94492f974340ec3e7b009c2c048a2",
+    "standingConstants": {
+      "width": 0.45,
+      "height": 1.1
+    },
+    "postureStatePresent": {
+      "crouch": true,
+      "flying": true
+    },
+    "bodyShapeWrites": [],
+    "crouchGroundedBranch": {
+      "present": true,
+      "boundsFieldsRead": [
+        "rx",
+        "ry",
+        "rz"
+      ],
+      "purpose": "edge-occupancy-query",
+      "shapeMutation": "absent"
+    },
+    "conclusion": "The archived client motor reads the current body bounds while crouching to restrict edge movement, but does not write rx/ry/rz or hsx/hsy/hsz."
+  },
+  "historicalPhysicsPreparation": {
+    "activeBodyFieldCopies": [
+      "hsx",
+      "hsy",
+      "hsz",
+      "rx",
+      "ry",
+      "rz"
+    ],
+    "fixedBodyFieldCopies": [
+      "hsx",
+      "hsy",
+      "hsz",
+      "rx",
+      "ry",
+      "rz"
+    ],
+    "classification": "consumer-only",
+    "conclusion": "The recovered preparation stages copy existing body bounds and shape fields into solver scratch arrays; they do not determine posture-specific values."
+  },
+  "legacyPublicProducer": {
+    "playerBodyWrites": [],
+    "entityBodyWrites": [
+      {
+        "receiver": "body",
+        "field": "rx"
+      },
+      {
+        "receiver": "body",
+        "field": "ry"
+      },
+      {
+        "receiver": "body",
+        "field": "rz"
+      }
+    ],
+    "playerUsesRigidBodyIdentity": true,
+    "classification": "local-reproduction-not-historical-evidence",
+    "conclusion": "The old local player producer leaves all six size fields at generic schema identity; only its entity path writes rx/ry/rz."
+  },
+  "replayData": {
+    "messageCount": 55,
+    "messages": [
+      "gameChat/log",
+      "gameNet/syncClientScriptModules",
+      "gameTerrain/chunkResponse",
+      "gameTerrain/reset",
+      "input/setCameraPitch",
+      "models/appendMeshHashes",
+      "models/appendSkinHashes",
+      "models/appendSkinPartHashes",
+      "playerProtocol/playerJoin",
+      "remoteChannel/sendClientEvent",
+      "sound/resetDictionary"
+    ],
+    "hasGameNetRawFrame": false,
+    "hasPublicBodyDelta": false,
+    "conclusion": "The replay is an already-decoded initialization-message list. It contains no raw gameNet frame and no PUBLIC body delta."
+  },
+  "localArtifacts": {
+    "logs": [
+      {
+        "file": "logs/legacy-player-8097.stderr.log",
+        "bytes": 169,
+        "sha256": "6a2fc364da23972017c15d1d875c90bdecccfa84300cebbc68e8d96dd9d41399",
+        "markerCounts": {
+          "PUBLIC": 0,
+          "BIN(": 0,
+          "raw": 0,
+          "rx": 0,
+          "hsx": 0,
+          "crouch": 0,
+          "fly": 0
+        }
+      },
+      {
+        "file": "logs/legacy-player-8097.stdout.log",
+        "bytes": 5998,
+        "sha256": "86adbbc017baa74afaeed7975a9898d947e19fa3559acd764951ee49d94f66f5",
+        "markerCounts": {
+          "PUBLIC": 0,
+          "BIN(": 0,
+          "raw": 0,
+          "rx": 0,
+          "hsx": 0,
+          "crouch": 0,
+          "fly": 0
+        }
+      },
+      {
+        "file": "logs/local-server-8091.err.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "markerCounts": {
+          "PUBLIC": 0,
+          "BIN(": 0,
+          "raw": 0,
+          "rx": 0,
+          "hsx": 0,
+          "crouch": 0,
+          "fly": 0
+        }
+      },
+      {
+        "file": "logs/local-server-8091.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "markerCounts": {
+          "PUBLIC": 0,
+          "BIN(": 0,
+          "raw": 0,
+          "rx": 0,
+          "hsx": 0,
+          "crouch": 0,
+          "fly": 0
+        }
+      },
+      {
+        "file": "logs/local-server-8091.out.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "markerCounts": {
+          "PUBLIC": 0,
+          "BIN(": 0,
+          "raw": 0,
+          "rx": 0,
+          "hsx": 0,
+          "crouch": 0,
+          "fly": 0
+        }
+      },
+      {
+        "file": "logs/local-server-8096.err.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "markerCounts": {
+          "PUBLIC": 0,
+          "BIN(": 0,
+          "raw": 0,
+          "rx": 0,
+          "hsx": 0,
+          "crouch": 0,
+          "fly": 0
+        }
+      },
+      {
+        "file": "logs/local-server-8096.out.log",
+        "bytes": 12455,
+        "sha256": "ed92ddcfec031007e0c743e41817eacfdfefd725d19c983fd1a25d16c7d6d97b",
+        "markerCounts": {
+          "PUBLIC": 0,
+          "BIN(": 0,
+          "raw": 0,
+          "rx": 2,
+          "hsx": 0,
+          "crouch": 0,
+          "fly": 0
+        }
+      },
+      {
+        "file": "logs/local-server-8096.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "markerCounts": {
+          "PUBLIC": 0,
+          "BIN(": 0,
+          "raw": 0,
+          "rx": 0,
+          "hsx": 0,
+          "crouch": 0,
+          "fly": 0
+        }
+      },
+      {
+        "file": "logs/local-server-8096.stdout.log",
+        "bytes": 3728,
+        "sha256": "3b7230c881169fe215e075451839316021a7f83307a63acfb50534362ce8f5fb",
+        "markerCounts": {
+          "PUBLIC": 0,
+          "BIN(": 0,
+          "raw": 0,
+          "rx": 1,
+          "hsx": 0,
+          "crouch": 0,
+          "fly": 0
+        }
+      },
+      {
+        "file": "logs/local-server.error.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "markerCounts": {
+          "PUBLIC": 0,
+          "BIN(": 0,
+          "raw": 0,
+          "rx": 0,
+          "hsx": 0,
+          "crouch": 0,
+          "fly": 0
+        }
+      },
+      {
+        "file": "logs/local-server.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "markerCounts": {
+          "PUBLIC": 0,
+          "BIN(": 0,
+          "raw": 0,
+          "rx": 0,
+          "hsx": 0,
+          "crouch": 0,
+          "fly": 0
+        }
+      },
+      {
+        "file": "logs/play-demo-4100.stderr.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "markerCounts": {
+          "PUBLIC": 0,
+          "BIN(": 0,
+          "raw": 0,
+          "rx": 0,
+          "hsx": 0,
+          "crouch": 0,
+          "fly": 0
+        }
+      },
+      {
+        "file": "logs/play-demo-4100.stdout.log",
+        "bytes": 54,
+        "sha256": "f3c06e91ef4905b002782ecadd0d13f9c5971f7ba990ea5ec485dcd1c7e69e6a",
+        "markerCounts": {
+          "PUBLIC": 0,
+          "BIN(": 0,
+          "raw": 0,
+          "rx": 0,
+          "hsx": 0,
+          "crouch": 0,
+          "fly": 0
+        }
+      },
+      {
+        "file": "logs/server-8092.error.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "markerCounts": {
+          "PUBLIC": 0,
+          "BIN(": 0,
+          "raw": 0,
+          "rx": 0,
+          "hsx": 0,
+          "crouch": 0,
+          "fly": 0
+        }
+      },
+      {
+        "file": "logs/server-8092.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "markerCounts": {
+          "PUBLIC": 0,
+          "BIN(": 0,
+          "raw": 0,
+          "rx": 0,
+          "hsx": 0,
+          "crouch": 0,
+          "fly": 0
+        }
+      }
+    ],
+    "binaryCandidates": [],
+    "serverToClientPublicFrameCount": 0
+  },
+  "authoritativePostureDelta": {
+    "status": "unresolved",
+    "missingFields": [
+      "rx",
+      "ry",
+      "rz",
+      "hsx",
+      "hsy",
+      "hsz"
+    ],
+    "requiredEvidence": "historical server-to-client PUBLIC body delta or equivalent authoritative server producer"
+  },
+  "safety": {
+    "excludedPaths": [
+      "dump/private",
+      ".git",
+      "node_modules"
+    ],
+    "emittedContent": "metadata-hashes-marker-counts-only"
+  }
+}

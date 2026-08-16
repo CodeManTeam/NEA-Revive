@@ -1,0 +1,19 @@
+[package]
+name = "voxweb-protocol"
+version = "0.1.0"
+edition = "2021"
+description = "MuDB wire codec (byte-exact port of Shared/mudb schema+stream semantics) for the NEA Player rebuild on VoxWeb"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+wasm-bindgen = { workspace = true }
+js-sys = { workspace = true }
+web-sys = { workspace = true }
+image = { version = "0.25", default-features = false, features = ["png"] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
+tokio-tungstenite = "0.26"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+futures-util = "0.3"

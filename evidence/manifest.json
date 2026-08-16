@@ -1,0 +1,36 @@
+{
+  "format": "nea-revive-evidence-manifest",
+  "version": 1,
+  "note": "证据数据仍留在原位置，此处只登记映射路径。提取还原时按 source 读取，产物落到 packages/<map>/。",
+  "sources": {
+    "dumpRoot": "D:/Projects/Gaming/NEA-Project/Evidence/dump",
+    "worksRoot": "D:/Projects/Gaming/NEA-Project/Evidence/works",
+    "originRoot": "D:/Projects/Gaming/NEA-Project/Evidence/origin",
+    "preservationRoot": "D:/Projects/Gaming/NEA-Project/Evidence/preservation-dump"
+  },
+  "captures": {
+    "parkour": {
+      "label": "跑酷地图（DAO3 play/773d55351c932c918ca0）",
+      "contentId": "100496679",
+      "primary": "D:/Projects/Gaming/NEA-Project/Evidence/dump/private/live-captures/20260729-195309",
+      "alternates": [
+        "D:/Projects/Gaming/NEA-Project/Evidence/dump/private/live-captures/20260729-181217",
+        "D:/Projects/Gaming/NEA-Project/Evidence/dump/private/live-captures/20260729-191807",
+        "D:/Projects/Gaming/NEA-Project/Evidence/dump/private/live-captures/20260729-175839"
+      ],
+      "manualCdp": "D:/Projects/Gaming/NEA-Project/Evidence/works/private/parkour/manual-cdp",
+      "serverScript": "D:/Projects/Gaming/NEA-Project/Evidence/works/private/parkour/manual-cdp/source/server/index.js",
+      "clientScripts": "D:/Projects/Gaming/NEA-Project/Evidence/works/private/parkour/manual-cdp/source/client/",
+      "screenshots": [
+        "D:/Projects/Gaming/NEA-Project/Evidence/works/private/parkour/manual-cdp/official-game-screenshot.png",
+        "D:/Projects/Gaming/NEA-Project/Evidence/works/private/parkour/manual-cdp/play-final.png",
+        "D:/Projects/Gaming/NEA-Project/Evidence/works/private/parkour/manual-cdp/editor.png"
+      ]
+    }
+  },
+  "assets": {
+    "recoveredAvatarAssets": "D:/Projects/Gaming/NEA-Project/Evidence/dump/recovered-avatar-assets",
+    "recoveredEngineAssets": "D:/Projects/Gaming/NEA-Project/Evidence/dump/recovered-engine-assets",
+    "localPlayerArchive": "D:/Projects/Gaming/NEA-Project/Backend/local-player/archive"
+  }
+}

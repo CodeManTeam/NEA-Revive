@@ -1,0 +1,269 @@
+{
+  "format": "nea-server-object-model",
+  "version": 1,
+  "generatedAt": "2026-07-31T09:27:01.910Z",
+  "entities": {
+    "GameEntity": {
+      "documentedOwner": "GameEntity",
+      "originOwner": "GameEntity",
+      "documentedMembers": {
+        "object": 1,
+        "property": 60,
+        "method": 13,
+        "event": 11
+      },
+      "originMembers": {
+        "object": 0,
+        "property": 58,
+        "method": 14,
+        "event": 22
+      },
+      "dependencies": [
+        "GameVector3",
+        "GameQuaternion",
+        "GameRGBColor",
+        "GameRGBAColor",
+        "GameAnimation",
+        "GameEventHandlerToken",
+        "Sound"
+      ],
+      "availability": "confirmed-in-origin-shell",
+      "compatibility": "not-implemented-by-local-runtime"
+    },
+    "GamePlayerEntity": {
+      "documentedOwner": "GamePlayerEntity",
+      "originOwner": "GamePlayer",
+      "documentedMembers": {
+        "object": 1,
+        "property": 77,
+        "method": 23,
+        "event": 6
+      },
+      "originMembers": {
+        "object": 0,
+        "property": 80,
+        "method": 24,
+        "event": 10
+      },
+      "dependencies": [
+        "GameVector3",
+        "GameBounds3",
+        "GameRGBColor",
+        "GameAnimation",
+        "GameEventHandlerToken",
+        "Sound"
+      ],
+      "availability": "confirmed-in-origin-shell",
+      "compatibility": "not-implemented-by-local-runtime"
+    }
+  },
+  "playerComposition": {
+    "representation": "intersection-and-component",
+    "typeExpression": "GameEntity & { player: GamePlayerEntity; isPlayer: true }",
+    "entityDiscriminator": "server.GameEntity.isPlayer",
+    "componentAccessor": "server.GameEntity.player",
+    "documentedComponent": "server.object.GamePlayerEntity",
+    "originComponentClass": "GamePlayer",
+    "originAttachment": "entity.player = new GamePlayer(...) followed by entity.isPlayer = true",
+    "classicalInheritance": false,
+    "status": "confirmed",
+    "evidence": [
+      {
+        "type": "docs",
+        "path": "dao3-docs-mirror/markdown/api/GameEntity/isPlayer.md",
+        "symbol": "declare type GamePlayerEntity = GameEntity & { player: GamePlayerEntity; isPlayer: true }",
+        "confidence": "direct"
+      },
+      {
+        "type": "origin-source",
+        "path": "origin/origin/origin/sync/ScriptEntitySync.js",
+        "symbol": "ScriptEntitySync._preTickServerPlayerBinding",
+        "confidence": "direct"
+      }
+    ]
+  },
+  "aliases": [
+    {
+      "documented": "GamePlayerEntity",
+      "origin": "GamePlayer",
+      "relation": "implementation-name",
+      "status": "confirmed"
+    }
+  ],
+  "sharedTypes": [
+    {
+      "documentedOwner": "GameVector3",
+      "originOwner": "GameVector3",
+      "documentedMembers": {
+        "object": 0,
+        "property": 3,
+        "method": 28,
+        "event": 0
+      },
+      "originMembers": {
+        "object": 0,
+        "property": 3,
+        "method": 27,
+        "event": 0
+      },
+      "dependencies": [
+        "GameVector3"
+      ],
+      "availability": "confirmed-in-origin-shell",
+      "compatibility": "not-implemented-by-local-runtime"
+    },
+    {
+      "documentedOwner": "GameQuaternion",
+      "originOwner": "GameQuaternion",
+      "documentedMembers": {
+        "object": 0,
+        "property": 4,
+        "method": 24,
+        "event": 0
+      },
+      "originMembers": {
+        "object": 0,
+        "property": 0,
+        "method": 27,
+        "event": 0
+      },
+      "dependencies": [
+        "GameVector3",
+        "GameQuaternion"
+      ],
+      "availability": "confirmed-in-origin-shell",
+      "compatibility": "not-implemented-by-local-runtime"
+    },
+    {
+      "documentedOwner": "GameBounds3",
+      "originOwner": "GameBounds3",
+      "documentedMembers": {
+        "object": 0,
+        "property": 2,
+        "method": 9,
+        "event": 0
+      },
+      "originMembers": {
+        "object": 0,
+        "property": 0,
+        "method": 10,
+        "event": 0
+      },
+      "dependencies": [
+        "GameVector3",
+        "GameBounds3"
+      ],
+      "availability": "confirmed-in-origin-shell",
+      "compatibility": "not-implemented-by-local-runtime"
+    },
+    {
+      "documentedOwner": "GameRGBColor",
+      "originOwner": "GameRGBColor",
+      "documentedMembers": {
+        "object": 0,
+        "property": 3,
+        "method": 17,
+        "event": 0
+      },
+      "originMembers": {
+        "object": 0,
+        "property": 0,
+        "method": 19,
+        "event": 0
+      },
+      "dependencies": [
+        "GameRGBColor",
+        "GameRGBAColor"
+      ],
+      "availability": "confirmed-in-origin-shell",
+      "compatibility": "not-implemented-by-local-runtime"
+    },
+    {
+      "documentedOwner": "GameRGBAColor",
+      "originOwner": "GameRGBAColor",
+      "documentedMembers": {
+        "object": 0,
+        "property": 4,
+        "method": 16,
+        "event": 0
+      },
+      "originMembers": {
+        "object": 0,
+        "property": 0,
+        "method": 19,
+        "event": 0
+      },
+      "dependencies": [
+        "GameRGBColor",
+        "GameRGBAColor"
+      ],
+      "availability": "confirmed-in-origin-shell",
+      "compatibility": "not-implemented-by-local-runtime"
+    },
+    {
+      "documentedOwner": "GameAnimation",
+      "originOwner": "GameAnimation",
+      "documentedMembers": {
+        "object": 0,
+        "property": 5,
+        "method": 3,
+        "event": 2
+      },
+      "originMembers": {
+        "object": 0,
+        "property": 4,
+        "method": 5,
+        "event": 4
+      },
+      "dependencies": [
+        "GameAnimation",
+        "GameEventHandlerToken"
+      ],
+      "availability": "confirmed-in-origin-shell",
+      "compatibility": "not-implemented-by-local-runtime"
+    },
+    {
+      "documentedOwner": "GameEventHandlerToken",
+      "originOwner": "GameEventHandlerToken",
+      "documentedMembers": {
+        "object": 0,
+        "property": 0,
+        "method": 3,
+        "event": 0
+      },
+      "originMembers": {
+        "object": 0,
+        "property": 0,
+        "method": 3,
+        "event": 0
+      },
+      "dependencies": [],
+      "availability": "confirmed-in-origin-shell",
+      "compatibility": "not-implemented-by-local-runtime"
+    },
+    {
+      "documentedOwner": "Sound",
+      "originOwner": "Sound",
+      "documentedMembers": {
+        "object": 0,
+        "property": 0,
+        "method": 4,
+        "event": 0
+      },
+      "originMembers": {
+        "object": 0,
+        "property": 0,
+        "method": 4,
+        "event": 0
+      },
+      "dependencies": [],
+      "availability": "confirmed-in-origin-shell",
+      "compatibility": "not-implemented-by-local-runtime"
+    }
+  ],
+  "invariants": [
+    "GamePlayerEntity is not modeled as a JavaScript subclass of GameEntity.",
+    "Player scripts reach player-only state through GameEntity.player after GameEntity.isPlayer becomes true.",
+    "RuntimePlayer remains a local composite adapter until entity and player-component wrappers are separated."
+  ]
+}

@@ -1,0 +1,86 @@
+{
+  "format": "nea-server-voxel-abi-evidence",
+  "version": 2,
+  "generatedAt": "2026-07-29T00:00:00.000Z",
+  "scope": [
+    "voxels.getVoxel",
+    "voxels.name",
+    "voxels.getVoxelRotation",
+    "voxels.shape",
+    "voxels.VoxelTypes"
+  ],
+  "policy": {
+    "workSpecificBehaviorAllowed": false,
+    "authoritativeBehaviorSource": "historical-source",
+    "privateSourceIncluded": false
+  },
+  "apis": {
+    "voxels.getVoxel": {
+      "signature": "getVoxel(x:number,y:number,z:number):number",
+      "realUsage": { "calls": 3, "samples": 2 },
+      "confirmedBehavior": [
+        "Delegates coordinate handling to getVoxelId.",
+        "Returns only the base type by masking the full id with 0x3fff."
+      ],
+      "evidence": [
+        "dao3-docs-mirror/markdown/api/GameVoxels/operate.md:349",
+        "origin/origin/origin/sync/ScriptVoxelSync.js:149",
+        "origin/third-party/ArenaPro-CLI/server/types/GameAPI.d.ts:17270"
+      ]
+    },
+    "voxels.name": {
+      "signature": "name(id:number):string",
+      "realUsage": { "calls": 2, "samples": 1 },
+      "confirmedBehavior": [
+        "Accepts full ids and masks rotation bits before lookup.",
+        "Returns an empty string for non-number or unknown base ids.",
+        "Uses historical JavaScript bitwise coercion for numeric NaN and Infinity."
+      ],
+      "evidence": [
+        "dao3-docs-mirror/markdown/api/GameVoxels/operate.md:72",
+        "origin/origin/origin/sync/ScriptVoxelSync.js:117",
+        "origin/third-party/ArenaPro-CLI/server/types/GameAPI.d.ts:17217"
+      ],
+      "documentationConflict": "The prose at operate.md:74 reverses the direction, while the signature, tables, declarations, wrapper order, and source implementation establish id-to-name."
+    },
+    "voxels.getVoxelRotation": {
+      "signature": "getVoxelRotation(x:number,y:number,z:number):number",
+      "realUsage": { "calls": 1, "samples": 1 },
+      "confirmedBehavior": [
+        "Delegates coordinate handling to getVoxelId.",
+        "Returns the unsigned full id shifted right by 14 bits."
+      ],
+      "evidence": [
+        "dao3-docs-mirror/markdown/api/GameVoxels/operate.md:397",
+        "origin/origin/origin/sync/ScriptVoxelSync.js:152",
+        "origin/third-party/ArenaPro-CLI/server/types/GameAPI.d.ts:17291"
+      ]
+    },
+    "voxels.shape": {
+      "signature": "readonly shape:GameVector3",
+      "realUsage": { "calls": 0, "samples": 0 },
+      "confirmedBehavior": [
+        "Reports one less than each underlying voxel array dimension.",
+        "Uses x, y, and z fields."
+      ],
+      "evidence": [
+        "dao3-docs-mirror/markdown/api/GameVoxels/operate.md:40",
+        "origin/origin/origin/sync/ScriptVoxelSync.js:79",
+        "origin/origin/origin/api/GameVoxels.js:3"
+      ]
+    },
+    "voxels.VoxelTypes": {
+      "signature": "readonly VoxelTypes:string[]",
+      "realUsage": { "calls": 0, "samples": 0 },
+      "confirmedBehavior": [
+        "Contains every non-empty BlockInfo name.",
+        "Is sorted with the historical default JavaScript array sort."
+      ],
+      "evidence": [
+        "dao3-docs-mirror/markdown/api/GameVoxels/operate.md:46",
+        "origin/origin/origin/sync/ScriptVoxelSync.js:67",
+        "origin/origin/origin/api/GameVoxels.js:4"
+      ]
+    }
+  }
+}

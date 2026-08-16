@@ -1,0 +1,13 @@
+[build]
+target = "start.html"
+html_output = "start.html"
+dist = "dist"
+release = true
+
+[serve]
+addresses = ["127.0.0.1"]
+port = 18080
+open = false
+
+[watch]
+ignore = ["signaling", "docs"]

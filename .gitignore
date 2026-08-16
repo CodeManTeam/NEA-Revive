@@ -1,0 +1,39 @@
+# === 构建产物 ===
+node_modules/
+target/
+dist/
+.build/
+*.staging-*
+*.backup-*
+
+# === Rust ===
+frontend/voxweb/target/
+frontend/voxweb/dist/
+Cargo.lock.orig
+
+# === Node ===
+*.log
+npm-debug.log*
+
+# === 编辑器/系统 ===
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+!.vscode/extensions.json
+
+# === 运行时临时 ===
+.runtime-logs/
+cdp-profile-*
+*.tmp
+
+# === 证据数据（原始 dump 不复制进仓库，只留 manifest 映射）===
+# evidence/ 下只有 manifest.json 等映射文件需要提交；
+# 若未来需要把提取产物纳入版本，单独放开对应路径。
+
+# === 隐私/密钥 ===
+.env
+.env.local
+*.pem
+*.key

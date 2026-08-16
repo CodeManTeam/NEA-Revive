@@ -1,0 +1,1480 @@
+[
+  {
+    "name": "varint-same",
+    "schema": {
+      "type": "varint",
+      "identity": 0
+    },
+    "base": 0,
+    "target": 0,
+    "changed": false,
+    "diffHex": ""
+  },
+  {
+    "name": "varint-small",
+    "schema": {
+      "type": "varint",
+      "identity": 0
+    },
+    "base": 0,
+    "target": 42,
+    "changed": true,
+    "diffHex": "2a"
+  },
+  {
+    "name": "varint-large",
+    "schema": {
+      "type": "varint",
+      "identity": 0
+    },
+    "base": 0,
+    "target": 4294967295,
+    "changed": true,
+    "diffHex": "ffffffff0f"
+  },
+  {
+    "name": "varint-delta",
+    "schema": {
+      "type": "varint",
+      "identity": 0
+    },
+    "base": 100,
+    "target": 1000000,
+    "changed": true,
+    "diffHex": "c0843d"
+  },
+  {
+    "name": "rvarint-same",
+    "schema": {
+      "type": "rvarint",
+      "identity": 0
+    },
+    "base": 5,
+    "target": 5,
+    "changed": false,
+    "diffHex": ""
+  },
+  {
+    "name": "rvarint-pos",
+    "schema": {
+      "type": "rvarint",
+      "identity": 0
+    },
+    "base": 5,
+    "target": 8,
+    "changed": true,
+    "diffHex": "07"
+  },
+  {
+    "name": "rvarint-neg",
+    "schema": {
+      "type": "rvarint",
+      "identity": 0
+    },
+    "base": 8,
+    "target": 5,
+    "changed": true,
+    "diffHex": "0d"
+  },
+  {
+    "name": "rvarint-big",
+    "schema": {
+      "type": "rvarint",
+      "identity": 0
+    },
+    "base": 0,
+    "target": 2147483647,
+    "changed": true,
+    "diffHex": "8380808008"
+  },
+  {
+    "name": "qf-same",
+    "schema": {
+      "type": "quantized-float",
+      "precision": 0.00390625,
+      "identity": 0
+    },
+    "base": 1.5,
+    "target": 1.5,
+    "changed": false,
+    "diffHex": ""
+  },
+  {
+    "name": "qf-pos",
+    "schema": {
+      "type": "quantized-float",
+      "precision": 0.00390625,
+      "identity": 0
+    },
+    "base": 0,
+    "target": 1,
+    "changed": true,
+    "diffHex": "8002"
+  },
+  {
+    "name": "qf-neg",
+    "schema": {
+      "type": "quantized-float",
+      "precision": 0.00390625,
+      "identity": 0
+    },
+    "base": 0.5,
+    "target": -0.25,
+    "changed": true,
+    "diffHex": "c006"
+  },
+  {
+    "name": "qf-multi",
+    "schema": {
+      "type": "quantized-float",
+      "precision": 0.00390625,
+      "identity": 0
+    },
+    "base": 0.09765625,
+    "target": 3.69921875,
+    "changed": true,
+    "diffHex": "ee09"
+  },
+  {
+    "name": "u8-same",
+    "schema": {
+      "type": "uint8",
+      "identity": 0
+    },
+    "base": 3,
+    "target": 3,
+    "changed": false,
+    "diffHex": ""
+  },
+  {
+    "name": "u8-chg",
+    "schema": {
+      "type": "uint8",
+      "identity": 0
+    },
+    "base": 3,
+    "target": 250,
+    "changed": true,
+    "diffHex": "fa"
+  },
+  {
+    "name": "u16-chg",
+    "schema": {
+      "type": "uint16",
+      "identity": 0
+    },
+    "base": 1,
+    "target": 65535,
+    "changed": true,
+    "diffHex": "ffff"
+  },
+  {
+    "name": "u32-chg",
+    "schema": {
+      "type": "uint32",
+      "identity": 0
+    },
+    "base": 1,
+    "target": 3735928559,
+    "changed": true,
+    "diffHex": "efbeadde"
+  },
+  {
+    "name": "i8-chg",
+    "schema": {
+      "type": "int8",
+      "identity": 0
+    },
+    "base": -5,
+    "target": 5,
+    "changed": true,
+    "diffHex": "05"
+  },
+  {
+    "name": "i16-chg",
+    "schema": {
+      "type": "int16",
+      "identity": 0
+    },
+    "base": -1000,
+    "target": 1000,
+    "changed": true,
+    "diffHex": "e803"
+  },
+  {
+    "name": "i32-chg",
+    "schema": {
+      "type": "int32",
+      "identity": 0
+    },
+    "base": -123456789,
+    "target": 987654321,
+    "changed": true,
+    "diffHex": "b168de3a"
+  },
+  {
+    "name": "f32-chg",
+    "schema": {
+      "type": "float32",
+      "identity": 0
+    },
+    "base": 0.5,
+    "target": -1.25,
+    "changed": true,
+    "diffHex": "0000a0bf"
+  },
+  {
+    "name": "f64-chg",
+    "schema": {
+      "type": "float64",
+      "identity": 0
+    },
+    "base": 0.1,
+    "target": -0.2,
+    "changed": true,
+    "diffHex": "9a9999999999c9bf"
+  },
+  {
+    "name": "bool-same",
+    "schema": {
+      "type": "boolean",
+      "identity": false
+    },
+    "base": false,
+    "target": false,
+    "changed": false,
+    "diffHex": ""
+  },
+  {
+    "name": "bool-chg",
+    "schema": {
+      "type": "boolean",
+      "identity": false
+    },
+    "base": false,
+    "target": true,
+    "changed": true,
+    "diffHex": "01"
+  },
+  {
+    "name": "ascii-same",
+    "schema": {
+      "type": "ascii",
+      "identity": ""
+    },
+    "base": "hi",
+    "target": "hi",
+    "changed": false,
+    "diffHex": ""
+  },
+  {
+    "name": "ascii-chg",
+    "schema": {
+      "type": "ascii",
+      "identity": ""
+    },
+    "base": "",
+    "target": "hello",
+    "changed": true,
+    "diffHex": "0568656c6c6f"
+  },
+  {
+    "name": "utf8-same",
+    "schema": {
+      "type": "utf8",
+      "identity": ""
+    },
+    "base": "x",
+    "target": "x",
+    "changed": false,
+    "diffHex": ""
+  },
+  {
+    "name": "utf8-chg",
+    "schema": {
+      "type": "utf8",
+      "identity": ""
+    },
+    "base": "",
+    "target": "中文",
+    "changed": true,
+    "diffHex": "06e4b8ade69687"
+  },
+  {
+    "name": "bytes-chg",
+    "schema": {
+      "type": "bytes",
+      "identity": "[]"
+    },
+    "base": [],
+    "target": [
+      1,
+      2,
+      3,
+      255
+    ],
+    "changed": true,
+    "diffHex": "04010203ff"
+  },
+  {
+    "name": "struct-mixed-all",
+    "schema": {
+      "type": "struct",
+      "subTypes": {
+        "weight": {
+          "type": "quantized-float",
+          "precision": 0.00390625,
+          "identity": 0
+        },
+        "rel": {
+          "type": "rvarint",
+          "identity": 0
+        },
+        "id": {
+          "type": "varint",
+          "identity": 0
+        },
+        "ratio": {
+          "type": "float64",
+          "identity": 0
+        },
+        "small": {
+          "type": "int16",
+          "identity": 0
+        },
+        "big": {
+          "type": "uint32",
+          "identity": 0
+        },
+        "count": {
+          "type": "uint8",
+          "identity": 0
+        },
+        "flag": {
+          "type": "boolean",
+          "identity": false
+        },
+        "data": {
+          "type": "bytes",
+          "identity": "[]"
+        },
+        "label": {
+          "type": "ascii",
+          "identity": ""
+        },
+        "nested": {
+          "type": "struct",
+          "subTypes": {
+            "x": {
+              "type": "varint",
+              "identity": 0
+            },
+            "y": {
+              "type": "uint8",
+              "identity": 0
+            }
+          }
+        },
+        "note": {
+          "type": "utf8",
+          "identity": ""
+        }
+      }
+    },
+    "base": {
+      "weight": 0,
+      "rel": 0,
+      "id": 0,
+      "ratio": 0,
+      "small": 0,
+      "big": 0,
+      "count": 0,
+      "flag": false,
+      "data": [],
+      "label": "",
+      "nested": {
+        "x": 0,
+        "y": 0
+      },
+      "note": ""
+    },
+    "target": {
+      "weight": 2.5,
+      "rel": 12,
+      "id": 9000,
+      "ratio": 3.14159,
+      "small": -123,
+      "big": 3405691582,
+      "count": 7,
+      "flag": true,
+      "data": [
+        9,
+        8,
+        7
+      ],
+      "label": "stone",
+      "nested": {
+        "x": 42,
+        "y": 3
+      },
+      "note": "测试note"
+    },
+    "changed": true,
+    "diffHex": "ff0f800f1ca8466e861bf0f921094085ffbebafeca07030908070573746f6e65032a030ae6b58be8af956e6f7465"
+  },
+  {
+    "name": "struct-mixed-partial",
+    "schema": {
+      "type": "struct",
+      "subTypes": {
+        "weight": {
+          "type": "quantized-float",
+          "precision": 0.00390625,
+          "identity": 0
+        },
+        "rel": {
+          "type": "rvarint",
+          "identity": 0
+        },
+        "id": {
+          "type": "varint",
+          "identity": 0
+        },
+        "ratio": {
+          "type": "float64",
+          "identity": 0
+        },
+        "small": {
+          "type": "int16",
+          "identity": 0
+        },
+        "big": {
+          "type": "uint32",
+          "identity": 0
+        },
+        "count": {
+          "type": "uint8",
+          "identity": 0
+        },
+        "flag": {
+          "type": "boolean",
+          "identity": false
+        },
+        "data": {
+          "type": "bytes",
+          "identity": "[]"
+        },
+        "label": {
+          "type": "ascii",
+          "identity": ""
+        },
+        "nested": {
+          "type": "struct",
+          "subTypes": {
+            "x": {
+              "type": "varint",
+              "identity": 0
+            },
+            "y": {
+              "type": "uint8",
+              "identity": 0
+            }
+          }
+        },
+        "note": {
+          "type": "utf8",
+          "identity": ""
+        }
+      }
+    },
+    "base": {
+      "weight": 0,
+      "rel": 0,
+      "id": 0,
+      "ratio": 0,
+      "small": 0,
+      "big": 0,
+      "count": 0,
+      "flag": false,
+      "data": [],
+      "label": "",
+      "nested": {
+        "x": 0,
+        "y": 0
+      },
+      "note": ""
+    },
+    "target": {
+      "weight": 0,
+      "rel": 0,
+      "id": 1,
+      "ratio": 0,
+      "small": 0,
+      "big": 0,
+      "count": 0,
+      "flag": false,
+      "data": [],
+      "label": "a",
+      "nested": {
+        "x": 0,
+        "y": 0
+      },
+      "note": ""
+    },
+    "changed": true,
+    "diffHex": "040301000161"
+  },
+  {
+    "name": "struct-mixed-same",
+    "schema": {
+      "type": "struct",
+      "subTypes": {
+        "weight": {
+          "type": "quantized-float",
+          "precision": 0.00390625,
+          "identity": 0
+        },
+        "rel": {
+          "type": "rvarint",
+          "identity": 0
+        },
+        "id": {
+          "type": "varint",
+          "identity": 0
+        },
+        "ratio": {
+          "type": "float64",
+          "identity": 0
+        },
+        "small": {
+          "type": "int16",
+          "identity": 0
+        },
+        "big": {
+          "type": "uint32",
+          "identity": 0
+        },
+        "count": {
+          "type": "uint8",
+          "identity": 0
+        },
+        "flag": {
+          "type": "boolean",
+          "identity": false
+        },
+        "data": {
+          "type": "bytes",
+          "identity": "[]"
+        },
+        "label": {
+          "type": "ascii",
+          "identity": ""
+        },
+        "nested": {
+          "type": "struct",
+          "subTypes": {
+            "x": {
+              "type": "varint",
+              "identity": 0
+            },
+            "y": {
+              "type": "uint8",
+              "identity": 0
+            }
+          }
+        },
+        "note": {
+          "type": "utf8",
+          "identity": ""
+        }
+      }
+    },
+    "base": {
+      "weight": 0,
+      "rel": 0,
+      "id": 0,
+      "ratio": 0,
+      "small": 0,
+      "big": 0,
+      "count": 0,
+      "flag": false,
+      "data": [],
+      "label": "",
+      "nested": {
+        "x": 0,
+        "y": 0
+      },
+      "note": ""
+    },
+    "target": {
+      "weight": 0,
+      "rel": 0,
+      "id": 0,
+      "ratio": 0,
+      "small": 0,
+      "big": 0,
+      "count": 0,
+      "flag": false,
+      "data": [],
+      "label": "",
+      "nested": {
+        "x": 0,
+        "y": 0
+      },
+      "note": ""
+    },
+    "changed": true,
+    "diffHex": "000100"
+  },
+  {
+    "name": "array-u8-empty-same",
+    "schema": {
+      "type": "array",
+      "valueType": {
+        "type": "uint8",
+        "identity": 0
+      },
+      "identity": "[]"
+    },
+    "base": [],
+    "target": [],
+    "changed": false,
+    "diffHex": ""
+  },
+  {
+    "name": "array-u8-grow",
+    "schema": {
+      "type": "array",
+      "valueType": {
+        "type": "uint8",
+        "identity": 0
+      },
+      "identity": "[]"
+    },
+    "base": [],
+    "target": [
+      1,
+      2,
+      3
+    ],
+    "changed": true,
+    "diffHex": "0307010203"
+  },
+  {
+    "name": "array-u8-shrink",
+    "schema": {
+      "type": "array",
+      "valueType": {
+        "type": "uint8",
+        "identity": 0
+      },
+      "identity": "[]"
+    },
+    "base": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "target": [
+      1,
+      2
+    ],
+    "changed": true,
+    "diffHex": "0200"
+  },
+  {
+    "name": "array-u8-mid-change",
+    "schema": {
+      "type": "array",
+      "valueType": {
+        "type": "uint8",
+        "identity": 0
+      },
+      "identity": "[]"
+    },
+    "base": [
+      1,
+      2,
+      3
+    ],
+    "target": [
+      1,
+      9,
+      3
+    ],
+    "changed": true,
+    "diffHex": "030209"
+  },
+  {
+    "name": "array-u8-all",
+    "schema": {
+      "type": "array",
+      "valueType": {
+        "type": "uint8",
+        "identity": 0
+      },
+      "identity": "[]"
+    },
+    "base": [
+      0,
+      0,
+      0
+    ],
+    "target": [
+      5,
+      6,
+      7,
+      8
+    ],
+    "changed": true,
+    "diffHex": "040f05060708"
+  },
+  {
+    "name": "array-varint",
+    "schema": {
+      "type": "array",
+      "valueType": {
+        "type": "varint",
+        "identity": 0
+      },
+      "identity": "[]"
+    },
+    "base": [
+      0,
+      10,
+      20
+    ],
+    "target": [
+      0,
+      11,
+      20,
+      30
+    ],
+    "changed": true,
+    "diffHex": "040a0b1e"
+  },
+  {
+    "name": "option-same-undef",
+    "schema": {
+      "type": "option",
+      "valueType": {
+        "type": "varint",
+        "identity": 0
+      },
+      "identity": "0"
+    },
+    "base": null,
+    "target": null,
+    "changed": false,
+    "diffHex": ""
+  },
+  {
+    "name": "option-identity",
+    "schema": {
+      "type": "option",
+      "valueType": {
+        "type": "varint",
+        "identity": 0
+      },
+      "identity": "0"
+    },
+    "base": null,
+    "target": 0,
+    "changed": true,
+    "diffHex": "01"
+  },
+  {
+    "name": "option-defined",
+    "schema": {
+      "type": "option",
+      "valueType": {
+        "type": "varint",
+        "identity": 0
+      },
+      "identity": "0"
+    },
+    "base": null,
+    "target": 77,
+    "changed": true,
+    "diffHex": "024d"
+  },
+  {
+    "name": "option-to-undef",
+    "schema": {
+      "type": "option",
+      "valueType": {
+        "type": "varint",
+        "identity": 0
+      },
+      "identity": "0"
+    },
+    "base": 77,
+    "target": null,
+    "changed": true,
+    "diffHex": "00"
+  },
+  {
+    "name": "option-stayed",
+    "schema": {
+      "type": "option",
+      "valueType": {
+        "type": "varint",
+        "identity": 0
+      },
+      "identity": "0"
+    },
+    "base": 5,
+    "target": 9,
+    "changed": true,
+    "diffHex": "0309"
+  },
+  {
+    "name": "option-same-val",
+    "schema": {
+      "type": "option",
+      "valueType": {
+        "type": "varint",
+        "identity": 0
+      },
+      "identity": "0"
+    },
+    "base": 5,
+    "target": 5,
+    "changed": false,
+    "diffHex": ""
+  },
+  {
+    "name": "union-same-type",
+    "schema": {
+      "type": "union",
+      "identity": "",
+      "data": {
+        "a": {
+          "type": "uint8",
+          "identity": 0
+        },
+        "b": {
+          "type": "varint",
+          "identity": 0
+        },
+        "c": {
+          "type": "utf8",
+          "identity": ""
+        }
+      }
+    },
+    "base": {
+      "type": "a",
+      "data": 1
+    },
+    "target": {
+      "type": "a",
+      "data": 2
+    },
+    "changed": true,
+    "diffHex": "0102"
+  },
+  {
+    "name": "union-switch",
+    "schema": {
+      "type": "union",
+      "identity": "",
+      "data": {
+        "a": {
+          "type": "uint8",
+          "identity": 0
+        },
+        "b": {
+          "type": "varint",
+          "identity": 0
+        },
+        "c": {
+          "type": "utf8",
+          "identity": ""
+        }
+      }
+    },
+    "base": {
+      "type": "a",
+      "data": 1
+    },
+    "target": {
+      "type": "b",
+      "data": 99
+    },
+    "changed": true,
+    "diffHex": "020163"
+  },
+  {
+    "name": "union-switch-identity",
+    "schema": {
+      "type": "union",
+      "identity": "",
+      "data": {
+        "a": {
+          "type": "uint8",
+          "identity": 0
+        },
+        "b": {
+          "type": "varint",
+          "identity": 0
+        },
+        "c": {
+          "type": "utf8",
+          "identity": ""
+        }
+      }
+    },
+    "base": {
+      "type": "c",
+      "data": "x"
+    },
+    "target": {
+      "type": "b",
+      "data": 0
+    },
+    "changed": true,
+    "diffHex": "0401"
+  },
+  {
+    "name": "union-identity-base",
+    "schema": {
+      "type": "union",
+      "identity": "",
+      "data": {
+        "a": {
+          "type": "uint8",
+          "identity": 0
+        },
+        "b": {
+          "type": "varint",
+          "identity": 0
+        },
+        "c": {
+          "type": "utf8",
+          "identity": ""
+        }
+      }
+    },
+    "base": {
+      "type": "",
+      "data": null
+    },
+    "target": {
+      "type": "c",
+      "data": "hi"
+    },
+    "changed": true,
+    "diffHex": "0202026869"
+  },
+  {
+    "name": "dict-same",
+    "schema": {
+      "type": "dictionary",
+      "valueType": {
+        "type": "uint8",
+        "identity": 0
+      },
+      "identity": "{}"
+    },
+    "base": {},
+    "target": {},
+    "changed": false,
+    "diffHex": ""
+  },
+  {
+    "name": "dict-add",
+    "schema": {
+      "type": "dictionary",
+      "valueType": {
+        "type": "uint8",
+        "identity": 0
+      },
+      "identity": "{}"
+    },
+    "base": {},
+    "target": {
+      "a": 1,
+      "b": 2
+    },
+    "changed": true,
+    "diffHex": "00000000000000000200000003016101016202"
+  },
+  {
+    "name": "dict-del",
+    "schema": {
+      "type": "dictionary",
+      "valueType": {
+        "type": "uint8",
+        "identity": 0
+      },
+      "identity": "{}"
+    },
+    "base": {
+      "a": 1,
+      "b": 2
+    },
+    "target": {
+      "a": 1
+    },
+    "changed": true,
+    "diffHex": "01000000000000000000000001"
+  },
+  {
+    "name": "dict-patch",
+    "schema": {
+      "type": "dictionary",
+      "valueType": {
+        "type": "uint8",
+        "identity": 0
+      },
+      "identity": "{}"
+    },
+    "base": {
+      "a": 1,
+      "b": 2
+    },
+    "target": {
+      "a": 9,
+      "b": 2
+    },
+    "changed": true,
+    "diffHex": "0000000001000000000000000009"
+  },
+  {
+    "name": "dict-mixed",
+    "schema": {
+      "type": "dictionary",
+      "valueType": {
+        "type": "uint8",
+        "identity": 0
+      },
+      "identity": "{}"
+    },
+    "base": {
+      "a": 1,
+      "b": 2,
+      "c": 3
+    },
+    "target": {
+      "b": 8,
+      "d": 4
+    },
+    "changed": true,
+    "diffHex": "0200000001000000010000000002010801016404"
+  },
+  {
+    "name": "sorted-same",
+    "schema": {
+      "type": "sorted-array",
+      "valueType": {
+        "type": "uint32",
+        "identity": 0
+      },
+      "identity": "[]"
+    },
+    "base": [],
+    "target": [],
+    "changed": false,
+    "diffHex": ""
+  },
+  {
+    "name": "sorted-insert",
+    "schema": {
+      "type": "sorted-array",
+      "valueType": {
+        "type": "uint32",
+        "identity": 0
+      },
+      "identity": "[]"
+    },
+    "base": [
+      1,
+      2,
+      3
+    ],
+    "target": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "changed": true,
+    "diffHex": "020000001c0000000a00000004000000"
+  },
+  {
+    "name": "sorted-skip",
+    "schema": {
+      "type": "sorted-array",
+      "valueType": {
+        "type": "uint32",
+        "identity": 0
+      },
+      "identity": "[]"
+    },
+    "base": [
+      1,
+      2,
+      3
+    ],
+    "target": [
+      2,
+      3
+    ],
+    "changed": true,
+    "diffHex": "020000000800000014000000"
+  },
+  {
+    "name": "sorted-patch",
+    "schema": {
+      "type": "sorted-array",
+      "valueType": {
+        "type": "uint32",
+        "identity": 0
+      },
+      "identity": "[]"
+    },
+    "base": [
+      1,
+      2,
+      3
+    ],
+    "target": [
+      1,
+      2,
+      9
+    ],
+    "changed": true,
+    "diffHex": "0300000014000000080000000a00000009000000"
+  },
+  {
+    "name": "sorted-mix",
+    "schema": {
+      "type": "sorted-array",
+      "valueType": {
+        "type": "uint32",
+        "identity": 0
+      },
+      "identity": "[]"
+    },
+    "base": [
+      1,
+      3,
+      5
+    ],
+    "target": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "changed": true,
+    "diffHex": "060000000c0000000a000000020000000c0000000a000000040000000c0000000a00000006000000"
+  },
+  {
+    "name": "void",
+    "schema": {
+      "type": "void"
+    },
+    "base": null,
+    "target": null,
+    "changed": false,
+    "diffHex": ""
+  },
+  {
+    "name": "array-struct-grow",
+    "schema": {
+      "type": "array",
+      "valueType": {
+        "type": "struct",
+        "subTypes": {
+          "id": {
+            "type": "varint",
+            "identity": 0
+          },
+          "name": {
+            "type": "utf8",
+            "identity": ""
+          }
+        }
+      },
+      "identity": "[]"
+    },
+    "base": [],
+    "target": [
+      {
+        "id": 1,
+        "name": "a"
+      },
+      {
+        "id": 2,
+        "name": "b"
+      }
+    ],
+    "changed": true,
+    "diffHex": "02030301016103020162"
+  },
+  {
+    "name": "array-struct-same",
+    "schema": {
+      "type": "array",
+      "valueType": {
+        "type": "struct",
+        "subTypes": {
+          "id": {
+            "type": "varint",
+            "identity": 0
+          },
+          "name": {
+            "type": "utf8",
+            "identity": ""
+          }
+        }
+      },
+      "identity": "[]"
+    },
+    "base": [
+      {
+        "id": 1,
+        "name": "a"
+      },
+      {
+        "id": 2,
+        "name": "b"
+      }
+    ],
+    "target": [
+      {
+        "id": 1,
+        "name": "a"
+      },
+      {
+        "id": 2,
+        "name": "b"
+      }
+    ],
+    "changed": false,
+    "diffHex": ""
+  },
+  {
+    "name": "array-struct-patch",
+    "schema": {
+      "type": "array",
+      "valueType": {
+        "type": "struct",
+        "subTypes": {
+          "id": {
+            "type": "varint",
+            "identity": 0
+          },
+          "name": {
+            "type": "utf8",
+            "identity": ""
+          }
+        }
+      },
+      "identity": "[]"
+    },
+    "base": [
+      {
+        "id": 1,
+        "name": "a"
+      },
+      {
+        "id": 2,
+        "name": "b"
+      }
+    ],
+    "target": [
+      {
+        "id": 1,
+        "name": "A"
+      },
+      {
+        "id": 2,
+        "name": "b"
+      }
+    ],
+    "changed": true,
+    "diffHex": "0201020141"
+  },
+  {
+    "name": "struct-complex-all",
+    "schema": {
+      "type": "struct",
+      "subTypes": {
+        "choice": {
+          "type": "union",
+          "identity": "a",
+          "data": {
+            "a": {
+              "type": "uint8",
+              "identity": 0
+            },
+            "b": {
+              "type": "varint",
+              "identity": 0
+            },
+            "c": {
+              "type": "utf8",
+              "identity": ""
+            }
+          }
+        },
+        "items": {
+          "type": "array",
+          "valueType": {
+            "type": "uint8",
+            "identity": 0
+          },
+          "identity": "[]"
+        },
+        "map": {
+          "type": "dictionary",
+          "valueType": {
+            "type": "uint8",
+            "identity": 0
+          },
+          "identity": "{}"
+        },
+        "maybe": {
+          "type": "option",
+          "valueType": {
+            "type": "varint",
+            "identity": 0
+          },
+          "identity": "0"
+        }
+      }
+    },
+    "base": {
+      "choice": {
+        "type": "a",
+        "data": 0
+      },
+      "items": [],
+      "map": {},
+      "maybe": 0
+    },
+    "target": {
+      "choice": {
+        "type": "b",
+        "data": 55
+      },
+      "items": [
+        3,
+        1,
+        4
+      ],
+      "map": {
+        "k": 9
+      },
+      "maybe": 12
+    },
+    "changed": true,
+    "diffHex": "0f020137030703010400000000000000000100000001016b09030c"
+  },
+  {
+    "name": "struct-complex-same",
+    "schema": {
+      "type": "struct",
+      "subTypes": {
+        "choice": {
+          "type": "union",
+          "identity": "a",
+          "data": {
+            "a": {
+              "type": "uint8",
+              "identity": 0
+            },
+            "b": {
+              "type": "varint",
+              "identity": 0
+            },
+            "c": {
+              "type": "utf8",
+              "identity": ""
+            }
+          }
+        },
+        "items": {
+          "type": "array",
+          "valueType": {
+            "type": "uint8",
+            "identity": 0
+          },
+          "identity": "[]"
+        },
+        "map": {
+          "type": "dictionary",
+          "valueType": {
+            "type": "uint8",
+            "identity": 0
+          },
+          "identity": "{}"
+        },
+        "maybe": {
+          "type": "option",
+          "valueType": {
+            "type": "varint",
+            "identity": 0
+          },
+          "identity": "0"
+        }
+      }
+    },
+    "base": {
+      "choice": {
+        "type": "a",
+        "data": 0
+      },
+      "items": [],
+      "map": {},
+      "maybe": 0
+    },
+    "target": {
+      "choice": {
+        "type": "a",
+        "data": 0
+      },
+      "items": [],
+      "map": {},
+      "maybe": 0
+    },
+    "changed": false,
+    "diffHex": ""
+  },
+  {
+    "name": "message-frame-id-varint",
+    "schema": {
+      "type": "struct",
+      "subTypes": {
+        "x": {
+          "type": "uint16",
+          "identity": 0
+        },
+        "y": {
+          "type": "uint8",
+          "identity": 0
+        }
+      }
+    },
+    "base": {
+      "x": 0,
+      "y": 0
+    },
+    "target": {
+      "x": 300,
+      "y": 7
+    },
+    "changed": true,
+    "diffHex": "0c032c0107",
+    "frame": {
+      "idBase": 10,
+      "msgId": 2
+    }
+  }
+]

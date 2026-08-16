@@ -1,0 +1,61 @@
+{
+  "format": "nea-contact-force-production-analysis",
+  "version": 1,
+  "generatedAt": "2026-07-31T04:39:03.393Z",
+  "source": {
+    "path": "local-player/archive/project/bedwars/client-runtime/assets/_next/static/chunks/734.8dcb480d99773395.js",
+    "sha256": "35067ead851335f4a2c878350aea4c3fcbbfaf1d71a79a5525b9e303ec8b0707"
+  },
+  "modules": {
+    "solver": {
+      "id": 64781,
+      "sha256": "d92c2c31fedc81bd2b508f3dd23a67a274a40cd498f4715ae4076d9b7cc20911",
+      "bytes": 9529
+    },
+    "contactIndexWriter": {
+      "id": 20351,
+      "sha256": "60f7a9fbff1ec5e2a91c229b5ec4115ee444db9c49bfcb5c91174db679d89a79",
+      "bytes": 6728
+    },
+    "contactRecordHelpers": {
+      "id": 20747,
+      "sha256": "18c3bd8618698819c79c94d82c0f159721f3520a012e44b24b94ede8ac0862db",
+      "bytes": 1630
+    }
+  },
+  "solverForce": {
+    "reset": "Each solver pass resets contact fx/fy/fz before processing its contact points.",
+    "perPointFormula": "force += (normal * normalImpulse + tangent * tangentImpulse + binormal * binormalImpulse) * INV_DT",
+    "units": "impulse-per-fixed-step converted to force by INV_DT",
+    "includesFriction": true,
+    "status": "confirmed"
+  },
+  "bodyContactProjection": {
+    "firstBody": {
+      "axis": "negative solver normal",
+      "force": "solver force"
+    },
+    "secondBody": {
+      "axis": "solver normal",
+      "force": "negative solver force"
+    },
+    "status": "confirmed"
+  },
+  "voxelContactProjection": {
+    "initialForce": [
+      0,
+      0,
+      0
+    ],
+    "solverForceAssignedToFirstGeneratedVoxelContact": true,
+    "compactGrouping": "same packed axis and same coordinate along that axis",
+    "cutoff": 0.001,
+    "cutoffRule": "retain a group when any absolute summed force component exceeds the cutoff",
+    "retainedForce": "component-wise group sum divided by group contact count, copied to each retained contact",
+    "status": "confirmed"
+  },
+  "contactForceProperty": {
+    "status": "unresolved",
+    "reason": "ContactBinding implementation is absent; the rule that aggregates active contact records into GameEntity.contactForce is still unavailable."
+  }
+}

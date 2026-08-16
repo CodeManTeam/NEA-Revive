@@ -1,0 +1,723 @@
+{
+  "format": "nea-posture-delta-corpus-inventory",
+  "version": 1,
+  "generatedAt": "2026-07-31T04:39:05.443Z",
+  "sourceSets": [
+    {
+      "id": "box-go-captures",
+      "path": "sibling-box-go/dump/downloaded",
+      "files": 9,
+      "available": true
+    },
+    {
+      "id": "box-go-resource-archives",
+      "path": "sibling-box-go/dump/downloaded",
+      "files": 3,
+      "available": true
+    },
+    {
+      "id": "local-player-bootstrap",
+      "path": "local-player/archive/project/bedwars/bootstrap/bootstrap.json",
+      "files": 1,
+      "available": true
+    },
+    {
+      "id": "local-player-websocket-discovery-cache",
+      "path": "local-player/runtime",
+      "files": 2,
+      "available": true
+    },
+    {
+      "id": "legacy-static-replay",
+      "path": "sibling-local-worktree/others/box-go-src/replay-data.ts",
+      "files": 1,
+      "available": true
+    },
+    {
+      "id": "player-browser-profile",
+      "path": "local-player/.profile/Default",
+      "files": 400,
+      "available": true
+    },
+    {
+      "id": "legacy-binary-candidates",
+      "path": "sibling-local-worktree",
+      "files": 0,
+      "available": true
+    }
+  ],
+  "packetOrderEvidence": {
+    "path": "sibling-box-go/src/packet-analysis.ts",
+    "expectedSha256": "3925a75e3a48beadd5d0b415f72aa5a95e2efa6e693a7c86c060e2100c883f8c",
+    "observedSha256": "3925a75e3a48beadd5d0b415f72aa5a95e2efa6e693a7c86c060e2100c883f8c",
+    "protocolOrder": [
+      "netLog",
+      "models",
+      "gameNet",
+      "gameClock",
+      "input",
+      "sound",
+      "gameTerrain",
+      "gameChat",
+      "playerProtocol",
+      "entityInteract",
+      "dialog",
+      "navigator",
+      "ref",
+      "rtc",
+      "gui",
+      "market",
+      "teleport",
+      "remoteChannel",
+      "gameUI",
+      "admin"
+    ]
+  },
+  "captures": {
+    "count": 9,
+    "traffic": {
+      "messages": 1963,
+      "clientToServerTextFrames": 91,
+      "clientToServerBinaryFrames": 1864,
+      "serverToClientTextFrames": 8,
+      "serverToClientBinaryFrames": 0
+    },
+    "packetGroups": [
+      {
+        "direction": "send",
+        "id": 6,
+        "protocol": "game-net",
+        "message": "input",
+        "count": 1309,
+        "bytes": 42254
+      },
+      {
+        "direction": "send",
+        "id": 5,
+        "protocol": "game-net",
+        "message": "acknowledge",
+        "count": 332,
+        "bytes": 1660
+      },
+      {
+        "direction": "send",
+        "id": 9,
+        "protocol": "game-net",
+        "message": "sendKeyBoardEvent",
+        "count": 90,
+        "bytes": 1072
+      },
+      {
+        "direction": "send",
+        "id": 13,
+        "protocol": "game-clock",
+        "message": "ping",
+        "count": 86,
+        "bytes": 758
+      },
+      {
+        "direction": "send",
+        "id": 1,
+        "protocol": "net-log",
+        "message": "logASCII",
+        "count": 18,
+        "bytes": 543
+      },
+      {
+        "direction": "send",
+        "id": 29,
+        "protocol": "dialog",
+        "message": "close",
+        "count": 9,
+        "bytes": 123
+      },
+      {
+        "direction": "send",
+        "id": 2,
+        "protocol": "net-log",
+        "message": "logPino",
+        "count": 6,
+        "bytes": 10746
+      },
+      {
+        "direction": "send",
+        "id": 11,
+        "protocol": "game-net",
+        "message": "unpause",
+        "count": 4,
+        "bytes": 8
+      },
+      {
+        "direction": "send",
+        "id": 7,
+        "protocol": "game-net",
+        "message": "join",
+        "count": 3,
+        "bytes": 3
+      },
+      {
+        "direction": "send",
+        "id": 19,
+        "protocol": "game-terrain",
+        "message": "ready",
+        "count": 3,
+        "bytes": 3
+      },
+      {
+        "direction": "send",
+        "id": 46,
+        "protocol": "remote-channel",
+        "message": "sendServerEvent",
+        "count": 3,
+        "bytes": 39
+      },
+      {
+        "direction": "send",
+        "id": 8,
+        "protocol": "game-net",
+        "message": "pause",
+        "count": 1,
+        "bytes": 1
+      }
+    ],
+    "files": [
+      {
+        "name": "box-go-2026-07-21T11-47-03-088Z.json",
+        "bytes": 12271,
+        "sha256": "d4bf10f63c2729ed9859c4aef297ca2341c6f97cb835184c46fb9ed551ba40cd",
+        "format": "box-go-capture",
+        "version": 1,
+        "socketCount": 0,
+        "messageCount": 21,
+        "messageCounts": {
+          "send:text": 21
+        },
+        "packetGroups": []
+      },
+      {
+        "name": "box-go-2026-07-21T11-55-07-529Z.json",
+        "bytes": 13137,
+        "sha256": "c9d5ef9657485a0869cdc19b11d6d5db2967b8eef8dc0becc537a7c008b02f49",
+        "format": "box-go-capture",
+        "version": 1,
+        "socketCount": 0,
+        "messageCount": 22,
+        "messageCounts": {
+          "send:text": 22
+        },
+        "packetGroups": []
+      },
+      {
+        "name": "box-go-2026-07-21T11-55-15-858Z.json",
+        "bytes": 181720,
+        "sha256": "006c16d5dfedd9d8dd5fcdb82f5c8a75400d843fc9cd23609b73eb20384577e2",
+        "format": "box-go-capture",
+        "version": 1,
+        "socketCount": 0,
+        "messageCount": 1156,
+        "messageCounts": {
+          "send:binary": 1156
+        },
+        "packetGroups": [
+          {
+            "direction": "send",
+            "id": 6,
+            "protocol": "game-net",
+            "message": "input",
+            "count": 831,
+            "bytes": 26394
+          },
+          {
+            "direction": "send",
+            "id": 5,
+            "protocol": "game-net",
+            "message": "acknowledge",
+            "count": 213,
+            "bytes": 1065
+          },
+          {
+            "direction": "send",
+            "id": 9,
+            "protocol": "game-net",
+            "message": "sendKeyBoardEvent",
+            "count": 52,
+            "bytes": 642
+          },
+          {
+            "direction": "send",
+            "id": 13,
+            "protocol": "game-clock",
+            "message": "ping",
+            "count": 43,
+            "bytes": 379
+          },
+          {
+            "direction": "send",
+            "id": 1,
+            "protocol": "net-log",
+            "message": "logASCII",
+            "count": 6,
+            "bytes": 181
+          },
+          {
+            "direction": "send",
+            "id": 29,
+            "protocol": "dialog",
+            "message": "close",
+            "count": 3,
+            "bytes": 41
+          },
+          {
+            "direction": "send",
+            "id": 2,
+            "protocol": "net-log",
+            "message": "logPino",
+            "count": 2,
+            "bytes": 3606
+          },
+          {
+            "direction": "send",
+            "id": 11,
+            "protocol": "game-net",
+            "message": "unpause",
+            "count": 2,
+            "bytes": 6
+          },
+          {
+            "direction": "send",
+            "id": 7,
+            "protocol": "game-net",
+            "message": "join",
+            "count": 1,
+            "bytes": 1
+          },
+          {
+            "direction": "send",
+            "id": 8,
+            "protocol": "game-net",
+            "message": "pause",
+            "count": 1,
+            "bytes": 1
+          },
+          {
+            "direction": "send",
+            "id": 19,
+            "protocol": "game-terrain",
+            "message": "ready",
+            "count": 1,
+            "bytes": 1
+          },
+          {
+            "direction": "send",
+            "id": 46,
+            "protocol": "remote-channel",
+            "message": "sendServerEvent",
+            "count": 1,
+            "bytes": 13
+          }
+        ]
+      },
+      {
+        "name": "box-go-2026-07-21T12-03-01-177Z.json",
+        "bytes": 13061,
+        "sha256": "79416d4b3c56ace530553b40856cb1f77a13656c6276b840ba5478406bf4c6c6",
+        "format": "box-go-capture",
+        "version": 1,
+        "socketCount": 1,
+        "messageCount": 23,
+        "messageCounts": {
+          "send:text": 21,
+          "receive:text": 2
+        },
+        "packetGroups": []
+      },
+      {
+        "name": "box-go-2026-07-21T12-03-06-441Z.json",
+        "bytes": 85655,
+        "sha256": "e0de16a2356acf797b1fd6a77bbe6cc3ac47951d6e21a731066369eed38a36db",
+        "format": "box-go-capture",
+        "version": 1,
+        "socketCount": 1,
+        "messageCount": 356,
+        "messageCounts": {
+          "send:binary": 356
+        },
+        "packetGroups": [
+          {
+            "direction": "send",
+            "id": 6,
+            "protocol": "game-net",
+            "message": "input",
+            "count": 246,
+            "bytes": 7614
+          },
+          {
+            "direction": "send",
+            "id": 5,
+            "protocol": "game-net",
+            "message": "acknowledge",
+            "count": 61,
+            "bytes": 305
+          },
+          {
+            "direction": "send",
+            "id": 13,
+            "protocol": "game-clock",
+            "message": "ping",
+            "count": 22,
+            "bytes": 198
+          },
+          {
+            "direction": "send",
+            "id": 9,
+            "protocol": "game-net",
+            "message": "sendKeyBoardEvent",
+            "count": 12,
+            "bytes": 108
+          },
+          {
+            "direction": "send",
+            "id": 1,
+            "protocol": "net-log",
+            "message": "logASCII",
+            "count": 6,
+            "bytes": 181
+          },
+          {
+            "direction": "send",
+            "id": 29,
+            "protocol": "dialog",
+            "message": "close",
+            "count": 3,
+            "bytes": 41
+          },
+          {
+            "direction": "send",
+            "id": 2,
+            "protocol": "net-log",
+            "message": "logPino",
+            "count": 2,
+            "bytes": 3570
+          },
+          {
+            "direction": "send",
+            "id": 7,
+            "protocol": "game-net",
+            "message": "join",
+            "count": 1,
+            "bytes": 1
+          },
+          {
+            "direction": "send",
+            "id": 11,
+            "protocol": "game-net",
+            "message": "unpause",
+            "count": 1,
+            "bytes": 1
+          },
+          {
+            "direction": "send",
+            "id": 19,
+            "protocol": "game-terrain",
+            "message": "ready",
+            "count": 1,
+            "bytes": 1
+          },
+          {
+            "direction": "send",
+            "id": 46,
+            "protocol": "remote-channel",
+            "message": "sendServerEvent",
+            "count": 1,
+            "bytes": 13
+          }
+        ]
+      },
+      {
+        "name": "box-go-2026-07-21T12-07-13-578Z.json",
+        "bytes": 13037,
+        "sha256": "e9c4e313b47345c4f8f7d8161080920a028673f51d42de18273ba7ff3dec1e44",
+        "format": "box-go-capture",
+        "version": 1,
+        "socketCount": 1,
+        "messageCount": 23,
+        "messageCounts": {
+          "send:text": 21,
+          "receive:text": 2
+        },
+        "packetGroups": []
+      },
+      {
+        "name": "box-go-2026-07-21T12-07-18-036Z.json",
+        "bytes": 86428,
+        "sha256": "334e95614d650538147f3b1a2a04b96c21d6c9b17fd63f5396e71f9ebf48d43d",
+        "format": "box-go-capture",
+        "version": 1,
+        "socketCount": 1,
+        "messageCount": 352,
+        "messageCounts": {
+          "send:binary": 352
+        },
+        "packetGroups": [
+          {
+            "direction": "send",
+            "id": 6,
+            "protocol": "game-net",
+            "message": "input",
+            "count": 232,
+            "bytes": 8246
+          },
+          {
+            "direction": "send",
+            "id": 5,
+            "protocol": "game-net",
+            "message": "acknowledge",
+            "count": 58,
+            "bytes": 290
+          },
+          {
+            "direction": "send",
+            "id": 9,
+            "protocol": "game-net",
+            "message": "sendKeyBoardEvent",
+            "count": 26,
+            "bytes": 322
+          },
+          {
+            "direction": "send",
+            "id": 13,
+            "protocol": "game-clock",
+            "message": "ping",
+            "count": 21,
+            "bytes": 181
+          },
+          {
+            "direction": "send",
+            "id": 1,
+            "protocol": "net-log",
+            "message": "logASCII",
+            "count": 6,
+            "bytes": 181
+          },
+          {
+            "direction": "send",
+            "id": 29,
+            "protocol": "dialog",
+            "message": "close",
+            "count": 3,
+            "bytes": 41
+          },
+          {
+            "direction": "send",
+            "id": 2,
+            "protocol": "net-log",
+            "message": "logPino",
+            "count": 2,
+            "bytes": 3570
+          },
+          {
+            "direction": "send",
+            "id": 7,
+            "protocol": "game-net",
+            "message": "join",
+            "count": 1,
+            "bytes": 1
+          },
+          {
+            "direction": "send",
+            "id": 11,
+            "protocol": "game-net",
+            "message": "unpause",
+            "count": 1,
+            "bytes": 1
+          },
+          {
+            "direction": "send",
+            "id": 19,
+            "protocol": "game-terrain",
+            "message": "ready",
+            "count": 1,
+            "bytes": 1
+          },
+          {
+            "direction": "send",
+            "id": 46,
+            "protocol": "remote-channel",
+            "message": "sendServerEvent",
+            "count": 1,
+            "bytes": 13
+          }
+        ]
+      },
+      {
+        "name": "box-go-browser-2026-07-21T12-39-26-900Z.json",
+        "bytes": 25110,
+        "sha256": "587de7c1b01797b858ad30ab01d7664b6330668d55a8c2f652bb8515a24cb9ca",
+        "format": "box-go-capture",
+        "version": 1,
+        "socketCount": 1,
+        "messageCount": 5,
+        "messageCounts": {
+          "send:text": 3,
+          "receive:text": 2
+        },
+        "packetGroups": []
+      },
+      {
+        "name": "box-go-browser-2026-07-21T12-43-00-177Z.json",
+        "bytes": 25654,
+        "sha256": "3eaf80ba441bfa4bf09ff56185094d3c35c1516e640de55ed799487f176a7c38",
+        "format": "box-go-capture",
+        "version": 1,
+        "socketCount": 1,
+        "messageCount": 5,
+        "messageCounts": {
+          "send:text": 3,
+          "receive:text": 2
+        },
+        "packetGroups": []
+      }
+    ]
+  },
+  "resourceArchives": {
+    "count": 3,
+    "frameCandidateEntries": 0,
+    "files": [
+      {
+        "name": "box3-dump-1784635007016.zip",
+        "bytes": 15167863,
+        "sha256": "f8b89aadecae493b5e3d7cf24c75c01fe03d7b60d2b308b1224bce28763a8c5c",
+        "entries": 222,
+        "frameCandidateEntries": 0,
+        "frameCandidates": []
+      },
+      {
+        "name": "box3-dump-1784635394254.zip",
+        "bytes": 16936961,
+        "sha256": "635351f02027232ea6d726f631732a2fb2b359d861c25c4102410003f49de494",
+        "entries": 224,
+        "frameCandidateEntries": 0,
+        "frameCandidates": []
+      },
+      {
+        "name": "box3-dump-1784635647946.zip",
+        "bytes": 16935877,
+        "sha256": "5d8c31823128effea8ac64d154185edaea938b723b451a2986e7884eca9d87ec",
+        "entries": 224,
+        "frameCandidateEntries": 0,
+        "frameCandidates": []
+      }
+    ],
+    "classification": "resource-only"
+  },
+  "bootstrap": {
+    "path": "local-player/archive/project/bedwars/bootstrap/bootstrap.json",
+    "available": true,
+    "bytes": 62962,
+    "sha256": "ea634db3a6c184bd4c5fb8ff27139e588314d053e9f4ce6d15f0037aa8e93596",
+    "sourceMessages": [
+      "models.appendMeshHashes",
+      "models.appendSkinHashes",
+      "models.appendSkinPartHashes",
+      "sound.resetDictionary",
+      "gameNet.syncClientScriptModules",
+      "gameTerrain.reset",
+      "models.appendSkinPartHashes"
+    ],
+    "rawPayloadFields": [],
+    "classification": "decoded-initialization-message-index"
+  },
+  "staticReplay": {
+    "path": "sibling-local-worktree/others/box-go-src/replay-data.ts",
+    "available": true,
+    "bytes": 1324421,
+    "sha256": "221e5cc0cc6c8818408c3927ccb63a424949764f85a14b75adb5506e8754f215",
+    "decodedMessages": 55,
+    "byMessage": {
+      "models/appendMeshHashes": 1,
+      "models/appendSkinHashes": 1,
+      "models/appendSkinPartHashes": 2,
+      "sound/resetDictionary": 1,
+      "gameNet/syncClientScriptModules": 1,
+      "gameTerrain/reset": 1,
+      "playerProtocol/playerJoin": 1,
+      "gameTerrain/chunkResponse": 37,
+      "gameChat/log": 1,
+      "remoteChannel/sendClientEvent": 8,
+      "input/setCameraPitch": 1
+    },
+    "rawMarkers": {
+      "base64": 0,
+      "uint8Array": 0,
+      "arrayBuffer": 0,
+      "raw": 0
+    },
+    "rawPayloadAvailable": false,
+    "classification": "decoded-static-replay-without-wire-bytes"
+  },
+  "websocketDiscovery": {
+    "classification": "http-websocket-connection-discovery-metadata",
+    "responses": [
+      {
+        "path": "local-player/runtime/responses/code-api-pc.dao3.fun/_websocket_server-269.json",
+        "bytes": 127,
+        "sha256": "b3772c72aeeb2f791aa1c795fb37396168121d41f72b4338f9e09a5149586025",
+        "keys": [
+          "code",
+          "data",
+          "msg",
+          "traceId"
+        ],
+        "dataProtocol": "wss:",
+        "traceIdentifierPresent": true,
+        "rawPayloadFields": []
+      },
+      {
+        "path": "local-player/runtime/http-cache/code-api-pc.dao3.fun/167-_websocket_se-stream1.json",
+        "bytes": 127,
+        "sha256": "b3772c72aeeb2f791aa1c795fb37396168121d41f72b4338f9e09a5149586025",
+        "keys": [
+          "code",
+          "data",
+          "msg",
+          "traceId"
+        ],
+        "dataProtocol": "wss:",
+        "traceIdentifierPresent": true,
+        "rawPayloadFields": []
+      }
+    ]
+  },
+  "browserProfile": {
+    "canonicalCacheStreams": 400,
+    "serverToClientBinaryFrames": 0,
+    "classification": "http-cache-without-websocket-public-frames"
+  },
+  "legacyArtifacts": {
+    "binaryCandidates": 0,
+    "serverToClientPublicFrames": 0
+  },
+  "authoritativePostureDelta": {
+    "status": "not-found-in-safe-local-frame-corpus",
+    "candidateServerToClientBinaryFrames": 0,
+    "archiveFrameCandidateEntries": 0,
+    "requiredDirection": "server-to-client",
+    "requiredProtocol": "gameNet PUBLIC body delta or equivalent authoritative state frame",
+    "requiredFields": [
+      "rx",
+      "ry",
+      "rz",
+      "hsx",
+      "hsy",
+      "hsz"
+    ],
+    "rawReplayPayloadAvailable": false,
+    "conclusion": "The safe local frame corpus contains only client-to-server MuDB binary traffic, decoded initialization replay values, HTTP connection metadata and resource archives; it contains no authoritative posture body delta."
+  },
+  "safety": {
+    "payloadValuesIncluded": false,
+    "websocketUrlsIncluded": false,
+    "sessionIdentifiersIncluded": false,
+    "privateBrowserStoresRead": false
+  }
+}

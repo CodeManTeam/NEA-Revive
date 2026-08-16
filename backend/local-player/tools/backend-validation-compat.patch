@@ -1,0 +1,24 @@
+diff --git a/local-player/backend/box3-server.cjs b/local-player/backend/box3-server.cjs
+--- a/local-player/backend/box3-server.cjs
++++ b/local-player/backend/box3-server.cjs
+@@ -17288 +17288 @@
+-        if (typeof body.session !== "string" || !Object.prototype.hasOwnProperty.call(body, "event")) {
++        if (typeof body.session !== "string" || body.session.length === 0 || !Object.prototype.hasOwnProperty.call(body, "event")) {
+@@ -17319 +17319 @@
+-        if (typeof body.session !== "string" || !body.command || typeof body.command !== "object" || Array.isArray(body.command)) {
++        if (typeof body.session !== "string" || body.session.length === 0 || !body.command || typeof body.command !== "object" || Array.isArray(body.command)) {
+@@ -17334 +17334 @@
+-        if (typeof body.session !== "string" || !body.config || typeof body.config !== "object" || Array.isArray(body.config)) {
++        if (typeof body.session !== "string" || body.session.length === 0 || !body.config || typeof body.config !== "object" || Array.isArray(body.config)) {
+@@ -17349 +17349 @@
+-        if (typeof body.session !== "string") throw new Error("dialog session is required");
++        if (typeof body.session !== "string" || body.session.length === 0) throw new Error("dialog session is required");
+@@ -17367 +17367 @@
+-        if (body.session !== void 0 && typeof body.session !== "string") throw new Error("chat session must be a string");
++        if (body.session !== void 0 && (typeof body.session !== "string" || body.session.length === 0)) throw new Error("chat session must be a non-empty string");
+@@ -17379 +17379 @@
+-        if (typeof body.session !== "string" || !body.state || typeof body.state !== "object" || Array.isArray(body.state)) {
++        if (typeof body.session !== "string" || body.session.length === 0 || !body.state || typeof body.state !== "object" || Array.isArray(body.state)) {
+@@ -17391 +17391 @@
+-        const hasSession = typeof body.session === "string";
++        const hasSession = typeof body.session === "string" && body.session.length > 0;

@@ -1,0 +1,21 @@
+{
+  "name": "nea-map-script-demo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node tools/import.mjs",
+    "build:showcase": "node tools/import-showcase.mjs",
+    "build:mudb": "node ../../tools/build-mudb.mjs",
+    "prestart": "node ../../tools/build-mudb.mjs",
+    "start": "node src/server.mjs",
+    "start:showcase": "node tools/start-showcase.mjs",
+    "validate": "node tools/import.mjs --check",
+    "validate:showcase": "node tools/import-showcase.mjs --check",
+    "inspect:ui": "node tools/inspect-player-ui-schema.cjs",
+    "probe:remote": "node tools/probe-remote-channel.cjs",
+    "test:control-bridge": "node --test test/control-bridge-contract.test.mjs",
+    "pretest": "node ../../tools/build-mudb.mjs",
+    "test": "node --test"
+  }
+}

@@ -1,0 +1,553 @@
+{
+  "format": "nea-doc-api-unresolved",
+  "version": 1,
+  "generatedAt": "2026-07-31T04:39:02.887Z",
+  "entries": [
+    {
+      "path": "dao3-docs-mirror/markdown/api/ClientAudio/mediaError.md",
+      "owner": "MediaError",
+      "heading": "MediaErrorCode",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/ClientNavigator/navigator.md",
+      "owner": "ClientNavigator",
+      "heading": "DeviceInfo",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/ClientUI/UiRenderable.md",
+      "owner": "UiRenderable",
+      "heading": "PointerEventBehavior",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/ClientUI/node/UiImage.md",
+      "owner": "UiImage",
+      "heading": "ImageDisplayMode",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/ClientUI/node/UiText.md",
+      "owner": "UiText",
+      "heading": "UITextFontFamily",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/ClientWorld/input.md",
+      "owner": "ClientWorld",
+      "heading": "截图和录像",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/ClientWorld/input.md",
+      "owner": "ClientWorld",
+      "heading": "性能优化",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/ClientWorld/input.md",
+      "owner": "ClientWorld",
+      "heading": "游戏设计",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/ClientWorld/input.md",
+      "owner": "ClientWorld",
+      "heading": "故障排查",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/ClientWorld/input.md",
+      "owner": "ClientWorld",
+      "heading": "过场动画",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/ClientWorld/input.md",
+      "owner": "ClientWorld",
+      "heading": "低配置设备优化",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/ClientWorld/input.md",
+      "owner": "ClientWorld",
+      "heading": "游戏教学",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameAnimation/index.md",
+      "owner": "GameAnimation",
+      "heading": "GameAnimationEvent",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameAnimation/index.md",
+      "owner": "GameAnimation",
+      "heading": "GameAnimationPlaybackConfig",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameAnimation/index.md",
+      "owner": "GameAnimation",
+      "heading": "GameAnimationPlaybackState",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameAssetListEntry/ls.md",
+      "owner": "GameAssetListEntry",
+      "heading": "GameAssetListEntry",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameAssetListEntry/ls.md",
+      "owner": "GameAssetListEntry",
+      "heading": "GameAssetType",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameDataStorage/getSpace.md",
+      "owner": "GameStorage",
+      "heading": "键（Key）",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameDataStorage/getSpace.md",
+      "owner": "GameStorage",
+      "heading": "值（Value）",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameDataStorage/getSpace.md",
+      "owner": "GameStorage",
+      "heading": "存储（Store）",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameDataStorage/setSpace.md",
+      "owner": "GameDataStorage",
+      "heading": "JSONValue",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameDataStorage/setSpace.md",
+      "owner": "GameDataStorage",
+      "heading": "ReturnValue",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameDataStorage/setSpace.md",
+      "owner": "GameDataStorage",
+      "heading": "ListPageOptions",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameDataStorage/setSpace.md",
+      "owner": "GameDataStorage",
+      "heading": "QueryList",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameEntity/animate.md",
+      "owner": "GameEntity",
+      "heading": "GameEntityKeyframe",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameEntity/fight.md",
+      "owner": "GameEntity",
+      "heading": "GameHurtOptions",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameEntity/fight.md",
+      "owner": "GameEntity",
+      "heading": "GameDamageEvent",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameEntity/fight.md",
+      "owner": "GameEntity",
+      "heading": "GameDieEvent",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameEntity/index.md",
+      "owner": "GameEntity",
+      "heading": "名称显示",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameEntity/input.md",
+      "owner": "GameEntity",
+      "heading": "GameEntityContactEvent",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameEntity/input.md",
+      "owner": "GameEntity",
+      "heading": "GameFluidContactEvent",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameEntity/input.md",
+      "owner": "GameEntity",
+      "heading": "GameVoxelContactEvent",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameEntity/physics.md",
+      "owner": "GameEntity",
+      "heading": "GameEntityContact",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameEntity/physics.md",
+      "owner": "GameEntity",
+      "heading": "GameVoxelContact",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameEntity/physics.md",
+      "owner": "GameEntity",
+      "heading": "GameFluidContact",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameHttpAPI/request.md",
+      "owner": "GameHttpAPI",
+      "heading": "GameHttpFetchRequestOptions",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameHttpAPI/request.md",
+      "owner": "GameHttpAPI",
+      "heading": "GameHttpFetchHeaders",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameMotionController/controller.md",
+      "owner": "GameMotionController",
+      "heading": "GameMotionConfig",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameMotionController/controller.md",
+      "owner": "GameMotionController",
+      "heading": "GameMotionClipConfig",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameMotionController/handler.md",
+      "owner": "GameMotionController",
+      "heading": "GameMotionEvent",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GamePlayerEntity/animate.md",
+      "owner": "GamePlayerEntity",
+      "heading": "GamePlayerKeyframe",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GamePlayerEntity/appearance.md",
+      "owner": "GamePlayerEntity",
+      "heading": "GameSkin",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GamePlayerEntity/appearance.md",
+      "owner": "GamePlayerEntity",
+      "heading": "GameSkinInvisible",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GamePlayerEntity/appearance.md",
+      "owner": "GamePlayerEntity",
+      "heading": "GameWearable",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GamePlayerEntity/appearance.md",
+      "owner": "GamePlayerEntity",
+      "heading": "GameBodyPart",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GamePlayerEntity/camera.md",
+      "owner": "GamePlayerEntity",
+      "heading": "GameCameraMode",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GamePlayerEntity/camera.md",
+      "owner": "GamePlayerEntity",
+      "heading": "GameCameraFreezedAxis",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GamePlayerEntity/chat.md",
+      "owner": "GamePlayerEntity",
+      "heading": "GameDialogCall",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GamePlayerEntity/chat.md",
+      "owner": "GamePlayerEntity",
+      "heading": "GameDialogResponse",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GamePlayerEntity/chat.md",
+      "owner": "GamePlayerEntity",
+      "heading": "GameDialogSelectResponse",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GamePlayerEntity/chat.md",
+      "owner": "GamePlayerEntity",
+      "heading": "GameDialogType",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GamePlayerEntity/info.md",
+      "owner": "GamePlayerEntity",
+      "heading": "SocialStatisticType",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GamePlayerEntity/info.md",
+      "owner": "GamePlayerEntity",
+      "heading": "SocialType",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GamePlayerEntity/input.md",
+      "owner": "GamePlayerEntity",
+      "heading": "GameKeyBoardEvent",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GamePlayerEntity/input.md",
+      "owner": "GamePlayerEntity",
+      "heading": "Gamepad",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GamePlayerEntity/input.md",
+      "owner": "GamePlayerEntity",
+      "heading": "GamePlayerMoveState",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GamePlayerEntity/input.md",
+      "owner": "GamePlayerEntity",
+      "heading": "GamePlayerWalkState",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GamePlayerEntity/input.md",
+      "owner": "GamePlayerEntity",
+      "heading": "GameInputDirection",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/animate.md",
+      "owner": "GameWorld",
+      "heading": "GameWorldKeyframe",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/animate.md",
+      "owner": "GameWorld",
+      "heading": "GameAnimationPlaybackConfig",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/animate.md",
+      "owner": "GameWorld",
+      "heading": "GameEasing",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/animate.md",
+      "owner": "GameWorld",
+      "heading": "GameAnimationDirection",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/chat/resident.md",
+      "owner": "GameWorld",
+      "heading": "GameChatEvent",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/entityCD.md",
+      "owner": "GameWorld",
+      "heading": "GameEntityEvent",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/entityCD.md",
+      "owner": "GameWorld",
+      "heading": "GameEntityConfig",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/fight.md",
+      "owner": "GameWorld",
+      "heading": "GameDamageEvent",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/fight.md",
+      "owner": "GameWorld",
+      "heading": "GameDieEvent",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/fight.md",
+      "owner": "GameWorld",
+      "heading": "GameRespawnEvent",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/index.md",
+      "owner": "GameWorld",
+      "heading": "雾效果",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/index.md",
+      "owner": "GameWorld",
+      "heading": "雨天效果",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/index.md",
+      "owner": "GameWorld",
+      "heading": "下雪效果",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/input.md",
+      "owner": "GameWorld",
+      "heading": "GameInteractEvent",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/input.md",
+      "owner": "GameWorld",
+      "heading": "GameInputEvent",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/input.md",
+      "owner": "GameWorld",
+      "heading": "GameClickEvent",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/input.md",
+      "owner": "GameWorld",
+      "heading": "GameEntityContactEvent",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/input.md",
+      "owner": "GameWorld",
+      "heading": "GameVoxelContactEvent",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/input.md",
+      "owner": "GameWorld",
+      "heading": "GameFluidContactEvent",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/input.md",
+      "owner": "GameWorld",
+      "heading": "GameButtonType",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/mapInfo.md",
+      "owner": "GameWorld",
+      "heading": "GameTickEvent",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/mapZone.md",
+      "owner": "GameWorld",
+      "heading": "GameZoneConfig",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/mapZone.md",
+      "owner": "GameWorld",
+      "heading": "GameZone",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/mapZone.md",
+      "owner": "GameWorld",
+      "heading": "GameTriggerEvent",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/music.md",
+      "owner": "GameWorld",
+      "heading": "GameSoundEffect",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/playerJL.md",
+      "owner": "GameWorld",
+      "heading": "GamePlayerEntityEvent",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/querySelectorEntity.md",
+      "owner": "GameWorld",
+      "heading": "GameSelectorString",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/querySelectorEntity.md",
+      "owner": "GameWorld",
+      "heading": "GameRaycastOptions",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/querySelectorEntity.md",
+      "owner": "GameWorld",
+      "heading": "GameRaycastResult",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/shopping.md",
+      "owner": "GameWorld",
+      "heading": "GamePurchaseSuccessEvent",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/teleport.md",
+      "owner": "GameWorld",
+      "heading": "TeleportResult",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/GameWorld/weather/illumination.md",
+      "owner": "GameWorld",
+      "heading": "skyTopLight：GameRGBColor",
+      "reason": "not-an-api-signature"
+    },
+    {
+      "path": "dao3-docs-mirror/markdown/api/RemoteChannel/Server/clientToServer.md",
+      "owner": "remoteChannel",
+      "heading": "ServerEvent",
+      "reason": "not-an-api-signature"
+    }
+  ]
+}

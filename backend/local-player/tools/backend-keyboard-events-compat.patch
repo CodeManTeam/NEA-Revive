@@ -1,0 +1,45 @@
+diff --git a/Backend/local-player/backend/box3-server.cjs b/Backend/local-player/backend/box3-server.cjs
+--- a/Backend/local-player/backend/box3-server.cjs
++++ b/Backend/local-player/backend/box3-server.cjs
+@@ -9614,17 +9614,29 @@ var KeyboardInteractionService = class {
+   handle(sessionId, input2) {
+     if (!sessionId || !isRecord4(input2)) return 0;
+     const playerId = this.options.playerIdForSession(sessionId);
+     if (playerId === void 0 || input2.id !== playerId) return 0;
++    if (!Number.isSafeInteger(input2.tick) || input2.tick < 0) return 0;
+     const current = keyCodes(input2.keyDownState);
+     const previous = keyCodes(input2.prevKeyDownState);
+     if (!current || !previous) return 0;
++    const currentSet = new Set(current);
+     const previousSet = new Set(previous);
++    const keyDown = [];
++    const keyUp = [];
+     let handled = 0;
+-    for (const keyCode of new Set(current)) {
++    for (const keyCode of currentSet) {
+       if (previousSet.has(keyCode)) continue;
+       this.options.onKeyPress(sessionId, keyCode);
++      keyDown.push(keyCode);
+       handled += 1;
+     }
++    for (const keyCode of previousSet) {
++      if (currentSet.has(keyCode)) continue;
++      keyUp.push(keyCode);
++      handled += 1;
++    }
++    if (handled > 0) this.options.onTransitions?.(sessionId, { tick: input2.tick, keyDown, keyUp });
+     return handled;
+   }
+ };
+@@ -14878,6 +14890,11 @@ var LegacyHistoricalProjectInstance = class {
+       playerIdForSession: (sessionId) => this.gameNetHandshakes.get(sessionId)?.playerId,
+       onKeyPress: (sessionId, keyCode) => {
+         this.bedwarsRemoteSessions?.handleKeyPress(sessionId, keyCode);
++      },
++      onTransitions: (sessionId, transitions) => {
++        if (process.env.BOX3_LOG_SCRIPT_INPUT_EVENTS === "1") {
++          options.logger.info(`[game-net:keyboard] ${sessionBridgeLabel(sessionId)} ${JSON.stringify(transitions)}`);
++        }
+       }
+     });
+     this.projectBootstrapSessions = new ProjectBootstrapSessions({

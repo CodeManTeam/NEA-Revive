@@ -1,0 +1,490 @@
+{
+  "format": "nea-player-physics-bundle-analysis",
+  "version": 1,
+  "generatedAt": "2026-07-31T04:39:03.213Z",
+  "source": {
+    "path": "local-player/archive/project/bedwars/client-runtime/assets/_next/static/chunks/734.8dcb480d99773395.js",
+    "bytes": 1543176,
+    "sha256": "35067ead851335f4a2c878350aea4c3fcbbfaf1d71a79a5525b9e303ec8b0707"
+  },
+  "corroboration": {
+    "lokibox": {
+      "path": "Lokibox/lokibox-merged-bypass/src/core/bodies.ts",
+      "bytes": 2457,
+      "sha256": "810e8bee661e756b8caf2a5ee9ecffd75371d469159e8e5c036306b9cc65989a",
+      "playerBinding": "Body id is selected through state.playerIndex; self body id is state.secret.id.",
+      "boundsFields": [
+        "rx",
+        "ry",
+        "rz"
+      ],
+      "shapeHalfExtentFields": [
+        "hsx",
+        "hsy",
+        "hsz"
+      ]
+    }
+  },
+  "rigidBody": {
+    "schemaModule": 2534,
+    "boundsRepresentation": "axis-aligned-broadphase-half-extents-rx-ry-rz",
+    "shapeRepresentation": "local-shape-half-extents-hsx-hsy-hsz",
+    "positionRepresentation": "body-center-px-py-pz",
+    "wireQuantization": 0.00390625,
+    "boundsWriteSites": [
+      {
+        "offset": 115016,
+        "module": 76459,
+        "field": "rx",
+        "expression": ".1"
+      },
+      {
+        "offset": 115027,
+        "module": 76459,
+        "field": "ry",
+        "expression": ".1"
+      },
+      {
+        "offset": 115038,
+        "module": 76459,
+        "field": "rz",
+        "expression": ".1"
+      },
+      {
+        "offset": 115492,
+        "module": 76459,
+        "field": "rx",
+        "expression": "e.rx"
+      },
+      {
+        "offset": 115502,
+        "module": 76459,
+        "field": "ry",
+        "expression": "e.ry"
+      },
+      {
+        "offset": 115512,
+        "module": 76459,
+        "field": "rz",
+        "expression": "e.rz"
+      },
+      {
+        "offset": 116055,
+        "module": 76459,
+        "field": "rx",
+        "expression": "i.rx"
+      },
+      {
+        "offset": 116065,
+        "module": 76459,
+        "field": "ry",
+        "expression": "i.ry"
+      },
+      {
+        "offset": 116075,
+        "module": 76459,
+        "field": "rz",
+        "expression": "i.rz"
+      },
+      {
+        "offset": 118296,
+        "module": 76459,
+        "field": "rx",
+        "expression": "g.rx"
+      },
+      {
+        "offset": 118306,
+        "module": 76459,
+        "field": "ry",
+        "expression": "g.ry"
+      },
+      {
+        "offset": 118316,
+        "module": 76459,
+        "field": "rz",
+        "expression": "g.rz"
+      },
+      {
+        "offset": 478703,
+        "module": 76459,
+        "field": "rx",
+        "expression": "l.rx"
+      },
+      {
+        "offset": 478713,
+        "module": 76459,
+        "field": "ry",
+        "expression": "l.ry"
+      },
+      {
+        "offset": 478723,
+        "module": 76459,
+        "field": "rz",
+        "expression": "l.rz"
+      },
+      {
+        "offset": 479560,
+        "module": 76459,
+        "field": "rx",
+        "expression": "E"
+      },
+      {
+        "offset": 479567,
+        "module": 76459,
+        "field": "ry",
+        "expression": "C"
+      },
+      {
+        "offset": 479574,
+        "module": 76459,
+        "field": "rz",
+        "expression": "P"
+      },
+      {
+        "offset": 1165424,
+        "module": 2534,
+        "field": "rx",
+        "expression": "1"
+      },
+      {
+        "offset": 1165434,
+        "module": 2534,
+        "field": "ry",
+        "expression": "1"
+      },
+      {
+        "offset": 1165444,
+        "module": 2534,
+        "field": "rz",
+        "expression": "1"
+      },
+      {
+        "offset": 1165763,
+        "module": 2534,
+        "field": "rx",
+        "expression": "e[0]"
+      },
+      {
+        "offset": 1165776,
+        "module": 2534,
+        "field": "ry",
+        "expression": "e[1]"
+      },
+      {
+        "offset": 1165789,
+        "module": 2534,
+        "field": "rz",
+        "expression": "e[2]"
+      },
+      {
+        "offset": 1168775,
+        "module": 2534,
+        "field": "rx",
+        "expression": "e.rx"
+      },
+      {
+        "offset": 1168785,
+        "module": 2534,
+        "field": "ry",
+        "expression": "e.ry"
+      },
+      {
+        "offset": 1168795,
+        "module": 2534,
+        "field": "rz",
+        "expression": "e.rz"
+      },
+      {
+        "offset": 1169173,
+        "module": 2534,
+        "field": "rx",
+        "expression": "==t.rx&&e.ry===t.ry&&e.rz===t.rz&&e.px===t.px&&e.py===t.py&&e.pz===t.pz&&e.vx===t.vx&&e.vy===t.vy&&e.vz===t.vz&&e.qx===t"
+      },
+      {
+        "offset": 1169560,
+        "module": 2534,
+        "field": "rx",
+        "expression": "t.rx"
+      },
+      {
+        "offset": 1169570,
+        "module": 2534,
+        "field": "ry",
+        "expression": "t.ry"
+      },
+      {
+        "offset": 1169580,
+        "module": 2534,
+        "field": "rz",
+        "expression": "t.rz"
+      },
+      {
+        "offset": 1170118,
+        "module": 2534,
+        "field": "rx",
+        "expression": "a&1<<O?x*(Math.round(e.rx*m"
+      },
+      {
+        "offset": 1170163,
+        "module": 2534,
+        "field": "ry",
+        "expression": "a&2<<O?x*(Math.round(e.ry*m"
+      },
+      {
+        "offset": 1170208,
+        "module": 2534,
+        "field": "rz",
+        "expression": "a&4<<O?x*(Math.round(e.rz*m"
+      },
+      {
+        "offset": 1173418,
+        "module": 2534,
+        "field": "rx",
+        "expression": "+n.bounds[0]||1"
+      },
+      {
+        "offset": 1173439,
+        "module": 2534,
+        "field": "ry",
+        "expression": "+n.bounds[1]||1"
+      },
+      {
+        "offset": 1173460,
+        "module": 2534,
+        "field": "rz",
+        "expression": "+n.bounds[2]||1"
+      }
+    ],
+    "shapeWriteSites": [
+      {
+        "offset": 115049,
+        "module": 76459,
+        "field": "hsx",
+        "expression": "1"
+      },
+      {
+        "offset": 115060,
+        "module": 76459,
+        "field": "hsy",
+        "expression": "1"
+      },
+      {
+        "offset": 115071,
+        "module": 76459,
+        "field": "hsz",
+        "expression": "1"
+      },
+      {
+        "offset": 115522,
+        "module": 76459,
+        "field": "hsx",
+        "expression": "e.hsx"
+      },
+      {
+        "offset": 115534,
+        "module": 76459,
+        "field": "hsy",
+        "expression": "e.hsy"
+      },
+      {
+        "offset": 115546,
+        "module": 76459,
+        "field": "hsz",
+        "expression": "e.hsz"
+      },
+      {
+        "offset": 116085,
+        "module": 76459,
+        "field": "hsx",
+        "expression": "i.hsx"
+      },
+      {
+        "offset": 116097,
+        "module": 76459,
+        "field": "hsy",
+        "expression": "i.hsy"
+      },
+      {
+        "offset": 116109,
+        "module": 76459,
+        "field": "hsz",
+        "expression": "i.hsz"
+      },
+      {
+        "offset": 118326,
+        "module": 76459,
+        "field": "hsx",
+        "expression": "g.hsx"
+      },
+      {
+        "offset": 118338,
+        "module": 76459,
+        "field": "hsy",
+        "expression": "g.hsy"
+      },
+      {
+        "offset": 118350,
+        "module": 76459,
+        "field": "hsz",
+        "expression": "g.hsz"
+      },
+      {
+        "offset": 1165554,
+        "module": 2534,
+        "field": "hsx",
+        "expression": "1"
+      },
+      {
+        "offset": 1165565,
+        "module": 2534,
+        "field": "hsy",
+        "expression": "1"
+      },
+      {
+        "offset": 1165576,
+        "module": 2534,
+        "field": "hsz",
+        "expression": "1"
+      },
+      {
+        "offset": 1168905,
+        "module": 2534,
+        "field": "hsx",
+        "expression": "e.hsx"
+      },
+      {
+        "offset": 1168917,
+        "module": 2534,
+        "field": "hsy",
+        "expression": "e.hsy"
+      },
+      {
+        "offset": 1168929,
+        "module": 2534,
+        "field": "hsz",
+        "expression": "e.hsz"
+      },
+      {
+        "offset": 1169342,
+        "module": 2534,
+        "field": "hsx",
+        "expression": "==t.hsx&&e.hsy===t.hsy&&e.hsz===t.hsz&&e.ax===t.ax&&e.ay===t.ay&&e.az===t.az"
+      },
+      {
+        "offset": 1169690,
+        "module": 2534,
+        "field": "hsx",
+        "expression": "t.hsx"
+      },
+      {
+        "offset": 1169702,
+        "module": 2534,
+        "field": "hsy",
+        "expression": "t.hsy"
+      },
+      {
+        "offset": 1169714,
+        "module": 2534,
+        "field": "hsz",
+        "expression": "t.hsz"
+      },
+      {
+        "offset": 1170703,
+        "module": 2534,
+        "field": "hsx",
+        "expression": "a&1<<V?E*(Math.round(e.hsx*w"
+      },
+      {
+        "offset": 1170751,
+        "module": 2534,
+        "field": "hsy",
+        "expression": "a&2<<V?E*(Math.round(e.hsy*w"
+      },
+      {
+        "offset": 1170799,
+        "module": 2534,
+        "field": "hsz",
+        "expression": "a&4<<V?E*(Math.round(e.hsz*w"
+      },
+      {
+        "offset": 1173837,
+        "module": 2534,
+        "field": "hsx",
+        "expression": "+n.halfSize[0]||1"
+      },
+      {
+        "offset": 1173861,
+        "module": 2534,
+        "field": "hsy",
+        "expression": "+n.halfSize[1]||1"
+      },
+      {
+        "offset": 1173885,
+        "module": 2534,
+        "field": "hsz",
+        "expression": "+n.halfSize[2]||1"
+      }
+    ],
+    "defaultPlayerProfile": {
+      "boundsHalfExtents": [
+        0.45,
+        1.1,
+        0.45
+      ],
+      "shapeHalfExtents": [
+        0.45,
+        1.1,
+        0.45
+      ],
+      "dimensions": [
+        0.9,
+        2.2,
+        0.9
+      ],
+      "status": "confirmed",
+      "basis": "Player physics exports PLAYER_WIDTH=0.45 and PLAYER_HEIGHT=1.1; camera and animation normalize body.ry by PLAYER_HEIGHT, while broadphase and contact code use position plus/minus rx/ry/rz."
+    }
+  },
+  "posture": {
+    "motorModule": 7166,
+    "clientMotorShapeWriteCount": 0,
+    "crouch": {
+      "confirmedEffects": [
+        "crouch-speed",
+        "crouch-acceleration",
+        "edge-occupancy-limiting"
+      ],
+      "shapeMutation": "not-found-in-client-motor",
+      "conclusion": "No client-local rx/ry/rz write was found; server-authoritative body deltas may still change shape."
+    },
+    "flying": {
+      "confirmedEffects": [
+        "gravity-flag",
+        "collision-flag",
+        "vertical-motor-force"
+      ],
+      "shapeMutation": "not-found-in-client-motor",
+      "conclusion": "No client-local rx/ry/rz write was found; server-authoritative body deltas may still change shape."
+    }
+  },
+  "grounded": {
+    "updateModule": 7166,
+    "voxelRule": "voxel contact axis 2 sets physGround true",
+    "bodyRule": "a body contact with non-zero ny replaces support when fy exceeds the current support force",
+    "voxelPlatformVelocity": "weighted by absolute voxel fy",
+    "bodyPlatformVelocity": "copied from the strongest supporting body"
+  },
+  "movement": {
+    "playerSchemaModule": 70648,
+    "defaultStepHeight": 1.25
+  },
+  "terrain": {
+    "contactModule": 89168,
+    "downwardYMode": "pushMotor",
+    "otherAxesMode": "push"
+  },
+  "unresolved": [
+    "server-authoritative crouch body deltas",
+    "server-authoritative flying body deltas"
+  ]
+}
