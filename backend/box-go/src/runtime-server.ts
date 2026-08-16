@@ -294,9 +294,13 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   const gridJ = sourceShape[1] / chunkSize
   const gridK = sourceShape[2] / chunkSize
 
-  // chunkId (voxweb 网格) → 源世界坐标内的方块 box 列表（MuSortedArray 需要排序）
+  // chunkId (voxweb 网格) → 源世界坐标内的方块 box 列表（MuSortedArray 需要排序）。
+  // 缓存已计算 chunk：全图 256 chunks 首次 ~1s，后续/重连秒回。
+  const chunkBoxCache = new Map<number, Array<Record<string, number>>>()
   function collisionBoxesForChunk(chunkId: number): Array<Record<string, number>> {
     if (!Number.isInteger(chunkId) || chunkId < 0) return []
+    const cached = chunkBoxCache.get(chunkId)
+    if (cached) return cached
     const k = Math.floor(chunkId / (gridI * gridJ))
     const rest = chunkId % (gridI * gridJ)
     const j = Math.floor(rest / gridI)
@@ -341,6 +345,7 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
       }
     }
     boxes.sort(compareTerrainBoxes)
+    chunkBoxCache.set(chunkId, boxes)
     return boxes
   }
 
@@ -506,6 +511,15 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   if (!address || typeof address === "string") throw new Error("Runtime server did not bind a TCP port")
   log(`NEA Runtime Server: http://${host}:${address.port} (${path})`)
 
+  // 后台预计算全图 chunk boxes（缓存预热），玩家进入时 fetchChunk 秒回。
+  // 延迟到启动完成之后，避免阻塞监听就绪。
+  const warmupTimer = setTimeout(() => {
+    const total = gridI * gridJ * gridK
+    for (let chunkId = 0; chunkId < total; chunkId += 1) collisionBoxesForChunk(chunkId)
+    log(`[terrain] warmup cached ${chunkBoxCache.size}/${total} chunks`)
+  }, 50)
+  warmupTimer.unref?.()
+
   return {
     host,
     port: address.port,
@@ -516,6 +530,7 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
     async close() {
       clearInterval(tickTimer)
       clearInterval(netStateTimer)
+      clearTimeout(warmupTimer)
       runtime.stop()
       if (mudbServer.running) mudbServer.destroy()
       await new Promise<void>((resolve) => httpServer.close(() => resolve()))

@@ -85,7 +85,14 @@ const frontend = createServer(async (req, res) => {
       res.end("not found: " + urlPath)
       return
     }
-    res.writeHead(200, { "content-type": mime[extname(filePath).toLowerCase()] ?? "application/octet-stream" })
+    // 内容寻址产物（WASM/JS/PNG/gltf）带长缓存（文件名含 hash），刷新秒开；
+    // HTML 不缓存（启动参数可能变）。
+    const ext = extname(filePath).toLowerCase()
+    const cacheable = [".wasm", ".js", ".png", ".jpg", ".jpeg", ".gltf", ".mp3"].includes(ext)
+    const headers = { "content-type": mime[ext] ?? "application/octet-stream" }
+    if (cacheable) headers["cache-control"] = "public, max-age=86400"
+    else headers["cache-control"] = "no-cache"
+    res.writeHead(200, headers)
     createReadStream(filePath).pipe(res)
   } catch (error) {
     res.writeHead(500)
