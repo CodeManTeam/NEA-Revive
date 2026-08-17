@@ -178,12 +178,21 @@ fn sample_shadows(world_pos: vec3f, face_normal: vec3f, frag_coord: vec4f) -> f3
     vec2f(-3.376766, -2.81844), vec2f(-3.974553, 0.5459405),
     vec2f(3.102514, 1.717692), vec2f(2.951887, 3.186624));
   var total = 0.0;
+  let shadow_size = vec2f(textureDimensions(shadow_map));
   for (var i = 0; i < 16; i++) {
     let duv = 0.5 * taps[i] * 0.0009765625;
     let uv = atlas_bounds.xy + 0.5 * clamp(uv_offset + duv, vec2f(0.0), vec2f(1.0));
     // The recovered WebGPU shader explicitly flips Y when reading the
     // composed shadow atlas (the render target is vertically inverted).
-    var depth = textureSampleLevel(shadow_map, shadow_sampler, vec2f(uv.x, 1.0 - uv.y), 0);
+    let sample_uv = vec2f(uv.x, 1.0 - uv.y) * shadow_size - vec2f(0.5);
+    let p0 = vec2i(floor(sample_uv));
+    let f = fract(sample_uv);
+    let q = vec2u(textureDimensions(shadow_map));
+    let a = textureLoad(shadow_map, clamp(p0, vec2i(0), vec2i(q) - vec2i(1)), 0);
+    let b = textureLoad(shadow_map, clamp(p0 + vec2i(1, 0), vec2i(0), vec2i(q) - vec2i(1)), 0);
+    let c = textureLoad(shadow_map, clamp(p0 + vec2i(0, 1), vec2i(0), vec2i(q) - vec2i(1)), 0);
+    let d = textureLoad(shadow_map, clamp(p0 + vec2i(1, 1), vec2i(0), vec2i(q) - vec2i(1)), 0);
+    var depth = mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
     depth += bias - (bias_x * duv.x + bias_y * duv.y);
     depth += abs(depth) * 0.0009765625;
     total += step(sample_depth, depth);
