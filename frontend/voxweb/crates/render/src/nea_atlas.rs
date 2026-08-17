@@ -23,7 +23,10 @@ impl Default for AtlasSampling {
         Self {
             mag_filter: wgpu::FilterMode::Nearest,
             min_filter: wgpu::FilterMode::Nearest,
-            mipmap_filter: wgpu::MipmapFilterMode::Linear,
+            // Linear mip selection blends neighboring atlas tiles at grazing
+            // angles and produces the horizontal bands visible on the floor.
+            // The original block sampler keeps the mip level discrete.
+            mipmap_filter: wgpu::MipmapFilterMode::Nearest,
             address_u: wgpu::AddressMode::ClampToEdge,
             address_v: wgpu::AddressMode::ClampToEdge,
         }
@@ -205,7 +208,7 @@ mod tests {
         assert_eq!(s.mag_filter, wgpu::FilterMode::Nearest);
         assert_eq!(s.address_u, wgpu::AddressMode::ClampToEdge);
         assert_eq!(s.address_v, wgpu::AddressMode::ClampToEdge);
-        assert_eq!(s.mipmap_filter, wgpu::MipmapFilterMode::Linear);
+        assert_eq!(s.mipmap_filter, wgpu::MipmapFilterMode::Nearest);
     }
 
     #[test]
