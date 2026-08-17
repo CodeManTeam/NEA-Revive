@@ -65,10 +65,10 @@ impl AvatarShadowRenderer {
             },
             fragment: None,
             primitive: wgpu::PrimitiveState {
-                // 只把人物**背面**写入 shadow map（front-face culling）：
-                // 主 pass 人物正面片元采样 shadow map 时，正面深度比背面深度浅，
-                // 不会自阴影；而地面采样人物背面深度仍比地面浅 → 投影保留。
-                cull_mode: Some(wgpu::Face::Front),
+                // Recovered avatar parts contain mixed winding across body
+                // pieces. Culling one face drops entire limbs from the shadow
+                // map, which is why the original cast shadow disappeared.
+                cull_mode: None,
                 ..Default::default()
             },
             depth_stencil: Some(wgpu::DepthStencilState {
