@@ -83,8 +83,8 @@ pub async fn init_device(_canvas: &web_sys::HtmlCanvasElement) -> Result<DeviceC
 fn select_format(caps: &SurfaceCapabilities) -> TextureFormat {
     let preferred = &caps.formats;
     for fmt in [
-        wgpu::TextureFormat::Bgra8Unorm,
         wgpu::TextureFormat::Bgra8UnormSrgb,
+        wgpu::TextureFormat::Bgra8Unorm,
     ] {
         if preferred.contains(&fmt) {
             return fmt;
@@ -105,7 +105,7 @@ mod tests {
             alpha_modes: vec![],
             usages: TextureUsages::RENDER_ATTACHMENT,
         };
-        assert_eq!(select_format(&caps), TextureFormat::Bgra8Unorm);
+        assert_eq!(select_format(&caps), TextureFormat::Bgra8UnormSrgb);
     }
 }
 
