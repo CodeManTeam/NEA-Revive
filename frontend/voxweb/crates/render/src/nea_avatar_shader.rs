@@ -119,7 +119,7 @@ fn sample_shadows(world_pos: vec3f, face_normal: vec3f, frag_coord: vec4f) -> f3
   for (var i = 0; i < 16; i++) {
     let duv = 0.5 * taps[i] * 0.0009765625;
     let uv = atlas_bounds.xy + 0.5 * clamp(uv_offset + duv, vec2f(0.0), vec2f(1.0));
-    var depth = textureSampleLevel(shadow_map, shadow_sampler, vec2f(uv.x, 1.0 - uv.y), 0);
+    var depth = textureSampleLevel(shadow_map, shadow_sampler, uv, 0);
     depth += bias - (bias_x * duv.x + bias_y * duv.y);
     depth += abs(depth) * 0.0009765625;
     total += step(sample_depth, depth);
