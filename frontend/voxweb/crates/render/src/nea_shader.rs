@@ -378,8 +378,13 @@ fn fs_main(in: VsOut) -> @location(0) vec4f {
     ((1.0 - nu) * nv) * in.light10 +
     (nu * nv) * in.light11;
   let ao = interpolated_light.a * bump.a;
+  // Keep a sky-light floor for exposed surfaces. The recovered voxel light
+  // alpha is sparse on stepped roofs, while the original renderer still
+  // contributes directional sky irradiance there; without it the whole
+  // platform is uniformly charcoal even when its shadow mask is correct.
+  let sky_visibility = max(interpolated_light.a, 0.35);
   let irradiance = 100.0 * interpolated_light.rgb +
-    interpolated_light.a * directional_sky(shaded_normal);
+    sky_visibility * directional_sky(shaded_normal);
   // 空气透视 fog factor（与 apply_fog 同一计算，供 F5 显示）
   var view_dir = in.world_pos - globals.eye_exposure.xyz;
   let dist = max(length(view_dir), 0.000001);
