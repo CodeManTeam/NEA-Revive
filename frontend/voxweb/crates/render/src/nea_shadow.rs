@@ -261,12 +261,15 @@ pub fn recovered_shadow_frame(
     let z = recovered_cascade_z(near, far);
     let sun = sun_direction.normalize_or_zero();
     let shadow_view = Mat4::look_at_rh(eye + sun * 512.0, eye, Vec3::Z);
+    // Keep each cascade anchored to the player's world position. Fitting to
+    // the camera frustum makes the shadow atlas rotate whenever the mouse
+    // turns, so nearby shadows visibly swim despite no movement.
+    let extents = [24.0, 64.0, 160.0, 320.0];
     let cascades = std::array::from_fn(|index| {
-        fit_cascade(
-            camera_view,
+        fit_cascade_fixed(
             shadow_view,
-            fov_y,
-            aspect,
+            eye,
+            extents[index],
             z[index],
             z[index + 1],
             CASCADE_VIEWPORTS[index],

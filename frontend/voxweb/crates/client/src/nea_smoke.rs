@@ -1082,6 +1082,9 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
             inp.flight_toggle = false;
             let physics = local_physics.get_or_insert_with(|| {
                 let mut physics = NeaPlayerPhysics::new(local_pos);
+                // Temporary inspection mode: allow free flight while tuning
+                // shadows and atlas sampling from arbitrary viewpoints.
+                physics.request_flight_toggle();
                 physics.observe(&|x, y, z| solid_voxel_at(&chunk_cells, x, y, z));
                 physics
             });
