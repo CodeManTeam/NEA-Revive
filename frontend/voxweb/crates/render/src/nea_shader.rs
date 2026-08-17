@@ -367,13 +367,8 @@ fn fs_main(in: VsOut) -> @location(0) vec4f {
     ((1.0 - nu) * nv) * in.light10 +
     (nu * nv) * in.light11;
   let ao = interpolated_light.a * bump.a;
-  // The voxel light field fades toward zero in unloaded/far cells, but the
-  // original renderer still retained a small sky contribution there. Without
-  // this floor the final pass turns distant terrain nearly black while F1
-  // (albedo-only) remains normal.
-  let sky_visibility = max(interpolated_light.a, 0.14);
   let irradiance = 100.0 * interpolated_light.rgb +
-    sky_visibility * directional_sky(shaded_normal);
+    interpolated_light.a * directional_sky(shaded_normal);
   // 空气透视 fog factor（与 apply_fog 同一计算，供 F5 显示）
   var view_dir = in.world_pos - globals.eye_exposure.xyz;
   let dist = max(length(view_dir), 0.000001);
@@ -393,7 +388,9 @@ fn fs_main(in: VsOut) -> @location(0) vec4f {
   let direct = normal_light * shadow * globals.light_color_global.rgb;
   var lit: vec3f;
   if (material.g < 0.01) {
-    lit = albedo * (ao * (direct + irradiance) + 400.0 * material.b);
+    // Original diffuse path: ambient voxel irradiance is already occlusion-
+    // aware; multiplying it by AO again makes distant terrain far too dark.
+    lit = albedo * (direct + irradiance + 400.0 * material.b);
   } else {
     let n = shaded_normal;
     let v = normalize(globals.eye_exposure.xyz - in.world_pos);
