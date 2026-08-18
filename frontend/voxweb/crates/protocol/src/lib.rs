@@ -23,6 +23,7 @@ pub mod session;
 pub mod session_web;
 pub mod stream;
 pub mod terrain;
+pub mod ui;
 
 pub use adapter::{
     nea_chunk_grid, nea_chunk_id_to_grid, set_nea_shape, voxweb_chunk_positions,
@@ -42,5 +43,8 @@ pub use player::{
 };
 pub use protocol::{ParsedMessage, Protocol, ProtocolTable};
 pub use schema::{Schema, Value};
-pub use session::{SessionCtx, SessionHandlers, SessionTransport, TerrainChunk, TerrainReset};
+pub use session::{
+    RemoteClientEvent, SessionCtx, SessionHandlers, SessionTransport, TerrainChunk, TerrainReset,
+};
 pub use stream::{ReadStream, WriteStream};
+pub use ui::{decode_dialog_open, decode_game_ui_reset, decode_gui_command, encode_runtime_outbound, DialogClose, DialogConfig, DialogOpen, DialogResult, GameUiState, GuiCommand, PictureAsset, UiCommon, UiCoord2, UiElement, UiNode, UiNodeValue, UiScreen};

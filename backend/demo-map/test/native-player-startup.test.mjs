@@ -18,7 +18,7 @@ test("native Player starts from an isolated build root and serves the client scr
   const controlPort = await freePort();
   const buildRoot = await mkdtemp(join(tmpdir(), "nea-native-player-"));
   const child = spawn(process.execPath, ["src/server.mjs"], {
-    cwd: join(process.cwd(), "Frontend", "demo-map"),
+    cwd: process.cwd(),
     env: {
       ...process.env,
       NEA_DEMO_PORT: String(playerPort),
@@ -52,9 +52,9 @@ test("native Player derives the launcher route from an imported Showcase id", { 
   const playerPort = await freePort();
   const controlPort = await freePort();
   const buildRoot = await mkdtemp(join(tmpdir(), "nea-showcase-player-"));
-  const sourceRoot = join(process.cwd(), "Frontend", "demo-map", "showcase");
+  const sourceRoot = join(process.cwd(), "showcase");
   const child = spawn(process.execPath, ["src/server.mjs"], {
-    cwd: join(process.cwd(), "Frontend", "demo-map"),
+    cwd: process.cwd(),
     env: {
       ...process.env,
       NEA_DEMO_PORT: String(playerPort),
@@ -156,7 +156,7 @@ async function verifyDeliveredClientModule({ buildRoot, modules }) {
   }, identity, "MuDB module bytes must match capability admission");
   const publishedManifest = await readJson(join(
     process.cwd(),
-    "Backend",
+    "..",
     "local-player",
     "archive",
     "project",
@@ -174,7 +174,7 @@ async function readJson(path) {
 
 function spawnDemoServer({ buildRoot, controlPort, playerPort }) {
   return spawn(process.execPath, ["src/server.mjs"], {
-    cwd: join(process.cwd(), "Frontend", "demo-map"),
+    cwd: process.cwd(),
     env: {
       ...process.env,
       NEA_DEMO_PORT: String(playerPort),

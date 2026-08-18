@@ -1,0 +1,45 @@
+{
+  "formatVersion": "nea-map/v1",
+  "id": "nea-script-lab",
+  "display": {
+    "name": "NEA Script Lab",
+    "description": "A compact test map for the recovered Player, map importer, and local server Script Runtime."
+  },
+  "runtime": {
+    "apiVersion": "0.1.0",
+    "tickRate": 20,
+    "clientContract": "dao3-client-runtime/v1",
+    "serverContract": "nea-server-runtime/v1",
+    "compatibilityLevel": "experimental"
+  },
+  "world": {
+    "shape": [64, 32, 64],
+    "spawn": [32, 9, 38],
+    "entityLimit": 3400,
+    "terrain": "world/terrain.json",
+    "entities": "world/entities.json",
+    "physics": "world/physics.json"
+  },
+  "scripts": {
+    "server": "scripts/server.js",
+    "client": "scripts/client.js",
+    "serverCapabilities": [
+      "server.world.events",
+      "server.world.chat",
+      "server.world.entities",
+      "server.world.voxels",
+      "server.world.config",
+      "server.gui",
+      "server.storage",
+      "server.player",
+      "server.player.write",
+      "server.remote-channel",
+      "server.http"
+    ],
+    "clientCapabilities": [
+      "client.core",
+      "client.ui",
+      "client.remote-channel"
+    ]
+  }
+}

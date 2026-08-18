@@ -2,6 +2,7 @@
 // gameTerrain.reset → fetchChunk → chunkResponse（boxes 包含 parkour 方块）。
 // 模拟 voxweb 前端的协议表解析（protocols.json）验证 wire 兼容性。
 import { strict as assert } from "node:assert"
+import { rm } from "node:fs/promises"
 import { MuClient } from "mudb"
 import { MuWebSocket } from "mudb/socket/web/client"
 import { box3Protocols, gameChat, gameClock, gameNet, gameTerrain } from "../protocol"
@@ -9,7 +10,7 @@ import { startRuntimeServer } from "./runtime-server"
 
 const sourceRoot = "D:/Projects/Gaming/NEA-Revive/packages/parkour"
 const assetRoot = "D:/Projects/Gaming/NEA-Revive/backend/local-player/archive"
-const buildRoot = "D:/Projects/Gaming/NEA-Revive/.build/runtime-server-build-voxweb-a"
+const buildRoot = `D:/Projects/Gaming/NEA-Revive/.build/runtime-server-build-voxweb-${process.pid}`
 
 const server = await startRuntimeServer({ port: 0, sourceRoot, assetRoot, buildRoot, quiet: true })
 
@@ -33,6 +34,7 @@ const client = new MuClient(socket, undefined, true)
 const rawFrames: Uint8Array[] = []
 const resets: any[] = []
 const chunkResponses: any[] = []
+const voxelChanges: any[] = []
 let terrainProtocol: any
 let netProtocol: any
 
@@ -46,6 +48,7 @@ for (const schema of box3Protocols) {
     // 必须立即深拷贝，否则 push 的引用随后被清空（boxes 变 0）。
     handlers.reset = (data: any) => resets.push(structuredClone(data))
     handlers.chunkResponse = (data: any) => chunkResponses.push(structuredClone(data))
+    handlers.voxelChange = (data: any) => voxelChanges.push(structuredClone(data))
   }
   protocol.configure({
     message: handlers as any,
@@ -96,29 +99,60 @@ try {
   assert.equal(reset.nx, 256)
   assert.equal(reset.ny, 64)
   assert.equal(reset.nz, 256)
-  assert.equal(reset.positionX, 128)
-  assert.equal(reset.positionY, 44)
-  assert.equal(reset.positionZ, 128)
+  assert.equal(reset.positionX, 115)
+  assert.equal(reset.positionY, 11)
+  assert.equal(reset.positionZ, 154)
 
-  // 3) fetchChunk（spawn 附近 chunk：网格 (4,1,4) → chunkId = 4 + 8*(1 + 2*4) = 76）
-  const chunkId = 4 + 8 * (1 + 2 * 4)
+  // Parkour startup script must have committed its water fill before the
+  // browser receives reset/chunk data, not only in the server collision world.
+  const waterId = server.runtime.voxels.id("water")
+  let startupWater: [number, number, number] | undefined
+  for (let x = 0; x < reset.nx && !startupWater; x += 1) {
+    for (let z = 0; z < reset.nz && !startupWater; z += 1) {
+      if (server.runtime.voxels.getVoxel(x, 8, z) === waterId) startupWater = [x, 8, z]
+    }
+  }
+  assert.ok(startupWater, "parkour startup script should create at least one water voxel")
+
+  // 3) fetchChunk：始终从 reset 的动态 shape/origin 计算出生 chunk。
+  const gridX = reset.nx / 32
+  const gridY = reset.ny / 32
+  const chunkId = Math.floor(reset.positionX / 32)
+    + gridX * (Math.floor(reset.positionY / 32) + gridY * Math.floor(reset.positionZ / 32))
   console.log("[test] sending fetchChunk chunkId=", chunkId)
   terrainProtocol.server.message.fetchChunk({ chunkId, rpcId: 1 })
   await waitFor(() => chunkResponses.length > 0)
   const chunk = chunkResponses[0]
   console.log(`[ok] chunkResponse rpcId=${chunk.rpcId} boxes=${chunk.boxes.length}`)
   assert.equal(chunk.rpcId, 1)
-  // spawn 视口 (128,44,128) 应落在某个 box 上（parkour 平台 stone=129 或底部 dirt=125）
+  // 出生区域应落在 parkour 的真实地形上。
   const blocks = new Set(chunk.boxes.map((b: any) => b.block))
   console.log("[ok] chunk blocks:", [...blocks].join(","))
   assert.ok(blocks.size > 0, "chunk should contain terrain blocks")
 
-  // 4) fetchHashes 响应
-  terrainProtocol.server.message.fetchHashes({ startI: 0, startJ: 0, startK: 0, chunkIds: [76], dirtyChunks: [] })
+  const waterChunkId = Math.floor(startupWater![0] / 32)
+    + gridX * (Math.floor(startupWater![1] / 32) + gridY * Math.floor(startupWater![2] / 32))
+  terrainProtocol.server.message.fetchChunk({ chunkId: waterChunkId, rpcId: 2 })
+  await waitFor(() => chunkResponses.length > 1)
+  assert.ok(chunkResponses[1].boxes.some((box: any) => box.block === waterId), "water mutation should be present in chunkResponse")
+  console.log(`[ok] startup water voxel=(${startupWater.join(",")}) chunk=${waterChunkId}`)
+
+  // 4) ScriptRuntime voxel commits use canonical game-terrain.voxelChange.
+  const [x, y, z] = [1, 2, 3]
+  const previous = server.runtime.voxels.getVoxelId(x, y, z)
+  const next = previous === 0 ? server.runtime.voxels.id("water") : 0
+  server.runtime.voxels.setVoxelId(x, y, z, next)
+  await waitFor(() => voxelChanges.length > 0)
+  assert.deepEqual(voxelChanges[0], [{ block: next, count: 1, offset: 53 }])
+  console.log(`[ok] voxelChange: (${x},${y},${z}) ${previous}->${next}`)
+
+  // 5) fetchHashes 响应
+  terrainProtocol.server.message.fetchHashes({ startI: 0, startJ: 0, startK: 0, chunkIds: [chunkId], dirtyChunks: [] })
   await new Promise((resolve) => setTimeout(resolve, 100))
 
   console.log("runtime-server voxweb handshake test passed")
 } finally {
   if (client.running) client.destroy()
   await server.close()
+  await rm(buildRoot, { recursive: true, force: true })
 }

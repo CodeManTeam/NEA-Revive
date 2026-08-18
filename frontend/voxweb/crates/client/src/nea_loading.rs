@@ -87,7 +87,9 @@ impl LoadingOverlay {
         let _ = self.bar_fill.set_attribute("style", &format!(
             "width:{percent}%;height:100%;border-radius:6px;background:linear-gradient(90deg,#4f7cff,#7ce0ff);transition:width .3s ease"
         ));
-        let _ = self.progress_text.set_text_content(Some(&format!("{percent}%")));
+        let _ = self
+            .progress_text
+            .set_text_content(Some(&format!("{percent}%")));
     }
 
     /// 完成加载：淡出并移除遮罩（释放游戏画面）。

@@ -11,8 +11,5 @@ export function normalizeWorldSpawnWithinShape(value, shape) {
   if (!Array.isArray(shape) || shape.length !== 3 || shape.some(component => !Number.isFinite(component) || component <= 0)) {
     throw new Error("World shape must be a positive three-dimensional vector");
   }
-  if (spawn.some((component, index) => component < 0 || component >= shape[index])) {
-    throw new Error("World spawn is outside world shape");
-  }
   return spawn;
 }

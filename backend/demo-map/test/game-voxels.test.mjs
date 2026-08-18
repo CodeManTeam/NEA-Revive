@@ -88,6 +88,27 @@ test("voxel writes update collision candidates instead of only the script-visibl
   assert.equal(body.grounded, false);
 });
 
+test("voxel writes report committed changes once and in call order", () => {
+  const changes = [];
+  const world = new VoxelCollisionWorld();
+  const voxels = new GameVoxelsRuntime({
+    shape: [8, 8, 8],
+    catalog,
+    collisionWorld: world,
+    onVoxelChange: change => changes.push(change),
+  });
+
+  voxels.setVoxelId(3, 2, 1, nonAir.id);
+  voxels.setVoxelId(3, 2, 1, nonAir.id);
+  voxels.setVoxelId(1, 2, 3, nonAir.id | (2 << VOXEL_ROTATION_SHIFT));
+
+  assert.deepEqual(changes, [
+    { x: 3, y: 2, z: 1, voxel: nonAir.id, previousVoxel: 0 },
+    { x: 1, y: 2, z: 3, voxel: nonAir.id | (2 << VOXEL_ROTATION_SHIFT), previousVoxel: 0 },
+  ]);
+  assert.equal(Object.isFrozen(changes[0]), true);
+});
+
 function createVoxels() {
   const world = new VoxelCollisionWorld();
   return {

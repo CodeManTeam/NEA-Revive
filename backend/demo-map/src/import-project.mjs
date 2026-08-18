@@ -106,6 +106,7 @@ async function writeProjectPackage(destination, prepared) {
       position: entity.position,
       tags: [...new Set([`id-${entity.id}`, ...entity.tags])].sort(),
       mesh: entity.mesh,
+      source: entity.source,
     })),
   });
   if (source.environment !== null) await writeJson(files.environment, source.environment);
@@ -168,12 +169,24 @@ async function replaceProjectPackage(staging, destination) {
     if (error?.code !== "ENOENT") throw error;
   }
   try {
-    await rename(staging, destination);
+    await renameWithWindowsRetry(staging, destination);
   } catch (error) {
     if (movedPrevious) await rename(backup, destination);
     throw error;
   }
   if (movedPrevious) await rm(backup, { recursive: true, force: true });
+}
+
+async function renameWithWindowsRetry(source, destination) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      await rename(source, destination);
+      return;
+    } catch (error) {
+      if (attempt >= 5 || !["EPERM", "EBUSY", "EACCES"].includes(error?.code)) throw error;
+      await new Promise(resolveDelay => setTimeout(resolveDelay, 50 * (attempt + 1)));
+    }
+  }
 }
 
 async function readSourceAssets(root, assets) {

@@ -1,0 +1,44 @@
+{
+  "formatVersion": "nea-map/v1",
+  "id": "api-acceptance",
+  "display": {
+    "name": "DAO3 API 验收实验场",
+    "description": "按 DAO3 API 文档组织的自动化与人工验收地图。"
+  },
+  "runtime": {
+    "apiVersion": "0.1.0",
+    "tickRate": 20,
+    "clientContract": "dao3-client-runtime/v1",
+    "serverContract": "nea-server-runtime/v1",
+    "compatibilityLevel": "experimental"
+  },
+  "world": {
+    "shape": [96, 32, 96],
+    "spawn": [8, 3, 8],
+    "entityLimit": 4000,
+    "terrain": "world/terrain.json",
+    "entities": "world/entities.json",
+    "physics": "world/physics.json"
+  },
+  "assets": [
+    { "name": "mesh/api-cube.gltf", "path": "assets/mesh/api-cube.gltf", "kind": "mesh" }
+  ],
+  "scripts": {
+    "server": "scripts/server.js",
+    "client": "scripts/client.js",
+    "serverCapabilities": [
+      "server.world.events",
+      "server.world.chat",
+      "server.world.entities",
+      "server.world.voxels",
+      "server.world.config",
+      "server.gui",
+      "server.storage",
+      "server.player",
+      "server.player.write",
+      "server.remote-channel",
+      "server.http"
+    ],
+    "clientCapabilities": ["client.core", "client.ui", "client.remote-channel"]
+  }
+}

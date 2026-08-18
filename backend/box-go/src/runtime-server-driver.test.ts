@@ -3,6 +3,7 @@
 // → parse_client_frame Ok → 发 join → secret → synchronize+unpause → reset → fetchChunk。
 // 这验证 voxweb 前端（Rust SessionDriver）能在自写后端上走通到 Playing。
 import { strict as assert } from "node:assert"
+import { rm } from "node:fs/promises"
 import { MuClient } from "mudb"
 import { MuWebSocket } from "mudb/socket/web/client"
 import { box3Protocols, gameChat, gameClock, gameNet, gameTerrain } from "../protocol"
@@ -10,7 +11,7 @@ import { startRuntimeServer } from "./runtime-server"
 
 const sourceRoot = "D:/Projects/Gaming/NEA-Revive/packages/parkour"
 const assetRoot = "D:/Projects/Gaming/NEA-Revive/backend/local-player/archive"
-const buildRoot = "D:/Projects/Gaming/NEA-Revive/.build/runtime-server-build-driver"
+const buildRoot = `D:/Projects/Gaming/NEA-Revive/.build/runtime-server-build-driver-${process.pid}`
 
 const server = await startRuntimeServer({ port: 0, sourceRoot, assetRoot, buildRoot, quiet: true })
 
@@ -131,7 +132,12 @@ try {
   console.log(`[ok] reset origin=(${resets[0].positionX},${resets[0].positionY},${resets[0].positionZ})`)
 
   // 4) fetchChunk → chunkResponse
-  terrainProto.server.message.fetchChunk({ chunkId: 76, rpcId: 1 })
+  const reset = resets[0]
+  const gridX = reset.nx / 32
+  const gridY = reset.ny / 32
+  const chunkId = Math.floor(reset.positionX / 32)
+    + gridX * (Math.floor(reset.positionY / 32) + gridY * Math.floor(reset.positionZ / 32))
+  terrainProto.server.message.fetchChunk({ chunkId, rpcId: 1 })
   await waitFor(() => chunks.length > 0)
   assert.ok(chunks[0].boxes.length > 0, "chunk has boxes")
   console.log(`[ok] chunkResponse boxes=${chunks[0].boxes.length}`)
@@ -148,4 +154,5 @@ try {
 } finally {
   if (client.running) client.destroy()
   await server.close()
+  await rm(buildRoot, { recursive: true, force: true })
 }

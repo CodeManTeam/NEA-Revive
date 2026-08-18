@@ -55,6 +55,23 @@ packages/<map>/
 2. `ScriptRuntime.load(buildRoot, { blockCatalog, ... })` 加载并执行 server 脚本。
 3. runtime-server 走 mudb 握手（createSession → join → secret → reset → fetchChunk）。
 
+## DAO3 标准导出
+
+`reference/<map>` 目录视为只读标准源。所有地图使用同一导入器生成
+`packages/<map-id>`，运行时不为具体地图增加转换特例：
+
+```powershell
+node backend/demo-map/tools/import-standard-export.mjs `
+  "D:/path/to/standard-export" `
+  "D:/Projects/Gaming/NEA-Revive/packages/<map-id>"
+node scripts/serve.mjs --map <map-id>
+```
+
+标准源包括 `voxel-sparse.gz`、`voxels.json`、`entitiesTree.json`、
+`physics.json`、`player.json`、`environment.json`、`uiTree.json`、
+`scriptAssets.json`、`scriptIndex.json`、`scripts/` 以及可选素材目录。
+体素 shape 只约束稀疏体素数据；实体允许位于该包围盒之外，这是标准导出的合法坐标语义。
+
 ## 非净室说明
 
 地形/代码直接来自 DAO3 dump（用户授权）。parkour 项目包的 `scripts/server.js`

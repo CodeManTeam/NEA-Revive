@@ -280,7 +280,11 @@ pub fn recovered_shadow_frame(
         // shader 用 `frag_coord.z/w`（NDC 深度 0..1）选级联，而 z[1..3] 是视距米
         // （16/48/128）。两者直接比较会让所有像素几乎全选最近级联 → 远处阴影
         // 全部失效。把视距 split 转成对应 NDC 深度阈值（perspective 逆映射）。
-        splits: [ndc_depth(near, far, z[1]), ndc_depth(near, far, z[2]), ndc_depth(near, far, z[3])],
+        splits: [
+            ndc_depth(near, far, z[1]),
+            ndc_depth(near, far, z[2]),
+            ndc_depth(near, far, z[3]),
+        ],
         cascades,
     }
 }
@@ -365,12 +369,7 @@ fn fit_cascade_fixed(
     ShadowCascade {
         view_projection,
         normal: Mat3::from_mat4(inverse).transpose(),
-        bounds: [
-            uv_bounds[0],
-            uv_bounds[1],
-            extent,
-            extent,
-        ],
+        bounds: [uv_bounds[0], uv_bounds[1], extent, extent],
         viewport: [
             (uv_bounds[0] * resolution as f32) as u32,
             (uv_bounds[1] * resolution as f32) as u32,
@@ -550,7 +549,11 @@ mod tests {
                 && (frame.splits[1] - expected[1]).abs() < 1.0e-5
                 && (frame.splits[2] - expected[2]).abs() < 1.0e-5
         );
-        assert!(frame.splits[0] > 0.9 && frame.splits[0] < frame.splits[1] && frame.splits[1] < frame.splits[2]);
+        assert!(
+            frame.splits[0] > 0.9
+                && frame.splits[0] < frame.splits[1]
+                && frame.splits[1] < frame.splits[2]
+        );
         assert_eq!(frame.cascades[3].viewport, [512, 512, 512, 512]);
         assert!(
             frame
@@ -583,16 +586,19 @@ mod tests {
             1024,
         );
         for world in [
-            Vec3::new(64.0, 3.0, 48.0),   // 玩家脚下地面
-            Vec3::new(52.0, 0.0, 40.0),   // 玩家周围地面
-            Vec3::new(76.0, 10.0, 56.0),  // 玩家周围高处
-            Vec3::new(64.0, 5.0, 48.0),   // 玩家头顶
+            Vec3::new(64.0, 3.0, 48.0),  // 玩家脚下地面
+            Vec3::new(52.0, 0.0, 40.0),  // 玩家周围地面
+            Vec3::new(76.0, 10.0, 56.0), // 玩家周围高处
+            Vec3::new(64.0, 5.0, 48.0),  // 玩家头顶
         ] {
             let clip = cascade.view_projection * world.extend(1.0);
             let ndc = clip.truncate() / clip.w;
             assert!(ndc.x.abs() <= 1.2, "X out of NDC: {world:?} -> {ndc:?}");
             assert!(ndc.y.abs() <= 1.2, "Z out of NDC: {world:?} -> {ndc:?}");
-            assert!((0.0..=1.0).contains(&ndc.z), "depth out of [0,1]: {world:?} -> {ndc:?}");
+            assert!(
+                (0.0..=1.0).contains(&ndc.z),
+                "depth out of [0,1]: {world:?} -> {ndc:?}"
+            );
         }
     }
 }

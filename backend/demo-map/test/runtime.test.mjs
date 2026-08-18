@@ -949,9 +949,9 @@ test("GameEntity hurt follows recovered damage, healing, death, and client-event
   target.hurt(50, "void");
   target.hurt(1);
   target.damageDummy.hurt(4, { attacker, damageType: "golem" });
-  target.damageDummy.hurt(6, { attacker, damageType: "golem" });
+  target.damageDummy.hurt(7, { attacker, damageType: "golem" });
 
-  assert.equal(target.hp, 0);
+  assert.equal(target.hp, -33);
   assert.deepEqual(JSON.parse(JSON.stringify(target.damageEvents)), [
     { damage: 5, attacker: "hurt-attacker", damageType: "melee" },
     { damage: -2, attacker: null, damageType: "" },
@@ -960,19 +960,19 @@ test("GameEntity hurt follows recovered damage, healing, death, and client-event
   assert.deepEqual(JSON.parse(JSON.stringify(target.dieEvents)), [{ attacker: null, damageType: "void" }]);
   assert.deepEqual(JSON.parse(JSON.stringify(target.damageDummy.damageEvents)), [
     { damage: 4, attacker: "hurt-attacker", damageType: "golem" },
-    { damage: 6, attacker: "hurt-attacker", damageType: "golem" },
+    { damage: 7, attacker: "hurt-attacker", damageType: "golem" },
   ]);
   assert.deepEqual(JSON.parse(JSON.stringify(target.damageDummy.dieEvents)), [{ attacker: "hurt-attacker", damageType: "golem" }]);
   assert.deepEqual(delivered, [
     { playerId: "hurt-target", event: { type: "health-update", hp: 15, damage: 5, attacker: "hurt-attacker", damageType: "melee" } },
     { playerId: "hurt-target", event: { type: "health-update", hp: 17, damage: -2, attacker: null, damageType: "" } },
-    { playerId: "hurt-target", event: { type: "health-update", hp: 0, damage: 50, attacker: null, damageType: "void" } },
+    { playerId: "hurt-target", event: { type: "health-update", hp: -33, damage: 50, attacker: null, damageType: "void" } },
     { playerId: "hurt-target", event: { type: "death", attacker: null, damageType: "void" } },
   ]);
   assert.deepEqual(damageWrites, [
-    { target: { playerId: "hurt-target" }, state: { showHealthBar: true, hp: 15, maxHp: 20 }, events: { hurt: 5, die: false } },
-    { target: { playerId: "hurt-target" }, state: { showHealthBar: true, hp: 17, maxHp: 20 }, events: { hurt: -2, die: false } },
-    { target: { playerId: "hurt-target" }, state: { showHealthBar: true, hp: 0, maxHp: 20 }, events: { hurt: 50, die: true } },
+    { target: { playerId: "hurt-target" }, state: { showHealthBar: true, hp: 15, maxHp: 20 }, events: { hurt: 5, die: false, respawn: false } },
+    { target: { playerId: "hurt-target" }, state: { showHealthBar: true, hp: 17, maxHp: 20 }, events: { hurt: -2, die: false, respawn: false } },
+    { target: { playerId: "hurt-target" }, state: { showHealthBar: true, hp: -33, maxHp: 20 }, events: { hurt: 50, die: true, respawn: false } },
   ]);
   runtime.stop();
 });
@@ -1437,10 +1437,15 @@ test("GUI transport keeps the internal player identity after scripts redefine pu
 
 test("RuntimeEntity properties and snapshots cannot diverge", () => {
   const entity = createRuntimeEntity({ id: "stable-entity", kind: "prop", position: [1, 2, 3], tags: ["initial"] });
+  assert.equal(entity.interactRadius, 3);
+  assert.deepEqual([entity.interactColor.r, entity.interactColor.g, entity.interactColor.b], [1, 1, 1]);
+  assert.deepEqual(entity.entityContacts, []);
+  assert.deepEqual(entity.voxelContacts, []);
+  assert.deepEqual(entity.contactForce.toArray(), [0, 0, 0]);
   assert.throws(() => { entity.id = "rewritten"; }, TypeError);
   assert.throws(() => { entity.kind = "other"; }, TypeError);
   entity.position = [4, 5, 6];
-  entity.tags.add("active");
+  entity.addTag("active");
   assert.deepEqual(entity.snapshot(), {
     id: "stable-entity",
     name: "stable-entity",
@@ -1524,5 +1529,11 @@ test("GameEventFuture filters are forwarded through world next methods", async (
   const target = runtime.addPlayer({ id: "filter-target", name: "Target" });
   await Promise.resolve();
   assert.equal(target.matchedByFutureFilter, true);
+  target.player.setCameraYaw(1.25);
+  target.player.setCameraPitch(-0.4);
+  assert.equal(target.player.cameraYaw, 1.25);
+  assert.equal(target.player.cameraPitch, -0.4);
+  assert.deepEqual(target.player.cameraUp.toArray(), [0, 1, 0]);
+  assert.equal(target.player.cameraDistance, 6);
   runtime.stop();
 });

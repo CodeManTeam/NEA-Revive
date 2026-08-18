@@ -127,33 +127,26 @@ world.onChat(async({ entity, message }) => {
 
 
 
+const hazardRespawning = new WeakSet()
+const hazardMessages = new Map([
+    [voxels.id('grass'), '你被毒草毒S了'],
+    [voxels.id('snowland'), '你被冻S了'],
+    [voxels.id('orange'), '你被撞S了'],
+    [voxels.id('medium_green'), '你被绿S了'],
+])
+
 world.onVoxelContact(async({entity,voxel}) => {
-    if(entity.isPlayer){
-        if(voxel == voxels.id('grass')){
-            await sleep(100); 
-            entity.player.directMessage('你被毒草毒S了')
-            await sleep(200); 
-            entity.player.forceRespawn();  // 让玩家重生
-        } 
-        if(voxel == voxels.id('snowland')){
-            await sleep(100); 
-            entity.player.directMessage('你被冻S了')
-            await sleep(200); 
-            entity.player.forceRespawn();  // 让玩家重生
-        } 
-        if(voxel == voxels.id('orange')){
-            await sleep(100); 
-            entity.player.directMessage('你被撞S了')
-            await sleep(200); 
-            entity.player.forceRespawn();  // 让玩家重生
-        } 
-        if(voxel == voxels.id('medium_green')){
-            await sleep(100); 
-            entity.player.directMessage('你被绿S了')
-            await sleep(200); 
-            entity.player.forceRespawn();  // 让玩家重生
-        } 
-    }
+    if (!entity.isPlayer || hazardRespawning.has(entity)) return
+    const message = hazardMessages.get(voxel)
+    if (!message) return
+
+    hazardRespawning.add(entity)
+    await sleep(100)
+    entity.player.directMessage(message)
+    await sleep(200)
+    entity.player.forceRespawn()
+    await sleep(500)
+    hazardRespawning.delete(entity)
 })
 
 
@@ -161,6 +154,10 @@ world.onVoxelContact(async({entity,voxel}) => {
 
 
 
+
+function sendCheckpointEvent(player, event) {
+    setTimeout(() => remoteChannel.sendClientEvent(player, event), 150)
+}
 
 for (const e of world.querySelectorAll('*')) {//遍历所有实体
     if (e.id.startsWith('存档')) {//如果当前实体名左边部分刚好是“存档点”，比如：存档点
@@ -172,10 +169,23 @@ for (const e of world.querySelectorAll('*')) {//遍历所有实体
                     if (e.id === '存档点_终点') {
                         other.player.directMessage('恭喜你，到达终点，开启飞行！')  //给玩家发消息
                         other.player.canFly = true
+                        sendCheckpointEvent(other, {
+                            type: 'parkour:checkpoint',
+                            id: e.id,
+                            index: 4,
+                            finish: true,
+                        })
                         return;
                     }
                     other.player.directMessage('恭喜你，到达新的重生点，继续加油吧！')  //给玩家发消息
                     other.player.spawnPoint = [e.position.x , e.position.y + 2 , e.position.z]  
+                    const checkpointIndex = Number(e.id.slice('存档点_'.length)) || 1
+                    sendCheckpointEvent(other, {
+                        type: 'parkour:checkpoint',
+                        id: e.id,
+                        index: checkpointIndex,
+                        finish: false,
+                    })
                     //other.x=other.position.x
                     //other.y=other.position.y
                 }
@@ -183,3 +193,15 @@ for (const e of world.querySelectorAll('*')) {//遍历所有实体
         })
     }
 }
+
+remoteChannel.onServerEvent(({ entity, args, tick }) => {
+    if (args && args.type === 'nea-revive:ready') {
+        remoteChannel.sendClientEvent(entity, {
+            type: 'nea-revive:welcome',
+            tick,
+            map: 'parkour',
+            shape: [256, 64, 256],
+            sentAt: args.sentAt,
+        })
+    }
+})

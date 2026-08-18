@@ -19,6 +19,7 @@ struct TimedBody {
 struct RemoteTrack {
     name: String,
     scale: f32,
+    dead: bool,
     snapshots: VecDeque<TimedBody>,
 }
 
@@ -28,6 +29,7 @@ pub struct RemotePlayerPose {
     pub name: String,
     pub scale: f32,
     pub body: RigidBody,
+    pub dead: bool,
 }
 
 #[derive(Default)]
@@ -50,11 +52,13 @@ impl RemotePlayers {
             let track = self.tracks.entry(body.id).or_insert_with(|| RemoteTrack {
                 name: display.map_or_else(|| "Player".to_owned(), |value| value.name.clone()),
                 scale: display.map_or(1.0, |value| value.scale),
+                dead: display.is_some_and(|value| value.flags & 4 != 0),
                 snapshots: VecDeque::new(),
             });
             if let Some(display) = display {
                 track.name.clone_from(&display.name);
                 track.scale = display.scale;
+                track.dead = display.flags & 4 != 0;
             }
             if track
                 .snapshots
@@ -75,10 +79,9 @@ impl RemotePlayers {
         // (disconnect/leave). Without this the last pose stays on screen as a
         // frozen ghost forever.
         self.tracks.retain(|_, track| {
-            track
-                .snapshots
-                .back()
-                .is_some_and(|snapshot| received_ms.saturating_sub(snapshot.received_ms) < REMOTE_PLAYER_TTL_MS)
+            track.snapshots.back().is_some_and(|snapshot| {
+                received_ms.saturating_sub(snapshot.received_ms) < REMOTE_PLAYER_TTL_MS
+            })
         });
     }
 
@@ -104,6 +107,7 @@ impl RemotePlayers {
                     name: track.name.clone(),
                     scale: track.scale,
                     body: interpolate_body(&first.body, &second.body, amount),
+                    dead: track.dead,
                 })
             })
             .collect()

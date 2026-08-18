@@ -1,0 +1,16 @@
+{
+  "entities": [
+    {
+      "id": "central-beacon",
+      "kind": "prop",
+      "position": [32, 9, 32],
+      "tags": ["demo-beacon", "interactable", "spawn-area"]
+    },
+    {
+      "id": "welcome-marker",
+      "kind": "prop",
+      "position": [32, 9, 38],
+      "tags": ["welcome-marker", "spawn-area"]
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "formatVersion": "nea-map/v1",
+  "id": "nea-capability-showcase",
+  "display": {
+    "name": "NEA Capability Showcase",
+    "description": "A large evidence-first map that demonstrates recovered, partial, and evidence-deferred API/ABI surfaces through the preserved Player."
+  },
+  "runtime": {
+    "apiVersion": "0.1.0",
+    "tickRate": 20,
+    "clientContract": "dao3-client-runtime/v1",
+    "serverContract": "nea-server-runtime/v1",
+    "compatibilityLevel": "experimental",
+    "groupId": "showcase-local"
+  },
+  "world": {
+    "shape": [256, 64, 256],
+    "spawn": [128, 9, 128],
+    "entityLimit": 3400,
+    "terrain": "world/terrain.json",
+    "entities": "world/entities.json",
+    "physics": "world/physics.json"
+  },
+  "scripts": {
+    "server": "scripts/server.js",
+    "client": "scripts/client.js",
+    "serverCapabilities": [
+      "server.world.events",
+      "server.world.chat",
+      "server.world.entities",
+      "server.world.voxels",
+      "server.world.config",
+      "server.gui",
+      "server.storage",
+      "server.player",
+      "server.player.write",
+      "server.remote-channel",
+      "server.http"
+    ],
+    "clientCapabilities": [
+      "client.core",
+      "client.ui",
+      "client.remote-channel"
+    ]
+  }
+}

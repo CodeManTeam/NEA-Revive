@@ -1,0 +1,31 @@
+{
+  "formatVersion": "nea-terrain/v1",
+  "boxes": [
+    { "from": [0, 0, 0], "to": [96, 1, 96], "blockId": 129 },
+    { "from": [2, 1, 2], "to": [20, 2, 20], "blockId": 125 },
+    { "from": [4, 2, 4], "to": [18, 3, 18], "blockId": 127 },
+    { "from": [24, 1, 4], "to": [88, 2, 12], "blockId": 125 },
+    { "from": [24, 2, 4], "to": [40, 3, 12], "blockId": 127 },
+    { "from": [40, 2, 4], "to": [56, 3, 12], "blockId": 343 },
+    { "from": [56, 2, 4], "to": [72, 3, 12], "blockId": 119 },
+    { "from": [72, 2, 4], "to": [88, 3, 12], "blockId": 391 },
+    { "from": [24, 1, 20], "to": [88, 2, 42], "blockId": 129 },
+    { "from": [24, 2, 20], "to": [88, 3, 22], "blockId": 155 },
+    { "from": [24, 2, 40], "to": [88, 3, 42], "blockId": 155 },
+    { "from": [24, 2, 22], "to": [26, 3, 40], "blockId": 155 },
+    { "from": [86, 2, 22], "to": [88, 3, 40], "blockId": 155 },
+    { "from": [4, 1, 28], "to": [20, 2, 44], "blockId": 129 },
+    { "from": [6, 2, 30], "to": [18, 3, 42], "blockId": 125 },
+    { "from": [4, 1, 52], "to": [88, 2, 88], "blockId": 129 },
+    { "from": [8, 2, 58], "to": [20, 3, 70], "blockId": 127 },
+    { "from": [28, 2, 58], "to": [40, 3, 70], "blockId": 343 },
+    { "from": [48, 2, 58], "to": [60, 3, 70], "blockId": 119 },
+    { "from": [68, 2, 58], "to": [80, 3, 70], "blockId": 391 }
+  ],
+  "voxels": [
+    { "position": [31, 3, 31], "blockId": 127, "rotation": 0 },
+    { "position": [32, 3, 31], "blockId": 343, "rotation": 1 },
+    { "position": [33, 3, 31], "blockId": 119, "rotation": 2 },
+    { "position": [34, 3, 31], "blockId": 391, "rotation": 3 }
+  ]
+}

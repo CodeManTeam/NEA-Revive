@@ -1,6 +1,7 @@
 // 验证 join 后 net-state 帧（含 avatarSkin）能到达客户端并被 raw handler 捕获，
 // 且 models.appendSkinPartHashes 到达客户端。
 import { strict as assert } from "node:assert"
+import { rm } from "node:fs/promises"
 import { MuClient } from "mudb"
 import { MuWebSocket } from "mudb/socket/web/client"
 import { box3Protocols, gameNet, gameTerrain } from "../protocol"
@@ -8,7 +9,7 @@ import { startRuntimeServer } from "./runtime-server"
 
 const sourceRoot = "D:/Projects/Gaming/NEA-Revive/packages/parkour"
 const assetRoot = "D:/Projects/Gaming/NEA-Revive/backend/local-player/archive"
-const buildRoot = "D:/Projects/Gaming/NEA-Revive/.build/runtime-server-build-netstate"
+const buildRoot = `D:/Projects/Gaming/NEA-Revive/.build/runtime-server-build-netstate-${process.pid}`
 
 const server = await startRuntimeServer({ port: 0, sourceRoot, assetRoot, buildRoot, quiet: true })
 
@@ -94,4 +95,5 @@ try {
 } finally {
   if (client.running) client.destroy()
   await server.close()
+  await rm(buildRoot, { recursive: true, force: true })
 }

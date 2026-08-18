@@ -21,6 +21,7 @@ export class EntityBackendBridge {
         throw new Error("Backend entity projection returned an invalid entity id");
       }
       entity._backendEntityId = entityId;
+      entity._backendEntityBound = true;
       if (entity.destroyed) return this.#destroyEntity(entityId);
       this.queueStateWrite(entity);
       onProjected(entity);
@@ -53,7 +54,7 @@ export function runtimeEntityProjectionPayload(entity) {
     position: entity.position.toArray(),
     velocity: entity.velocity.toArray(),
     name: entity.name,
-    tags: [...entity.tags],
+    tags: entity.tags(),
     mesh: entity.mesh,
     bounds: entity.bounds.toArray(),
     nameplate: runtimeEntityNameplatePayload(entity),
@@ -86,6 +87,7 @@ export function runtimeEntityStatePayload(entity) {
     restitution: Number(entity.restitution),
     nameplate: runtimeEntityNameplatePayload(entity),
     model: runtimeEntityModelPayload(entity),
+    ...(hasParticleState(entity) ? { particles: runtimeEntityParticlePayload(entity) } : {}),
   };
 }
 
@@ -108,4 +110,40 @@ function runtimeEntityModelPayload(entity) {
     shininess: entity.meshShininess,
     metalness: entity.meshMetalness,
   };
+}
+
+function runtimeEntityParticlePayload(entity) {
+  return {
+    rate: Number(entity.particleRate ?? 0),
+    rateSpread: Number(entity.particleRateSpread ?? 0),
+    limit: Number(entity.particleLimit ?? 100),
+    lifetime: Number(entity.particleLifetime ?? 10),
+    lifetimeSpread: Number(entity.particleLifetimeSpread ?? 0),
+    size: Array.isArray(entity.particleSize) ? [...entity.particleSize] : [],
+    sizeSpread: Number(entity.particleSizeSpread ?? 0),
+    color: structuredClone(entity.particleColor ?? []),
+    velocity: vectorArray(entity.particleVelocity),
+    velocitySpread: vectorArray(entity.particleVelocitySpread),
+    damping: Number(entity.particleDamping ?? 0),
+  };
+}
+
+function hasParticleState(entity) {
+  return Number(entity.particleRate ?? 0) !== 0
+    || Number(entity.particleRateSpread ?? 0) !== 0
+    || Number(entity.particleLimit ?? 100) !== 100
+    || Number(entity.particleLifetime ?? 10) !== 10
+    || Number(entity.particleLifetimeSpread ?? 0) !== 0
+    || (Array.isArray(entity.particleSize) && entity.particleSize.some(value => Number(value) !== 1))
+    || Number(entity.particleSizeSpread ?? 0) !== 0
+    || (Array.isArray(entity.particleColor) && entity.particleColor.length > 0)
+    || vectorArray(entity.particleVelocity).some(value => value !== 0)
+    || vectorArray(entity.particleVelocitySpread).some(value => value !== 0)
+    || Number(entity.particleDamping ?? 0) !== 0;
+}
+
+function vectorArray(value) {
+  if (value && typeof value.toArray === "function") return value.toArray();
+  if (Array.isArray(value)) return value.slice(0, 3).map(Number);
+  return [Number(value?.x ?? 0), Number(value?.y ?? 0), Number(value?.z ?? 0)];
 }

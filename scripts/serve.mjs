@@ -1,7 +1,7 @@
 // NEA-Revive 本地开发栈启动脚本：
 // - 后端 runtime-server（18081）：packages/<map> + local-player archive
 // - 前端静态服务器（18082）：frontend/voxweb/dist
-// 用法：node scripts/serve.mjs [--map parkour|minecraft] [--backend-port 18081] [--frontend-port 18082]
+// 用法：node scripts/serve.mjs [--map <packages 下的目录名>] [--backend-port 18081] [--frontend-port 18082]
 import { createServer } from "node:http"
 import { readFile, stat } from "node:fs/promises"
 import { createReadStream } from "node:fs"
@@ -14,11 +14,9 @@ const frontendPort = Number(process.env.NEA_FRONTEND_PORT ?? 18082)
 const mapArg = process.argv.includes("--map")
   ? process.argv[process.argv.indexOf("--map") + 1]
   : (process.env.NEA_MAP ?? "parkour")
-const maps = {
-  parkour: { spawn: [115, 11, 154], build: "parkour" },
-  minecraft: { spawn: [64, 3, 48], build: "minecraft" },
-}
-const map = maps[mapArg] ?? maps.parkour
+const runtimeBuildRoot = process.env.NEA_BUILD_ROOT
+  ? resolve(process.env.NEA_BUILD_ROOT)
+  : resolve(rootDir, ".build", mapArg)
 
 // ---- 后端（runtime-server）----
 // 用 child 方式启动，避免本进程直接 import tsx 的生命周期耦合
@@ -33,8 +31,7 @@ const server = await startRuntimeServer({
   port: ${backendPort},
   sourceRoot: '${rootDir.replace(/\\/g, "/")}/packages/${mapArg}',
   assetRoot: '${rootDir.replace(/\\/g, "/")}/backend/local-player/archive',
-  buildRoot: '${rootDir.replace(/\\/g, "/")}/.build/${map.build}',
-  spawn: [${map.spawn.join(", ")}],
+  buildRoot: '${runtimeBuildRoot.replace(/\\/g, "/")}',
   quiet: false,
 })
 console.log('[backend] READY on', server.port)
@@ -117,10 +114,20 @@ const frontend = createServer(async (req, res) => {
     // 内容寻址产物（WASM/JS/PNG/gltf）带长缓存（文件名含 hash），刷新秒开；
     // HTML 不缓存（启动参数可能变）。
     const ext = extname(filePath).toLowerCase()
-    const cacheable = [".wasm", ".js", ".png", ".jpg", ".jpeg", ".gltf", ".mp3"].includes(ext)
-    const headers = { "content-type": mime[ext] ?? "application/octet-stream" }
-    if (cacheable) headers["cache-control"] = "public, max-age=86400"
-    else headers["cache-control"] = "no-cache"
+    // client-script-runtime.js is a stable entrypoint copied by Trunk rather
+    // than a content-addressed artifact. Caching it previously left browsers
+    // on obsolete DAO3 APIs even after a successful frontend rebuild.
+    const stableRuntimeEntry = urlPath === "/client-script-runtime.js"
+    const cacheable = !stableRuntimeEntry && [".wasm", ".js", ".png", ".jpg", ".jpeg", ".gltf", ".mp3"].includes(ext)
+    const headers = {
+      "content-type": mime[ext] ?? "application/octet-stream",
+      "content-length": String(info.size),
+    }
+    // Development builds can replace hashed Trunk artifacts while a tab is
+    // still loading the previous JS/WASM pair. Revalidate both files so the
+    // browser never combines an old JS manifest with a newer wasm payload.
+    if (cacheable) headers["cache-control"] = "no-cache"
+    else headers["cache-control"] = stableRuntimeEntry ? "no-store" : "no-cache"
     res.writeHead(200, headers)
     createReadStream(filePath).pipe(res)
   } catch (error) {

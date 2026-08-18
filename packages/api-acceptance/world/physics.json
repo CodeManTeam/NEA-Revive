@@ -1,0 +1,23 @@
+{
+  "formatVersion": "nea-physics/v1",
+  "gravity": -20,
+  "maxFallSpeed": 50,
+  "stepHeight": 1.25,
+  "playerBody": {
+    "profileId": "historical-player-default-v1",
+    "origin": "body-center",
+    "originStatus": "confirmed",
+    "sizeStatus": "confirmed",
+    "boundsHalfExtents": [0.45, 1.1, 0.45],
+    "shapeHalfExtents": [0.45, 1.1, 0.45],
+    "evidence": "DAO3 historical player profile"
+  },
+  "materials": {
+    "125": { "friction": 10, "restitution": 0, "tags": ["dirt"] },
+    "129": { "friction": 10, "restitution": 0, "tags": ["stone"] },
+    "127": { "friction": 1, "restitution": 0, "tags": ["grass"] },
+    "343": { "friction": 0.05, "restitution": 0, "tags": ["ice-test"] },
+    "119": { "friction": 1, "restitution": 0.85, "tags": ["bounce-test"] },
+    "391": { "friction": 8, "restitution": 0, "tags": ["drag-test"] }
+  }
+}

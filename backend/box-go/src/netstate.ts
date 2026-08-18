@@ -128,6 +128,8 @@ export interface NetPlayerDisplay {
   id: number
   name: string
   avatarSkin?: number[]
+  /** Historical PlayerDisplayFlags.DEAD bit (4). */
+  dead?: boolean
 }
 
 export interface NetPlayerState {
@@ -135,8 +137,20 @@ export interface NetPlayerState {
   position: [number, number, number]
   // 可选：脚本对玩家属性的修改（DAO3 player API），同步到前端本地物理。
   walkSpeed?: number
+  walkAcceleration?: number
   runSpeed?: number
+  runAcceleration?: number
+  crouchSpeed?: number
+  crouchAcceleration?: number
+  swimSpeed?: number
+  swimAcceleration?: number
   flySpeed?: number
+  flyAcceleration?: number
+  jumpPower?: number
+  jumpSpeedFactor?: number
+  jumpAccelerationFactor?: number
+  doubleJumpPower?: number
+  stepHeight?: number
   flags?: number
 }
 
@@ -158,6 +172,7 @@ export function encodeNetPublicPacket(input: {
     ...PlayerDisplaySchema.clone(PlayerDisplaySchema.identity as any),
     id: d.id,
     name: d.name,
+    flags: d.dead ? 4 | 8 : 8,
     avatarSkin: { ...avatarSkinValue(d.avatarSkin ?? LOCAL_AVATAR_SKIN_PART_IDS) },
     scale: 1,
   }))
@@ -170,8 +185,20 @@ export function encodeNetPublicPacket(input: {
     platformY: p.position[1],
     platformZ: p.position[2],
     ...(p.walkSpeed === undefined ? {} : { walkSpeed: p.walkSpeed }),
+    ...(p.walkAcceleration === undefined ? {} : { walkAcceleration: p.walkAcceleration }),
     ...(p.runSpeed === undefined ? {} : { runSpeed: p.runSpeed }),
+    ...(p.runAcceleration === undefined ? {} : { runAcceleration: p.runAcceleration }),
+    ...(p.crouchSpeed === undefined ? {} : { crouchSpeed: p.crouchSpeed }),
+    ...(p.crouchAcceleration === undefined ? {} : { crouchAcceleration: p.crouchAcceleration }),
+    ...(p.swimSpeed === undefined ? {} : { swimSpeed: p.swimSpeed }),
+    ...(p.swimAcceleration === undefined ? {} : { swimAcceleration: p.swimAcceleration }),
     ...(p.flySpeed === undefined ? {} : { flySpeed: p.flySpeed }),
+    ...(p.flyAcceleration === undefined ? {} : { flyAcceleration: p.flyAcceleration }),
+    ...(p.jumpPower === undefined ? {} : { jumpPower: p.jumpPower }),
+    ...(p.jumpSpeedFactor === undefined ? {} : { jumpSpeedFactor: p.jumpSpeedFactor }),
+    ...(p.jumpAccelerationFactor === undefined ? {} : { jumpAccelerationFactor: p.jumpAccelerationFactor }),
+    ...(p.doubleJumpPower === undefined ? {} : { doubleJumpPower: p.doubleJumpPower }),
+    ...(p.stepHeight === undefined ? {} : { stepHeight: p.stepHeight }),
     ...(p.flags === undefined ? {} : { flags: p.flags }),
   }))
   current.state.players = players

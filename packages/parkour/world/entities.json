@@ -1,8 +1,8 @@
 {
   "entities": [
-    { "id": "存档点_1", "kind": "prop", "position": [16, 10, 32] },
-    { "id": "存档点_2", "kind": "prop", "position": [32, 13, 32] },
-    { "id": "存档点_3", "kind": "prop", "position": [48, 10, 32] },
-    { "id": "存档点_终点", "kind": "prop", "position": [56, 10, 32] }
+    { "id": "存档点_1", "kind": "prop", "position": [115, 9, 154], "tags": ["checkpoint", "placement-derived-from-demo-spawn"] },
+    { "id": "存档点_2", "kind": "prop", "position": [131, 12, 154], "tags": ["checkpoint", "placement-derived-from-demo-spawn"] },
+    { "id": "存档点_3", "kind": "prop", "position": [147, 9, 154], "tags": ["checkpoint", "placement-derived-from-demo-spawn"] },
+    { "id": "存档点_终点", "kind": "prop", "position": [155, 9, 154], "tags": ["checkpoint", "finish", "placement-derived-from-demo-spawn"] }
   ]
 }

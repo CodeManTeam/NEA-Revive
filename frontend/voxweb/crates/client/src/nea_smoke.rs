@@ -19,7 +19,7 @@ use voxweb_protocol::atlas::AtlasImage;
 use voxweb_protocol::browser::{BrowserSockets, SessionEvent, socket_url_with_sid};
 use voxweb_protocol::driver::{SessionDriver, SessionStage};
 use voxweb_protocol::protocol::ProtocolTable;
-use voxweb_protocol::terrain::{CollisionBox, boxes_to_cells};
+use voxweb_protocol::terrain::{CollisionBox, apply_world_voxel_runs, boxes_to_cells};
 use voxweb_render::avatar_pipeline::{AvatarInstance, NeaAvatarRenderer};
 use voxweb_render::device::{configure_surface, init_device};
 use voxweb_render::nea_alpha::NeaAlphaPipeline;
@@ -32,10 +32,10 @@ use voxweb_render::passes::skybox::{SkyboxGlobals, SkyboxPass};
 use crate::asset_overrides::AssetOverrides;
 use crate::nea_eye_ambient::{EyeAmbientSampler, EyeExposure, RECOVERED_INITIAL_EXPOSURE};
 use crate::nea_loading::LoadingOverlay;
-use voxweb_physics::NeaPlayerPhysics;
 use crate::nea_prediction::{PredictionHistory, PredictionInput};
 use crate::nea_voxel_light::StaticVoxelLight;
 use crate::sanitized_assets::SanitizedAtlasKind;
+use voxweb_physics::NeaPlayerPhysics;
 
 const COLOR_ATLAS_MIP_COUNT: usize = 10;
 const MATERIAL_ATLAS_MIP_COUNT: usize = 10;
@@ -53,6 +53,48 @@ struct AvatarRollState {
     phase: f32,
     completed: bool,
 }
+
+#[derive(Default, serde::Deserialize)]
+struct StaticEntityScene {
+    meshes: HashMap<String, StaticEntityMesh>,
+    entities: Vec<StaticEntityInstance>,
+}
+
+#[derive(serde::Deserialize)]
+struct StaticEntityMesh {
+    positions: Vec<f32>,
+    uvs: Vec<f32>,
+    indices: Vec<u32>,
+}
+
+#[derive(serde::Deserialize)]
+struct StaticEntityInstance {
+    id: u32,
+    mesh: String,
+    position: [f32; 3],
+    scale: [f32; 3],
+    rotation: [f32; 4],
+    collision: bool,
+    fixed: bool,
+    #[serde(rename = "halfExtents")]
+    half_extents: [f32; 3],
+    mass: f32,
+    friction: f32,
+    restitution: f32,
+    #[serde(default)]
+    enable_interact: bool,
+    #[serde(default)]
+    interact_hint: String,
+    #[serde(default = "default_interact_radius")]
+    interact_radius: f32,
+    #[serde(default = "default_entity_visible")]
+    visible: bool,
+    #[serde(default)]
+    mesh_offset: [f32; 3],
+}
+
+fn default_entity_visible() -> bool { true }
+fn default_interact_radius() -> f32 { 3.0 }
 
 impl Default for AvatarRollState {
     fn default() -> Self {
@@ -142,14 +184,35 @@ fn block_is_solid(block: u16) -> bool {
 
 fn block_surface_friction(block: u16) -> f32 {
     let block = block & voxweb_protocol::geometry::BLOCK_ID_MASK;
+    // Recovered material overrides from the native player surface table.
+    // The anonymous catalog intentionally keeps texture data separate from
+    // gameplay coefficients, so these semantic blocks need explicit values.
+    if block == 398 { return 0.05; } // ice
+    if block == 145 { return 0.15; } // ice brick
+    if block == 135 { return 0.70; } // sand
     recovered_block_catalog()
         .get(block)
         .map_or(1.0, |entry| entry.friction)
 }
 
-/// DAO3 barrier（id=650）：隐形屏障但**按不透明渲染**（有贴图）——
-/// 既避免半透明网格造成的透视，也避免完全不渲染导致地面层悬空/底部透空。
-/// 面剔除时视作 opaque（奇数规则）。
+fn block_surface_material(
+    block: u16,
+    overrides: &std::collections::HashMap<u16, (f32, f32)>,
+) -> (f32, f32) {
+    let id = block & voxweb_protocol::geometry::BLOCK_ID_MASK;
+    overrides
+        .get(&id)
+        .copied()
+        .unwrap_or_else(|| {
+            let entry = recovered_block_catalog().get(id);
+            (
+                block_surface_friction(id),
+                entry.map_or(0.0, |value| value.restitution),
+            )
+        })
+}
+
+/// DAO3 barrier (id=650) participates in physics but has no visible surface.
 fn is_barrier_block(id: u16) -> bool {
     matches!(id, 650)
 }
@@ -157,8 +220,12 @@ fn is_barrier_block(id: u16) -> bool {
 fn recovered_voxel_face_visible(block: u16, neighbour: u16) -> bool {
     let block = block & voxweb_protocol::geometry::BLOCK_ID_MASK;
     let neighbour = neighbour & voxweb_protocol::geometry::BLOCK_ID_MASK;
-    let block_opaque = block & 1 != 0 || is_barrier_block(block);
-    let neighbour_opaque = neighbour & 1 != 0 || is_barrier_block(neighbour);
+    if is_barrier_block(block) {
+        return false;
+    }
+    let block_opaque = block & 1 != 0;
+    // An invisible barrier must not hide the visible face beside it.
+    let neighbour_opaque = neighbour & 1 != 0 && !is_barrier_block(neighbour);
     if block_opaque {
         !neighbour_opaque
     } else {
@@ -379,7 +446,9 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
     let content_id = page_content_id();
     let (session_id, socket_url, max_sockets) =
         create_session(create_session_url, &content_id).await?;
-    jslog!("[nea] session {session_id} contentId {content_id} socketUrl {socket_url} maxSockets {max_sockets}");
+    jslog!(
+        "[nea] session {session_id} contentId {content_id} socketUrl {socket_url} maxSockets {max_sockets}"
+    );
     loading.set_status("会话已建立，正在初始化渲染…");
     loading.set_progress(0.12);
 
@@ -394,6 +463,8 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
         .dyn_into()
         .map_err(|_| JsValue::from_str("#game not a canvas"))?;
     let mut nameplate_overlay = crate::nea_nameplates::NameplateOverlay::new(&document)?;
+    let interaction_overlay = crate::nea_interaction::InteractionOverlay::new(&document)?;
+    let mut damage_overlay = crate::nea_damage_overlay::DamageOverlay::new(&document)?;
     let mut fps_overlay = FpsOverlay::new(&document)?;
     // fill the window so the terrain fills the viewport
     let view_w = window
@@ -443,6 +514,20 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
 
     // 5) resolve optional same-origin replacements, then decode atlas mips.
     let origin = origin_of(create_session_url);
+    let mut entity_scene = fetch_static_entity_scene(&format!("{origin}/api/map/entities"))
+        .await
+        .unwrap_or_default();
+    let mut static_collision_bodies = build_static_entity_collision_bodies(&entity_scene);
+    let mut entity_scene_dirty = false;
+    jslog!(
+        "[nea] static entity scene: {} meshes {} instances",
+        entity_scene.meshes.len(),
+        entity_scene.entities.len()
+    );
+    jslog!(
+        "[nea] static entity collision: {} bodies",
+        static_collision_bodies.len()
+    );
     let asset_overrides = load_asset_overrides().await?;
     jslog!("[nea] local asset replacements: {}", asset_overrides.len());
     let atlas_images =
@@ -529,6 +614,9 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
     // 7) session + terrain state
     let driver = Rc::new(RefCell::new(SessionDriver::new()));
     let mut terrain: Option<RenderTerrain> = None;
+    // Historical gameUI retained state. The renderer will consume this tree
+    // independently from the diagnostic egui HUD.
+    let mut historical_ui = crate::historical_ui::HistoricalUi::default();
     let mut loading_finished = false;
     let mut fetch_sent = false;
     let mut ready_sent = false;
@@ -561,6 +649,8 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
     let mut local_pos: [f32; 3] = [128.0, 64.0, 128.0];
     let mut local_vel: [f32; 3] = [0.0, 0.0, 0.0];
     let mut local_physics: Option<NeaPlayerPhysics> = None;
+    let mut world_physics = (-0.1f32, 0.01f32, 20.0f32);
+    let mut surface_materials = std::collections::HashMap::<u16, (f32, f32)>::new();
     let mut last_physics_ms = now_ms();
     let mut unsubmitted_jump_edge = false;
     let mut follow_camera_anchor = crate::nea_follow_camera::FollowCameraAnchor::default();
@@ -745,6 +835,127 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                         {
                             jslog!("[nea] avatar catalog updated by models.{name}");
                         }
+                        if proto == "gameUI" && name == "reset" {
+                            if let Some(value) = parsed_v.as_ref() {
+                                if let Some(state) = voxweb_protocol::decode_game_ui_reset(value) {
+                                    jslog!(
+                                        "[nea] historical gameUI reset: running={} nodes={} pictures={} default={}",
+                                        state.running,
+                                        state.nodes.len(),
+                                        state.picture_assets.len(),
+                                        state.default_screen_id
+                                    );
+                                    historical_ui.replace(state, [canvas.width() as f32, canvas.height() as f32]);
+                                    if let Err(error) = historical_ui.render_dom(&document) {
+                                        jslog!("[nea] historical UI render failed: {error:?}");
+                                    }
+                                }
+                            }
+                        }
+                        if proto == "dialog" && name == "open" {
+                            if let Some(value) = parsed_v.as_ref()
+                                && let Some(dialog) = voxweb_protocol::decode_dialog_open(value)
+                                && let Ok(json) = serde_json::to_value(dialog)
+                            {
+                                let event = serde_json::json!({"type":"nea-historical-dialog-open","dialog":json});
+                                let _ = crate::nea_client_runtime::receive_event(&event);
+                            }
+                        }
+                        if proto == "dialog" && (name == "cancelDialogs" || name == "cancelDialog") {
+                            let event = serde_json::json!({"type":"nea-historical-dialog-cancel"});
+                            let _ = crate::nea_client_runtime::receive_event(&event);
+                        }
+                        if proto == "gui" {
+                            if let Some(value) = parsed_v.as_ref()
+                                && let Some(command) = voxweb_protocol::decode_gui_command(&name, value)
+                            {
+                                let event = serde_json::json!({"type":"nea-historical-gui","command":command});
+                                let _ = crate::nea_client_runtime::receive_event(&event);
+                            }
+                        }
+                        if proto == "game-net" && name == "syncClientScriptModules" {
+                            if let Some(voxweb_protocol::Value::Dictionary(entries)) =
+                                parsed_v.as_ref()
+                            {
+                                let modules = serde_json::Value::Object(
+                                    entries
+                                        .iter()
+                                        .filter_map(|(name, value)| match value {
+                                            voxweb_protocol::Value::UTF8(source) => Some((
+                                                name.clone(),
+                                                serde_json::Value::String(source.clone()),
+                                            )),
+                                            _ => None,
+                                        })
+                                        .collect(),
+                                );
+                                match crate::nea_client_runtime::install_modules(&modules) {
+                                    Ok(()) => jslog!(
+                                        "[nea] client script runtime started with {} modules",
+                                        entries.len()
+                                    ),
+                                    Err(error) => {
+                                        jslog!("[nea] client script runtime failed: {error}")
+                                    }
+                                }
+                            }
+                        }
+                        if proto == "remote-channel" && name == "sendClientEvent" {
+                            if let Some(value) = parsed_v.as_ref() {
+                                match voxweb_protocol::session::decode_remote_client_event(value) {
+                                    Ok(event) => {
+                                        jslog!(
+                                            "[nea] remote client event tick={} event={}",
+                                            event.tick,
+                                            event.event
+                                        );
+                                        if let Err(error) =
+                                            crate::nea_client_runtime::receive_event(&event.event)
+                                        {
+                                            jslog!(
+                                                "[nea] client script event delivery failed: {error}"
+                                            );
+                                        }
+                                        entity_scene_dirty |= apply_entity_state_event(
+                                            &event.event,
+                                            &mut static_collision_bodies,
+                                            &mut entity_scene,
+                                        );
+                                        damage_overlay.apply_event(&event.event, f64::from(now_ms()));
+                                        if event.event.get("type").and_then(serde_json::Value::as_str)
+                                            == Some("nea-revive:world-physics")
+                                        {
+                                            world_physics = (
+                                                json_f32(event.event.get("gravity")),
+                                                json_f32(event.event.get("airFriction")),
+                                                json_f32(event.event.get("tickRate")).max(1.0),
+                                            );
+                                            surface_materials.clear();
+                                            if let Some(materials) = event.event.get("materials").and_then(serde_json::Value::as_object) {
+                                                for (raw_id, material) in materials {
+                                                    let Some(id) = raw_id.parse::<u16>().ok() else { continue; };
+                                                    let friction = json_f32(material.get("friction"));
+                                                    let restitution = json_f32(material.get("restitution"));
+                                                    if friction.is_finite() && friction >= 0.0 && restitution.is_finite() && restitution >= 0.0 {
+                                                        surface_materials.insert(id, (friction, restitution));
+                                                    }
+                                                }
+                                            }
+                                            if let Some(physics) = local_physics.as_mut() {
+                                                physics.set_world_physics(
+                                                    world_physics.0,
+                                                    world_physics.1,
+                                                    world_physics.2,
+                                                );
+                                            }
+                                        }
+                                    }
+                                    Err(error) => {
+                                        jslog!("[nea] rejected remote client event: {error}")
+                                    }
+                                }
+                            }
+                        }
                         if proto == "game-terrain" && name == "reset" {
                             if let Some(v) = parsed_v.as_ref() {
                                 let reset = voxweb_protocol::session::decode_reset(&v);
@@ -821,6 +1032,26 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                 }
                             }
                         }
+                        if proto == "game-terrain" && name == "voxelChange" {
+                            if let Some(value) = parsed_v.as_ref() {
+                                let runs = voxel_runs_from_value(value);
+                                if apply_world_voxel_runs(&mut chunk_cells, &runs) {
+                                    jslog!("[nea] applied voxelChange runs={}", runs.len());
+                                    terrain = Some(RenderTerrain::build_chunks(
+                                        &dc.device,
+                                        &atlas,
+                                        &material_atlas,
+                                        &bump_atlas,
+                                        &water_bump,
+                                        &chunk_cells,
+                                        &entity_scene,
+                                        dc.surface_format,
+                                        width,
+                                        height,
+                                    ));
+                                }
+                            }
+                        }
                         if proto == "game-terrain" && name == "chunkResponse" {
                             if let Some(voxweb_protocol::Value::Struct(fields)) = parsed_v.as_ref()
                             {
@@ -868,7 +1099,8 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                                 pending_chunks.len()
                                             ));
                                             loading.set_progress(
-                                                0.62 + 0.33 * (got as f32 / pending_chunks.len() as f32),
+                                                0.62 + 0.33
+                                                    * (got as f32 / pending_chunks.len() as f32),
                                             );
                                             if non_air > 0 {
                                                 jslog!(
@@ -892,6 +1124,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                                 &bump_atlas,
                                                 &water_bump,
                                                 &chunk_cells,
+                                                &entity_scene,
                                                 dc.surface_format,
                                                 width,
                                                 height,
@@ -933,8 +1166,9 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                                     // 玩家脚底应落在「脚下 solid 方块顶面」(gy+1)，
                                                     // center = 顶面 + body 半高。旧公式 gy+1.1 让脚底
                                                     // 落在方块内部 (gy)，物理会把玩家顶出/弹飞（悬空下落）。
-                                                    local_pos[1] =
-                                                        gy as f32 + 1.0 + local_body_half_extents[1];
+                                                    local_pos[1] = gy as f32
+                                                        + 1.0
+                                                        + local_body_half_extents[1];
                                                     local_vel[1] = 0.0;
                                                     // 若本地物理已初始化（地形重建等），同步其位置，
                                                     // 避免旧位置继续主导（悬空/下落）。
@@ -956,7 +1190,8 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                             let foot_block = block_voxel_at(
                                                 &chunk_cells,
                                                 local_pos[0].floor() as i32,
-                                                (local_pos[1] - local_body_half_extents[1]).floor() as i32,
+                                                (local_pos[1] - local_body_half_extents[1]).floor()
+                                                    as i32,
                                                 local_pos[2].floor() as i32,
                                             );
                                             jslog!(
@@ -979,6 +1214,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                                 &bump_atlas,
                                                 &water_bump,
                                                 &chunk_cells,
+                                                &entity_scene,
                                                 dc.surface_format,
                                                 width,
                                                 height,
@@ -1011,10 +1247,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                             let _ = sockets.send_reliable(&fetch);
                         }
                         fetch_sent = true;
-                        jslog!(
-                            "[nea] fetchChunk sent {} chunks",
-                            pending_chunks.len()
-                        );
+                        jslog!("[nea] fetchChunk sent {} chunks", pending_chunks.len());
                     }
                 }
                 SessionEvent::Text(_) => {}
@@ -1025,6 +1258,26 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     return Err(JsValue::from_str("socket closed before terrain"));
                 }
             }
+        }
+        match crate::nea_client_runtime::drain_events() {
+            Ok(events) => {
+                for event in events {
+                    if let Ok(Some(frame)) = voxweb_protocol::encode_runtime_outbound(&table, &event) {
+                        let _ = sockets.send_reliable(&frame);
+                        continue;
+                    }
+                    let tick = driver.borrow().last_server_tick.wrapping_add(1);
+                    match driver.borrow().send_remote_event(&table, tick, event) {
+                        Ok(frame) => {
+                            let _ = sockets.send_reliable(&frame);
+                        }
+                        Err(error) => {
+                            jslog!("[nea] client script outbound event failed: {error}")
+                        }
+                    }
+                }
+            }
+            Err(error) => jslog!("[nea] client script drain failed: {error}"),
         }
         if avatar_renderer.is_none()
             && !avatar_load_attempted
@@ -1056,6 +1309,24 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 Err(error) => jslog!("[nea] recovered avatar load failed: {error}"),
             }
         }
+        // Entity-only maps and late model updates must rebuild even when the
+        // voxel chunk set is empty; otherwise model visibility/transform
+        // changes remain trapped in the scene JSON and never reach WebGPU.
+        if entity_scene_dirty {
+            terrain = Some(RenderTerrain::build_chunks(
+                &dc.device,
+                &atlas,
+                &material_atlas,
+                &bump_atlas,
+                &water_bump,
+                &chunk_cells,
+                &entity_scene,
+                dc.surface_format,
+                width,
+                height,
+            ));
+            entity_scene_dirty = false;
+        }
         // Render once per browser animation frame. Network polling, physics,
         // and presentation share the display cadence instead of busy-spinning
         // whenever the WebSocket queue remains non-empty.
@@ -1073,6 +1344,56 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 .map_or(0, |player| player.input_direction_state);
             let movement = inp.movement_vector_with_state(input_direction_state);
             let move_mode = inp.move_mode();
+            let interaction_hint = entity_scene
+                .entities
+                .iter()
+                .filter(|entity| entity.enable_interact)
+                .filter_map(|entity| {
+                    let dx = entity.position[0] - local_pos[0];
+                    let dy = entity.position[1] - local_pos[1];
+                    let dz = entity.position[2] - local_pos[2];
+                    let distance = (dx * dx + dy * dy + dz * dz).sqrt();
+                    (distance <= entity.interact_radius.max(0.0)).then_some((distance, entity.interact_hint.as_str()))
+                })
+                .min_by(|a, b| a.0.total_cmp(&b.0))
+                .map(|(_, hint)| if hint.is_empty() { "交互" } else { hint });
+            interaction_overlay.set(interaction_hint);
+            let interact_edge = std::mem::take(&mut inp.interact_edge);
+            if interact_edge {
+                let nearest = entity_scene
+                    .entities
+                    .iter()
+                    .filter(|entity| entity.enable_interact)
+                    .filter_map(|entity| {
+                        let dx = entity.position[0] - local_pos[0];
+                        let dy = entity.position[1] - local_pos[1];
+                        let dz = entity.position[2] - local_pos[2];
+                        let distance = (dx * dx + dy * dy + dz * dz).sqrt();
+                        (distance <= entity.interact_radius.max(0.0)).then_some((distance, entity))
+                    })
+                    .min_by(|left, right| left.0.total_cmp(&right.0));
+                if let Some((distance, entity)) = nearest {
+                    let tick = driver.borrow().last_server_tick.wrapping_add(1);
+                    match voxweb_protocol::session::encode_outbound(
+                        &table,
+                        &voxweb_protocol::session::Outbound::EntityInteract {
+                            tick: tick as f32,
+                            id: entity.id,
+                        },
+                    ) {
+                        Ok(frame) => {
+                            let _ = sockets.send_reliable(&frame);
+                            jslog!(
+                                "[nea] interact id={} distance={:.2} hint='{}'",
+                                entity.id,
+                                distance,
+                                entity.interact_hint
+                            );
+                        }
+                        Err(error) => jslog!("[nea] interact encode failed: {error}"),
+                    }
+                }
+            }
             let jump_edge = inp.jump_edge && dt > 0.0;
             unsubmitted_jump_edge |= jump_edge;
             let flight_toggle = inp.flight_toggle;
@@ -1082,10 +1403,11 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
             inp.flight_toggle = false;
             let physics = local_physics.get_or_insert_with(|| {
                 let mut physics = NeaPlayerPhysics::new(local_pos);
-                // Temporary inspection mode: allow free flight while tuning
-                // shadows and atlas sampling from arbitrary viewpoints.
-                physics.request_flight_toggle();
+                // Start in the authoritative grounded mode. Flight is only
+                // enabled when the server/player flags permit it and the
+                // user explicitly toggles it, matching the native player.
                 physics.observe(&|x, y, z| solid_voxel_at(&chunk_cells, x, y, z));
+                physics.set_world_physics(world_physics.0, world_physics.1, world_physics.2);
                 physics
             });
             physics.set_half_extents(local_body_half_extents);
@@ -1111,7 +1433,12 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 (physics.position[1] - local_body_half_extents[1] - 1.0e-4).floor() as i32,
                 physics.position[2].floor() as i32,
             );
-            physics.set_surface_friction(block_surface_friction(support_block));
+            let (surface_friction, surface_restitution) =
+                block_surface_material(support_block, &surface_materials);
+            physics.set_surface_friction(surface_friction);
+            physics.set_surface_restitution(surface_restitution);
+            let mut physics_bodies = collision_bodies.clone();
+            physics_bodies.extend(static_collision_bodies.iter().cloned());
             physics.step_with_bodies(
                 movement,
                 move_mode,
@@ -1119,7 +1446,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 inp.jump,
                 dt,
                 &|x, y, z| solid_voxel_at(&chunk_cells, x, y, z),
-                &mut collision_bodies,
+                &mut physics_bodies,
             );
             local_pos = physics.position;
             local_vel = physics.velocity;
@@ -1197,7 +1524,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     prediction_history.record_submitted(
                         tick_now,
                         physics,
-                        &collision_bodies,
+                        &physics_bodies,
                         PredictionInput {
                             movement,
                             mode: move_mode,
@@ -1293,6 +1620,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 });
             }
             nameplate_overlay.update(&nameplates, mvp, width, height)?;
+            damage_overlay.update(&static_collision_bodies, mvp, width, height, f64::from(now_ms()))?;
             let aspect = width as f32 / height.max(1) as f32;
             let projection = glam::Mat4::perspective_rh(
                 voxweb_protocol::player::CAMERA_FOV_Y_RADIANS,
@@ -1339,9 +1667,9 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 &mut encoder,
                 &dc.queue,
                 &shadow_frame,
-                &t.pipeline.vertex_buffer,
-                &t.pipeline.index_buffer,
-                t.pipeline.index_count,
+                &t.terrain_pipelines[0].vertex_buffer,
+                &t.terrain_pipelines[0].index_buffer,
+                t.terrain_pipelines[0].index_count,
             );
             if let Some(renderer) = avatar_renderer.as_mut() {
                 if physics.grounded && !avatar_was_grounded && local_vel[1] < 0.0 {
@@ -1488,11 +1816,37 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     multiview_mask: None,
                 });
                 let inp_debug_view = input.borrow().debug_view;
-                t.pipeline
-                    .set_camera(&dc.queue, &mvp, &eye, eye_fluid, exposure, inp_debug_view);
-                t.pipeline.draw(&mut pass);
+                for terrain_pipeline in &t.terrain_pipelines {
+                    terrain_pipeline.set_camera(
+                        &dc.queue,
+                        &mvp,
+                        &eye,
+                        eye_fluid,
+                        exposure,
+                        inp_debug_view,
+                    );
+                    terrain_pipeline.draw(&mut pass);
+                }
+                for entity_pipeline in &t.entity_pipelines {
+                    entity_pipeline.set_camera(
+                        &dc.queue,
+                        &mvp,
+                        &eye,
+                        eye_fluid,
+                        exposure,
+                        inp_debug_view,
+                    );
+                    entity_pipeline.draw(&mut pass);
+                }
                 if let Some(renderer) = avatar_renderer.as_ref() {
-                    renderer.set_environment(&dc.queue, &mvp, &eye, eye_fluid, exposure, inp_debug_view);
+                    renderer.set_environment(
+                        &dc.queue,
+                        &mvp,
+                        &eye,
+                        eye_fluid,
+                        exposure,
+                        inp_debug_view,
+                    );
                     renderer.draw(&mut pass);
                 }
                 // F4（Shadow debug）下跳过透明面（流体/玻璃），用于隔离
@@ -1530,11 +1884,275 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
 /// Packed terrain mesh + pipeline for the decoded chunk cells.
 struct RenderTerrain {
     mesh: MeshBuffers,
-    pipeline: NeaTerrainPipeline,
+    terrain_pipelines: Vec<NeaTerrainPipeline>,
+    entity_pipelines: Vec<NeaTerrainPipeline>,
     alpha_pipeline: NeaAlphaPipeline,
     fluid_pipeline: NeaFluidPipeline,
     voxel_light: StaticVoxelLight,
     shadow_map: voxweb_render::nea_shadow::NeaShadowMap,
+}
+
+/// Keep each WebGPU vertex allocation comfortably below browser adapter
+/// limits. Box geometry is appended in triangle-sized groups, so a batch can
+/// be split without rewriting topology or changing world coordinates.
+fn split_mesh_batches(mesh: MeshBuffers, max_vertex_floats: usize) -> Vec<MeshBuffers> {
+    let max_vertex_count = (max_vertex_floats / FLOATS_PER_VERTEX).max(3);
+    if mesh.vertices.len() <= max_vertex_floats {
+        return vec![mesh];
+    }
+    let mut batches = Vec::new();
+    let mut start_vertex = 0usize;
+    let mut batch_indices = Vec::new();
+    let mut batch_end = max_vertex_count;
+    for triangle in mesh.indices.chunks_exact(3) {
+        let triangle_end = triangle.iter().copied().max().unwrap_or(0) as usize + 1;
+        if triangle_end > batch_end && !batch_indices.is_empty() {
+            let vertices = mesh.vertices[start_vertex * FLOATS_PER_VERTEX..batch_end * FLOATS_PER_VERTEX]
+                .to_vec();
+            batches.push(MeshBuffers {
+                vertices,
+                indices: std::mem::take(&mut batch_indices),
+            });
+            start_vertex = batch_end;
+            batch_end = start_vertex + max_vertex_count;
+        }
+        let base = start_vertex as u32;
+        batch_indices.extend(triangle.iter().map(|index| index - base));
+    }
+    if !batch_indices.is_empty() {
+        let end_vertex = mesh.vertices.len() / FLOATS_PER_VERTEX;
+        batches.push(MeshBuffers {
+            vertices: mesh.vertices[start_vertex * FLOATS_PER_VERTEX..end_vertex * FLOATS_PER_VERTEX]
+                .to_vec(),
+            indices: batch_indices,
+        });
+    }
+    batches
+}
+
+async fn fetch_static_entity_scene(url: &str) -> Result<StaticEntityScene, JsValue> {
+    let bytes = fetch_bytes(url).await?;
+    serde_json::from_slice(&bytes)
+        .map_err(|error| JsValue::from_str(&format!("invalid static entity scene: {error}")))
+}
+
+fn build_static_entity_mesh_batches(scene: &StaticEntityScene) -> Vec<MeshBuffers> {
+    const MAX_VERTEX_FLOATS_PER_BATCH: usize = 8 * 1024 * 1024;
+    let tile = voxweb_protocol::geometry::face_uv_rect(1, 512.0);
+    let mut batches = Vec::new();
+    let mut vertices = Vec::new();
+    let mut indices = Vec::new();
+    let mut base = 0u32;
+    for instance in &scene.entities {
+        if !instance.visible { continue; }
+        let Some(mesh) = scene.meshes.get(&instance.mesh) else {
+            continue;
+        };
+        let vertex_count = mesh.positions.len() / 3;
+        if vertex_count == 0 {
+            continue;
+        }
+        let rotation = glam::Quat::from_xyzw(
+            instance.rotation[0],
+            instance.rotation[1],
+            instance.rotation[2],
+            instance.rotation[3],
+        )
+        .normalize();
+        let translation = glam::Vec3::from_array(instance.position)
+            + rotation * glam::Vec3::from_array(instance.mesh_offset);
+        let scale = glam::Vec3::from_array(instance.scale);
+        let transformed: Vec<glam::Vec3> = mesh
+            .positions
+            .chunks_exact(3)
+            .map(|position| {
+                rotation * (glam::Vec3::new(position[0], position[1], position[2]) * scale)
+                    + translation
+            })
+            .collect();
+        let mut normals = vec![glam::Vec3::ZERO; vertex_count];
+        for triangle in mesh.indices.chunks_exact(3) {
+            let [a, b, c] = [
+                triangle[0] as usize,
+                triangle[1] as usize,
+                triangle[2] as usize,
+            ];
+            if a >= vertex_count || b >= vertex_count || c >= vertex_count {
+                continue;
+            }
+            let normal = (transformed[b] - transformed[a])
+                .cross(transformed[c] - transformed[a])
+                .normalize_or_zero();
+            normals[a] += normal;
+            normals[b] += normal;
+            normals[c] += normal;
+        }
+        let instance_float_count = vertex_count * FLOATS_PER_VERTEX;
+        if !vertices.is_empty()
+            && vertices.len() + instance_float_count > MAX_VERTEX_FLOATS_PER_BATCH
+        {
+            batches.push(MeshBuffers { vertices, indices });
+            vertices = Vec::new();
+            indices = Vec::new();
+            base = 0;
+        }
+        for vertex in 0..vertex_count {
+            let position = transformed[vertex];
+            let normal = normals[vertex].normalize_or_zero();
+            let u = mesh
+                .uvs
+                .get(vertex * 2)
+                .copied()
+                .unwrap_or(0.0)
+                .fract()
+                .abs();
+            let v = mesh
+                .uvs
+                .get(vertex * 2 + 1)
+                .copied()
+                .unwrap_or(0.0)
+                .fract()
+                .abs();
+            vertices.extend_from_slice(&[
+                position.x,
+                position.y,
+                position.z,
+                normal.x,
+                normal.y,
+                normal.z,
+                tile.u0 + (tile.u1 - tile.u0) * u,
+                tile.v0 + (tile.v1 - tile.v0) * v,
+            ]);
+            for _ in 0..4 {
+                vertices.extend_from_slice(&[1.0, 1.0, 1.0, 1.0]);
+            }
+            vertices.push(0.0);
+        }
+        indices.extend(mesh.indices.iter().map(|index| index + base));
+        base += vertex_count as u32;
+    }
+    if !vertices.is_empty() {
+        batches.push(MeshBuffers { vertices, indices });
+    }
+    batches
+}
+
+fn build_static_entity_collision_bodies(
+    scene: &StaticEntityScene,
+) -> Vec<voxweb_protocol::netstate::RigidBody> {
+    scene
+        .entities
+        .iter()
+        .filter(|entity| entity.collision)
+        .map(|entity| voxweb_protocol::netstate::RigidBody {
+            id: entity.id,
+            flags: if entity.fixed { 2 } else { 2 | 64 },
+            group: 0,
+            mass: entity.mass,
+            friction: entity.friction,
+            restitution: entity.restitution,
+            rx: 1.0,
+            ry: 1.0,
+            rz: 1.0,
+            px: entity.position[0],
+            py: entity.position[1],
+            pz: entity.position[2],
+            vx: 0.0,
+            vy: 0.0,
+            vz: 0.0,
+            qx: entity.rotation[0],
+            qy: entity.rotation[1],
+            qz: entity.rotation[2],
+            qw: entity.rotation[3],
+            hsx: entity.half_extents[0],
+            hsy: entity.half_extents[1],
+            hsz: entity.half_extents[2],
+            ax: 0.0,
+            ay: 0.0,
+            az: 0.0,
+        })
+        .collect()
+}
+
+fn apply_entity_state_event(
+    event: &serde_json::Value,
+    bodies: &mut Vec<voxweb_protocol::netstate::RigidBody>,
+    scene: &mut StaticEntityScene,
+) -> bool {
+    if event.get("type").and_then(serde_json::Value::as_str) != Some("nea-revive:entity-state") {
+        return false;
+    }
+    let Some(id) = event.get("entityId").and_then(serde_json::Value::as_u64) else {
+        return false;
+    };
+    let Some(state) = event.get("state") else { return false };
+    let Some(body) = bodies.iter_mut().find(|body| body.id == id as u32) else {
+        return false;
+    };
+    if let Some(position) = json_vec3(state.get("position")) {
+        [body.px, body.py, body.pz] = position;
+        if let Some(entity) = scene.entities.iter_mut().find(|entity| entity.id == id as u32) {
+            entity.position = position;
+        }
+    }
+    if let Some(velocity) = json_vec3(state.get("velocity")) {
+        [body.vx, body.vy, body.vz] = velocity;
+    }
+    if let Some(orientation) = state.get("orientation").and_then(serde_json::Value::as_array) {
+        if orientation.len() >= 4 {
+            body.qw = json_f32(orientation.first());
+            body.qx = json_f32(orientation.get(1));
+            body.qy = json_f32(orientation.get(2));
+            body.qz = json_f32(orientation.get(3));
+            if let Some(entity) = scene.entities.iter_mut().find(|entity| entity.id == id as u32) {
+                entity.rotation = [body.qx, body.qy, body.qz, body.qw];
+            }
+        }
+    }
+    if let Some(value) = state.get("mass").and_then(serde_json::Value::as_f64) {
+        body.mass = value.max(0.001) as f32;
+    }
+    if let Some(value) = state.get("friction").and_then(serde_json::Value::as_f64) {
+        body.friction = value.max(0.0) as f32;
+    }
+    if let Some(value) = state.get("restitution").and_then(serde_json::Value::as_f64) {
+        body.restitution = value.max(0.0) as f32;
+    }
+    if state.get("collides").and_then(serde_json::Value::as_bool) == Some(false) {
+        body.flags &= !2;
+    } else if state.get("collides").and_then(serde_json::Value::as_bool) == Some(true) {
+        body.flags |= 2;
+    }
+    if state.get("fixed").and_then(serde_json::Value::as_bool) == Some(true) {
+        body.flags &= !64;
+    } else if state.get("fixed").and_then(serde_json::Value::as_bool) == Some(false) {
+        body.flags |= 64;
+    }
+    if let Some(invisible) = state.pointer("/model/invisible").and_then(serde_json::Value::as_bool) {
+        if let Some(entity) = scene.entities.iter_mut().find(|entity| entity.id == id as u32) {
+            entity.visible = !invisible;
+        }
+    }
+    if let Some(scale) = json_vec3(state.pointer("/model/scale")) {
+        if let Some(entity) = scene.entities.iter_mut().find(|entity| entity.id == id as u32) {
+            entity.scale = scale;
+        }
+    }
+    if let Some(offset) = json_vec3(state.pointer("/model/offset")) {
+        if let Some(entity) = scene.entities.iter_mut().find(|entity| entity.id == id as u32) {
+            entity.mesh_offset = offset;
+        }
+    }
+    true
+}
+
+fn json_vec3(value: Option<&serde_json::Value>) -> Option<[f32; 3]> {
+    let values = value?.as_array()?;
+    (values.len() >= 3).then(|| [json_f32(values.first()), json_f32(values.get(1)), json_f32(values.get(2))])
+}
+
+fn json_f32(value: Option<&serde_json::Value>) -> f32 {
+    value.and_then(serde_json::Value::as_f64).unwrap_or(0.0) as f32
 }
 
 impl RenderTerrain {
@@ -1548,6 +2166,7 @@ impl RenderTerrain {
         bump_atlas: &AtlasTexture,
         water_bump: &AtlasTexture,
         chunks: &[(u32, u32, u32, Vec<u16>)],
+        entity_scene: &StaticEntityScene,
         surface_format: wgpu::TextureFormat,
         width: u32,
         height: u32,
@@ -1654,6 +2273,9 @@ impl RenderTerrain {
                             let Some(entry) = catalog.get(block_id) else {
                                 continue;
                             };
+                            if is_barrier_block(block_id) {
+                                continue;
+                            }
                             let unrotated_rects = [
                                 voxweb_protocol::geometry::face_uv_rect(entry.faces.px, 512.0),
                                 voxweb_protocol::geometry::face_uv_rect(entry.faces.nx, 512.0),
@@ -1765,8 +2387,7 @@ impl RenderTerrain {
                                 &voxel_light,
                                 &chunk_index,
                             );
-                            // barrier 按不透明渲染（其余偶数 id 才是 alpha 透明方块）
-                            let uses_alpha = block_id & 1 == 0 && !is_barrier_block(block_id);
+                            let uses_alpha = block_id & 1 == 0;
                             if uses_alpha {
                                 alpha_verts.extend_from_slice(&packed.vertices);
                                 alpha_idx
@@ -1792,17 +2413,42 @@ impl RenderTerrain {
             device,
             voxweb_render::nea_shadow::DEFAULT_SHADOW_RESOLUTION,
         );
-        let pipeline = NeaTerrainPipeline::new(
-            device,
-            atlas,
-            material_atlas,
-            bump_atlas,
-            &shadow_map,
-            &mesh,
-            surface_format,
-            Some(wgpu::TextureFormat::Depth32Float),
-            "nea.terrain",
-        );
+        let terrain_meshes = split_mesh_batches(mesh.clone(), 4 * 1024 * 1024);
+        let terrain_pipelines = terrain_meshes
+            .iter()
+            .enumerate()
+            .map(|(index, terrain_mesh)| {
+                NeaTerrainPipeline::new(
+                    device,
+                    atlas,
+                    material_atlas,
+                    bump_atlas,
+                    &shadow_map,
+                    terrain_mesh,
+                    surface_format,
+                    Some(wgpu::TextureFormat::Depth32Float),
+                    &format!("nea.terrain.{index}"),
+                )
+            })
+            .collect::<Vec<_>>();
+        let entity_meshes = build_static_entity_mesh_batches(entity_scene);
+        let entity_pipelines = entity_meshes
+            .iter()
+            .enumerate()
+            .map(|(index, entity_mesh)| {
+                NeaTerrainPipeline::new(
+                    device,
+                    atlas,
+                    material_atlas,
+                    bump_atlas,
+                    &shadow_map,
+                    entity_mesh,
+                    surface_format,
+                    Some(wgpu::TextureFormat::Depth32Float),
+                    &format!("nea.entities.{index}"),
+                )
+            })
+            .collect::<Vec<_>>();
         let fluid_mesh = MeshBuffers {
             vertices: fluid_verts,
             indices: fluid_idx,
@@ -1832,15 +2478,17 @@ impl RenderTerrain {
             wgpu::TextureFormat::Depth32Float,
         );
         jslog!(
-            "[nea] terrain mesh built: {} verts {} idx ({} solid, {} fluid cells)",
+            "[nea] terrain mesh built: {} verts {} idx ({} solid, {} fluid cells, {} entity batches)",
             mesh.vertices.len(),
             mesh.indices.len(),
             solid,
             fluid_cells,
+            entity_pipelines.len(),
         );
         Self {
             mesh,
-            pipeline,
+            terrain_pipelines,
+            entity_pipelines,
             alpha_pipeline,
             fluid_pipeline,
             voxel_light,
@@ -2239,6 +2887,7 @@ struct InputState {
     look_axis: [f32; 2],
     /// Debug view 模式：F1=Albedo F2=Direct F3=Ambient/Sky F4=Shadow F5=Fog F6=Final
     debug_view: f32,
+    interact_edge: bool,
 }
 
 impl Default for InputState {
@@ -2261,6 +2910,7 @@ impl Default for InputState {
             local_yaw: 0.0,
             look_axis: [0.0, 0.0],
             debug_view: 0.0,
+            interact_edge: false,
         }
     }
 }
@@ -2454,6 +3104,10 @@ fn install_keyboard(canvas: &HtmlCanvasElement, input: &Rc<RefCell<InputState>>)
                     s.press_jump();
                     handled = true;
                 }
+                "KeyE" => {
+                    s.interact_edge = true;
+                    handled = true;
+                }
                 "ShiftLeft" | "ShiftRight" => {
                     s.crouching = true;
                     handled = true;
@@ -2463,7 +3117,11 @@ fn install_keyboard(canvas: &HtmlCanvasElement, input: &Rc<RefCell<InputState>>)
                     let index = code.as_str().chars().nth(1).and_then(|c| c.to_digit(10));
                     if let Some(i) = index {
                         let value = i as f32;
-                        s.debug_view = if (s.debug_view - value).abs() < 0.5 { 0.0 } else { value };
+                        s.debug_view = if (s.debug_view - value).abs() < 0.5 {
+                            0.0
+                        } else {
+                            value
+                        };
                         web_sys::console::log_1(&wasm_bindgen::JsValue::from_str(&format!(
                             "[nea] debug view F{i}: {}",
                             match i {
@@ -2756,6 +3414,34 @@ fn boxes_from_value(v: &Value) -> Vec<CollisionBox> {
         }
     }
     out
+}
+
+fn voxel_runs_from_value(v: &Value) -> Vec<(u32, u32, u32)> {
+    let Value::Array(items) = v else {
+        return Vec::new();
+    };
+    items
+        .iter()
+        .filter_map(|item| {
+            let Value::Struct(fields) = item else {
+                return None;
+            };
+            // MuStruct field order is alphabetical: block, count, offset.
+            let block = match fields.first() {
+                Some(Value::RVarint(value)) => *value,
+                _ => return None,
+            };
+            let count = match fields.get(1) {
+                Some(Value::Varint(value)) => *value,
+                _ => return None,
+            };
+            let offset = match fields.get(2) {
+                Some(Value::Varint(value)) => *value,
+                _ => return None,
+            };
+            Some((offset, count, block))
+        })
+        .collect()
 }
 
 fn send_frames(sockets: &Rc<BrowserSockets>, frames: Vec<voxweb_protocol::driver::SendFrame>) {

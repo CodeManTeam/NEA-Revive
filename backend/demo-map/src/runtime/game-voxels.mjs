@@ -14,8 +14,9 @@ export class GameVoxelsRuntime {
   #idsByName = new Map();
   #namesById = new Map();
   #fluidIds = new Set();
+  #onVoxelChange;
 
-  constructor({ shape, catalog, collisionWorld }) {
+  constructor({ shape, catalog, collisionWorld, onVoxelChange }) {
     if (!Array.isArray(shape) || shape.length !== 3 || shape.some(value => !Number.isInteger(value) || value < 1)) {
       throw new Error("GameVoxelsRuntime requires a positive integer three-dimensional shape");
     }
@@ -23,6 +24,7 @@ export class GameVoxelsRuntime {
     if (!collisionWorld) throw new Error("GameVoxelsRuntime requires a collision world");
     this.#shape = Object.freeze({ x: shape[0] - 1, y: shape[1] - 1, z: shape[2] - 1 });
     this.#collisionWorld = collisionWorld;
+    this.#onVoxelChange = typeof onVoxelChange === "function" ? onVoxelChange : () => {};
     for (const entry of catalog) {
       if (!Number.isInteger(entry?.id) || typeof entry?.name !== "string") throw new Error("Invalid BlockInfo catalog entry");
       this.#idsByName.set(entry.name, entry.id);
@@ -77,7 +79,10 @@ export class GameVoxelsRuntime {
     const iz = Math.floor(z);
     const fullId = voxel | 0;
     if (!this.#inBounds(ix, iy, iz) || !this.#isValidVoxelType(fullId)) return 0;
+    const previousId = this.#collisionWorld.getVoxelId(ix, iy, iz);
+    if (previousId === fullId) return fullId;
     this.#collisionWorld.setVoxelId(ix, iy, iz, fullId);
+    this.#onVoxelChange(Object.freeze({ x: ix, y: iy, z: iz, voxel: fullId, previousVoxel: previousId }));
     return fullId;
   }
 

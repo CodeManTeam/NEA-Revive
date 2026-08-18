@@ -89,6 +89,37 @@ pub fn rle_offset_to_voxel(t: u32) -> (u32, u32, u32) {
     (y8(t), y8(t >> 1), y8(t >> 2))
 }
 
+/// Apply world-space voxelChange runs to the loaded chunk set. The recovered
+/// stream accumulates both Morton offset and block id across each batch.
+pub fn apply_world_voxel_runs(
+    chunks: &mut [(u32, u32, u32, Vec<u16>)],
+    runs: &[(u32, u32, u32)],
+) -> bool {
+    let mut changed = false;
+    let mut offset = 0u32;
+    let mut block = 0u32;
+    for &(delta_offset, count, delta_block) in runs {
+        offset = offset.wrapping_add(delta_offset);
+        block = block.wrapping_add(delta_block);
+        for index in 0..count {
+            let (x, y, z) = rle_offset_to_voxel(offset.wrapping_add(index));
+            let chunk = (x >> CHUNK_SHIFT, y >> CHUNK_SHIFT, z >> CHUNK_SHIFT);
+            let local_index = chunk_cell_index(x & CHUNK_MASK, y & CHUNK_MASK, z & CHUNK_MASK);
+            if let Some((_, _, _, cells)) = chunks
+                .iter_mut()
+                .find(|(cx, cy, cz, _)| (*cx, *cy, *cz) == chunk)
+            {
+                let next = block as u16;
+                if cells[local_index] != next {
+                    cells[local_index] = next;
+                    changed = true;
+                }
+            }
+        }
+    }
+    changed
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -165,5 +196,27 @@ mod tests {
         assert_eq!(rle_offset_to_voxel(5), (1, 0, 1));
         assert_eq!(rle_offset_to_voxel(7), (1, 1, 1));
         assert_eq!(rle_offset_to_voxel(8), (2, 0, 0));
+    }
+
+    #[test]
+    fn world_runs_update_the_correct_loaded_chunk() {
+        let mut chunks = vec![
+            (0, 0, 0, vec![0u16; CELLS_PER_CHUNK]),
+            (1, 0, 0, vec![0u16; CELLS_PER_CHUNK]),
+        ];
+        let x = 33u32;
+        let y = 2u32;
+        let z = 3u32;
+        let mut offset = 0u32;
+        for bit in 0..10 {
+            offset |= ((x >> bit) & 1) << (bit * 3);
+            offset |= ((y >> bit) & 1) << (bit * 3 + 1);
+            offset |= ((z >> bit) & 1) << (bit * 3 + 2);
+        }
+
+        assert!(apply_world_voxel_runs(&mut chunks, &[(offset, 1, 9)]));
+        assert_eq!(chunks[0].3.iter().filter(|&&cell| cell != 0).count(), 0);
+        assert_eq!(chunks[1].3[chunk_cell_index(1, 2, 3)], 9);
+        assert!(!apply_world_voxel_runs(&mut chunks, &[(offset, 1, 9)]));
     }
 }

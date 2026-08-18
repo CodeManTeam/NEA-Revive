@@ -22,6 +22,19 @@ test("projects a validated entity then writes its backend state", async () => {
   assert.equal(entity._backendEntityId, 41);
   assert.deepEqual(created, [runtimeEntityProjectionPayload(entity)]);
   assert.deepEqual(states, [{ entityId: 41, state: runtimeEntityStatePayload(entity) }]);
+  assert.deepEqual(states[0].state.particles, {
+    rate: 12,
+    rateSpread: 3,
+    limit: 80,
+    lifetime: 2,
+    lifetimeSpread: 1,
+    size: [1, 2, 0],
+    sizeSpread: 0.5,
+    color: [[1, 0.5, 0]],
+    velocity: [0, 1, 0],
+    velocitySpread: [0.2, 0.3, 0.4],
+    damping: 0.25,
+  });
   assert.deepEqual(projected, [entity]);
 });
 
@@ -67,7 +80,7 @@ function createEntity() {
     position: vector([1, 2, 3]),
     velocity: vector([0, 1, 0]),
     name: "Bridge entity",
-    tags: new Set(["bridge"]),
+    tags: () => ["bridge"],
     mesh: "verified-mesh",
     bounds: vector([1, 1, 1]),
     showEntityName: true,
@@ -89,6 +102,17 @@ function createEntity() {
     enableInteract: true,
     meshColor: { r: 1, g: 0.5, b: 0, a: 1 },
     meshOffset: vector([0, 0, 0]),
+    particleRate: 12,
+    particleRateSpread: 3,
+    particleLimit: 80,
+    particleLifetime: 2,
+    particleLifetimeSpread: 1,
+    particleSize: [1, 2, 0],
+    particleSizeSpread: 0.5,
+    particleColor: [[1, 0.5, 0]],
+    particleVelocity: vector([0, 1, 0]),
+    particleVelocitySpread: vector([0.2, 0.3, 0.4]),
+    particleDamping: 0.25,
   };
 }
 

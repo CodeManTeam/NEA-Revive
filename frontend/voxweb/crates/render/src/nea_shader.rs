@@ -378,13 +378,8 @@ fn fs_main(in: VsOut) -> @location(0) vec4f {
     ((1.0 - nu) * nv) * in.light10 +
     (nu * nv) * in.light11;
   let ao = interpolated_light.a * bump.a;
-  // Keep a sky-light floor for exposed surfaces. The recovered voxel light
-  // alpha is sparse on stepped roofs, while the original renderer still
-  // contributes directional sky irradiance there; without it the whole
-  // platform is uniformly charcoal even when its shadow mask is correct.
-  let sky_visibility = max(interpolated_light.a, 0.35);
   let irradiance = 100.0 * interpolated_light.rgb +
-    sky_visibility * directional_sky(shaded_normal);
+    interpolated_light.a * directional_sky(shaded_normal);
   // 空气透视 fog factor（与 apply_fog 同一计算，供 F5 显示）
   var view_dir = in.world_pos - globals.eye_exposure.xyz;
   let dist = max(length(view_dir), 0.000001);
@@ -401,12 +396,12 @@ fn fs_main(in: VsOut) -> @location(0) vec4f {
   );
   let uniform_extinction = clamp(exp(-fog_distance * globals.fog_params.w), 0.0, 1.0);
   let fog_amount = min(1.0 - height_extinction * uniform_extinction, globals.fog_params2.z);
-  let direct = normal_light * shadow * globals.light_color_global.rgb;
+  // NEA-Project's live Player WGSL uses globalShade here. Its global-light
+  // floor keeps shadowed stone readable instead of multiplying it to black.
+  let direct = global_shade(normal_light * shadow) * globals.light_color_global.rgb;
   var lit: vec3f;
   if (material.g < 0.01) {
-    // Original diffuse path: ambient voxel irradiance is already occlusion-
-    // aware; multiplying it by AO again makes distant terrain far too dark.
-    lit = albedo * (direct + irradiance + 400.0 * material.b);
+    lit = albedo * (ao * (direct + irradiance) + 400.0 * material.b);
   } else {
     let n = shaded_normal;
     let v = normalize(globals.eye_exposure.xyz - in.world_pos);
@@ -437,7 +432,8 @@ fn fs_main(in: VsOut) -> @location(0) vec4f {
     lit += specular_irradiance * specular_color;
     lit += 400.0 * material.b * albedo;
   }
-  let fogged = mix(lit, globals.fog_params3.rgb, fog_amount);
+  let fog_color = globals.fog_params2.x * directional_sky(view_dir) * globals.fog_params3.rgb;
+  let fogged = mix(lit, fog_color, fog_amount);
   let mapped = aces_tone_map(globals.eye_exposure.w * fogged);
   // Debug view（F1-F6，存 atlas_params.w）：Albedo / Direct / Ambient / Shadow / Fog / Final
   let dbg = globals.atlas_params.w;
@@ -505,6 +501,10 @@ mod tests {
         assert!(!NEA_FRAGMENT_WGSL.contains("perturb_normal"));
         assert!(NEA_FRAGMENT_WGSL.contains("global_shade"));
         assert!(NEA_FRAGMENT_WGSL.contains("light_color_global"));
+        assert!(
+            NEA_FRAGMENT_WGSL
+                .contains("global_shade(normal_light * shadow) * globals.light_color_global.rgb")
+        );
         assert!(NEA_FRAGMENT_WGSL.contains("apply_fog"));
         assert!(NEA_FRAGMENT_WGSL.contains("directional_sky"));
         assert!(NEA_FRAGMENT_WGSL.contains("aces_tone_map"));
@@ -512,10 +512,17 @@ mod tests {
         assert!(NEA_FRAGMENT_WGSL.contains("array<vec2f, 16>"));
         assert!(NEA_FRAGMENT_WGSL.contains("let direct = global_shade(normal_light * shadow)"));
         assert!(NEA_FRAGMENT_WGSL.contains("((1.0 - nu) * (1.0 - nv)) * in.light00"));
+        assert!(
+            NEA_FRAGMENT_WGSL.contains("interpolated_light.a * directional_sky(shaded_normal)")
+        );
+        assert!(!NEA_FRAGMENT_WGSL.contains("max(interpolated_light.a, 0.35)"));
         assert!(NEA_FRAGMENT_WGSL.contains("direct + irradiance"));
         assert!(NEA_FRAGMENT_WGSL.contains("shadow = face_shadow * sample_shadows"));
         assert!(NEA_FRAGMENT_WGSL.contains("max(length(view), 0.000001)"));
         assert!(NEA_FRAGMENT_WGSL.contains("let view_y = select(-0.000001"));
+        assert!(NEA_FRAGMENT_WGSL.contains(
+            "globals.fog_params2.x * directional_sky(view_dir) * globals.fog_params3.rgb"
+        ));
         assert!(NEA_ALPHA_FRAGMENT_WGSL.contains("let h0 = step(in.texture_rotation"));
         assert!(NEA_ALPHA_FRAGMENT_WGSL.contains("let face_u = a * base_u + b * base_v"));
     }

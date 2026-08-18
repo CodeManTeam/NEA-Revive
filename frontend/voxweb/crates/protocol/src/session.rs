@@ -32,6 +32,12 @@ pub struct TerrainReset {
     pub inner_ao: bool,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct RemoteClientEvent {
+    pub tick: u32,
+    pub event: serde_json::Value,
+}
+
 /// Outbound frames a driver may need to send.
 pub enum Outbound {
     /// game-clock ping payload (already structured).
@@ -46,6 +52,10 @@ pub enum Outbound {
     TerrainReady(u32),
     /// game-terrain fetchChunk {chunkId, rpcId}.
     FetchChunk { chunk_id: u32, rpc_id: u32 },
+    /// entity-interact.interact {tick, id}.
+    EntityInteract { tick: f32, id: u32 },
+    /// remote-channel.sendServerEvent {tick,args(JSON)}.
+    RemoteServerEvent { tick: u32, event: serde_json::Value },
 }
 
 /// A minimal transport abstraction (reliable binary + text frames).
@@ -57,6 +67,10 @@ pub trait SessionTransport {
 /// Handlers the driver calls as protocol events arrive.
 #[derive(Default)]
 pub struct SessionHandlers {
+    /// Every schema-backed server->client message, before specialized
+    /// terrain/clock handling.  UI and script protocols use this hook so
+    /// their recovered wire values are not discarded.
+    pub on_message: Option<fn(&SessionCtx, &str, &str, &Value)>,
     pub on_pong: Option<fn(&SessionCtx, &Value)>,
     pub on_secret: Option<fn(&SessionCtx, u32)>,
     pub on_terrain_reset: Option<fn(&SessionCtx, TerrainReset)>,
@@ -103,6 +117,9 @@ pub fn handle_frame(
     match table.parse_client_frame(bytes) {
         Ok((proto, name, parsed)) => match parsed {
             crate::ParsedMessage::Value(v) => {
+                if let Some(h) = handlers.on_message {
+                    h(ctx, &proto, &name, &v);
+                }
                 if proto == "game-clock" && name == "pong" {
                     if let Some(h) = handlers.on_pong {
                         h(ctx, &v);
@@ -251,7 +268,33 @@ pub fn encode_outbound(table: &ProtocolTable, msg: &Outbound) -> Result<Vec<u8>,
             let payload = Value::Struct(vec![Value::Varint(*chunk_id), Value::Varint(*rpc_id)]);
             table.encode_server_message("game-terrain", "fetchChunk", &payload)
         }
+        Outbound::EntityInteract { tick, id } => {
+            let payload = Value::Struct(vec![Value::Quantized(*tick), Value::Varint(*id)]);
+            table.encode_server_message("entity-interact", "interact", &payload)
+        }
+        Outbound::RemoteServerEvent { tick, event } => {
+            let args = serde_json::to_string(event).map_err(|error| error.to_string())?;
+            let payload = Value::Struct(vec![Value::Varint(*tick), Value::UTF8(args)]);
+            table.encode_server_message("remote-channel", "sendServerEvent", &payload)
+        }
     }
+}
+
+pub fn decode_remote_client_event(value: &Value) -> Result<RemoteClientEvent, String> {
+    let Value::Struct(fields) = value else {
+        return Err("remote client event must be a struct".to_string());
+    };
+    let tick = match fields.first() {
+        Some(Value::Varint(value)) => *value,
+        _ => return Err("remote client event tick is invalid".to_string()),
+    };
+    let args = match fields.get(1) {
+        Some(Value::UTF8(value)) => value,
+        _ => return Err("remote client event args are invalid".to_string()),
+    };
+    let event = serde_json::from_str(args)
+        .map_err(|error| format!("remote client event JSON is invalid: {error}"))?;
+    Ok(RemoteClientEvent { tick, event })
 }
 
 /// Convenience: chunk id for a voxel position (origin/32 in the world grid).
@@ -276,6 +319,22 @@ pub fn load_catalog(json: &str) -> Result<BlockCatalog, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn remote_channel_json_codec_is_strict() {
+        let event = serde_json::json!({"type": "ready", "count": 3});
+        let decoded = decode_remote_client_event(&Value::Struct(vec![
+            Value::Varint(8),
+            Value::UTF8(event.to_string()),
+        ]))
+        .expect("decode remote event");
+        assert_eq!(decoded, RemoteClientEvent { tick: 8, event });
+        assert!(decode_remote_client_event(&Value::Struct(vec![
+            Value::Varint(9),
+            Value::UTF8("{".to_string()),
+        ]))
+        .is_err());
+    }
 
     #[test]
     fn decode_reset_known_fields() {
@@ -354,5 +413,32 @@ mod tests {
         // bytes without panicking; the E2E covers the live secret decode.
         let res = handle_frame(&table, &mut ctx, &SessionHandlers::default(), &raw);
         assert!(res.is_ok(), "frame handled without error");
+    }
+
+    #[test]
+    fn schema_message_callback_receives_ui_protocol_frames() {
+        fn observe(_ctx: &SessionCtx, proto: &str, name: &str, value: &Value) {
+            assert_eq!(proto, "game-terrain");
+            assert_eq!(name, "reset");
+            assert!(matches!(value, Value::Struct(_)));
+        }
+        let raw_json = std::fs::read_to_string(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../tools/parity/fixtures/protocols.json"
+        ))
+        .expect("protocols.json");
+        let tj: serde_json::Value = serde_json::from_str(&raw_json).unwrap();
+        let (table, _, _) = ProtocolTable::from_json(&tj).unwrap();
+        let schema = table.client_schema("game-terrain", "reset").unwrap();
+        let mut frame = crate::WriteStream::new(128);
+        frame.write_varint(
+            table.client_id_bases[table.protocols.iter().position(|p| p.name == "game-terrain").unwrap()]
+                + table.protocols.iter().find(|p| p.name == "game-terrain").unwrap()
+                    .client_messages.iter().position(|(n, _)| n == "reset").unwrap() as u32,
+        );
+        schema.diff(&schema.identity(), &schema.identity(), &mut frame);
+        let mut ctx = SessionCtx::default();
+        let handlers = SessionHandlers { on_message: Some(observe), ..Default::default() };
+        handle_frame(&table, &mut ctx, &handlers, &frame.bytes).unwrap();
     }
 }

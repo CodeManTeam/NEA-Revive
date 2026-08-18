@@ -8,7 +8,7 @@ test("normalizes recovered object spawn coordinates without coercion", () => {
   assert.throws(() => normalizeWorldSpawn({ x: "1", y: 2, z: 3 }), /finite three-dimensional vector/);
 });
 
-test("rejects recovered spawn coordinates outside the declared voxel shape", () => {
+test("accepts world spawn coordinates outside the declared voxel shape", () => {
   assert.deepEqual(normalizeWorldSpawnWithinShape([0, 1, 2], [32, 32, 32]), [0, 1, 2]);
-  assert.throws(() => normalizeWorldSpawnWithinShape([32, 1, 2], [32, 32, 32]), /outside world shape/);
+  assert.deepEqual(normalizeWorldSpawnWithinShape([32, 1, 40], [32, 32, 32]), [32, 1, 40]);
 });

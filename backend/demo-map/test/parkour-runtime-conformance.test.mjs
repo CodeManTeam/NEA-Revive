@@ -38,7 +38,7 @@ world.onTick(({ tick }) => {
   voxels.setVoxel(edgeX, edgeY, edgeZ, courseBlock ? "sand" : "air");
   const edge = voxels.getVoxel(edgeX, edgeY, edgeZ);
   const beacon = world.querySelector(".demo-beacon");
-  if (beacon) beacon.tags.add("course");
+  if (beacon) beacon.addTag("course");
   // Selector engine supports .tag / #id / entity / * (game-selector.mjs);
   // attribute syntax like [tag=x] is not part of the recovered grammar.
   const found = world.querySelectorAll(".course");

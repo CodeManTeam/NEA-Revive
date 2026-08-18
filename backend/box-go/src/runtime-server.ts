@@ -10,7 +10,7 @@ import { randomUUID } from "node:crypto"
 import { pathToFileURL } from "node:url"
 import { MuServer } from "mudb"
 import { MuWebSocketServer } from "mudb/socket/web/server"
-import { box3Protocols, gameClock, gameNet, gameChat, gameTerrain, compareTerrainBoxes } from "../protocol"
+import { box3Protocols, gameClock, gameNet, gameChat, gameTerrain, remoteChannel, compareTerrainBoxes } from "../protocol"
 import { ScriptRuntime } from "../../demo-map/src/runtime/script-runtime.mjs"
 import { importMapProject } from "../../demo-map/src/import-project.mjs"
 import { loadPreservedBlockCatalog } from "../../local-player/src/block-info.mjs"
@@ -47,12 +47,73 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   const path = options.path ?? "/ws"
   const log = options.quiet ? () => undefined : console.log
   const logger = options.quiet ? { log() {}, error() {}, exception() {} } : undefined
-  const spawn = options.spawn ?? [115, 11, 154] // parkour 真实 spawn（256×64×256 世界）
+  const sessions = new Map<string, string>() // sessionId -> playerId
+  const sessionNames = new Map<string, string>() // sessionId -> playerName（来自 createSession）
+  const playerSessions = new Map<string, string>() // playerId -> sessionId
+  const pendingClientEvents = new Map<string, unknown[]>() // playerId -> pre-join RemoteChannel events
+  const chatLogIds = new Map<string, number>() // sessionId -> chat log id
+  let gameChatProtocolRef: any = null
+  let gameTerrainProtocolRef: any = null
+  let gameNetProtocolRef: any = null
+  let gameClockProtocolRef: any = null
+  let modelsProtocolRef: any = null
+  let remoteChannelProtocolRef: any = null
+  let remoteEventTick = 1
+  const maxPendingClientEvents = 32
+  const pendingVoxelChanges: Array<{ x: number, y: number, z: number, voxel: number }> = []
+  let handleVoxelChange = (change: { x: number, y: number, z: number, voxel: number }) => {
+    pendingVoxelChanges.push(change)
+  }
+
+  function gameChatClients(): Record<string, any> { return gameChatProtocolRef?.clients ?? {} }
+  function gameTerrainClients(): Record<string, any> { return gameTerrainProtocolRef?.clients ?? {} }
+  function gameNetClients(): Record<string, any> { return gameNetProtocolRef?.clients ?? {} }
+  function gameClockClients(): Record<string, any> { return gameClockProtocolRef?.clients ?? {} }
+  function modelsClients(): Record<string, any> { return modelsProtocolRef?.clients ?? {} }
+  function remoteChannelClients(): Record<string, any> { return remoteChannelProtocolRef?.clients ?? {} }
+
+  function deliverClientEvent(playerId: string, event: unknown): boolean {
+    const sessionId = playerSessions.get(playerId)
+    const client = sessionId === undefined ? undefined : remoteChannelClients()[sessionId]
+    if (!client) return false
+    try {
+      client.message.sendClientEvent({ tick: remoteEventTick++, args: JSON.stringify(event) })
+      return true
+    } catch (error) {
+      log(`[remote-channel] failed to send event to ${playerId}: ${String(error)}`)
+      return false
+    }
+  }
+
+  function flushPendingClientEvents(playerId: string): void {
+    const events = pendingClientEvents.get(playerId)
+    if (!events) return
+    pendingClientEvents.delete(playerId)
+    for (let index = 0; index < events.length; index++) {
+      const event = events[index]
+      if (!deliverClientEvent(playerId, event)) {
+        const remaining = events.slice(index)
+        pendingClientEvents.set(playerId, remaining.slice(-maxPendingClientEvents))
+        return
+      }
+    }
+  }
 
   // ---- 1. 加载地图包 → ScriptRuntime（执行地图 server script）----
   const blockCatalog = await loadPreservedBlockCatalog(options.assetRoot, options.worldManifest ?? "world-bedwars.json")
   const buildRoot = options.buildRoot ?? `${options.sourceRoot}-runtime-build`
-  await importMapProject(options.sourceRoot, buildRoot)
+  const importedProject = await importMapProject(options.sourceRoot, buildRoot)
+  const spawn = options.spawn ?? importedProject.manifest.world.spawn
+  let staticEntitySceneJson: string | null = null
+  const clientScriptModules = Object.fromEntries(
+    importedProject.clientModules.map((module: { name: string; bytes: Uint8Array }) => [
+      module.name,
+      Buffer.from(module.bytes).toString("utf8"),
+    ]),
+  )
+  if (importedProject.clientUiState) {
+    clientScriptModules["__nea_ui_state__"] = JSON.stringify(importedProject.clientUiState)
+  }
 
   // ---- 1b. 人物模型 bootstrap（skin part hashes）----
   // 从恢复运行时的 bedwars bootstrap 读取 skinPartHashBatches，供 models.appendSkinPartHashes。
@@ -70,6 +131,9 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   }
   const runtime = await ScriptRuntime.load(buildRoot, {
     blockCatalog,
+    validatedMeshNames: importedProject.assets
+      .filter((asset: { kind: string | null }) => asset.kind === "mesh")
+      .map((asset: { name: string }) => asset.name),
     logger: options.quiet
       ? { info() {}, warn() {}, error() {} }
       : { info: (m: string) => log(`[script] ${m}`), warn: (m: string) => log(`[script] ${m}`), error: (m: string) => log(`[script] ${m}`) },
@@ -97,15 +161,69 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         }
       }
     },
+    sendClientEvent: (playerId: string, event: unknown) => {
+      if (deliverClientEvent(playerId, event)) return
+      const events = pendingClientEvents.get(playerId) ?? []
+      events.push(structuredClone(event))
+      pendingClientEvents.set(playerId, events.slice(-maxPendingClientEvents))
+    },
+    linkPlayer: async (playerId: string, href: string, linkOptions: unknown) => {
+      // Historical maps commonly use javascript: links for DAO3 account
+      // telemetry. Never execute those in the local player, but keep the API
+      // successful so the remainder of an async join handler can run.
+      if (href.trimStart().toLowerCase().startsWith("javascript:")) {
+        log(`[player-link] ignored legacy javascript URL for ${playerId}`)
+        return
+      }
+      const sessionId = playerSessions.get(playerId)
+      const client = sessionId === undefined ? undefined : remoteChannelClients()[sessionId]
+      client?.message.sendClientEvent({
+        tick: remoteEventTick++,
+        args: JSON.stringify({ type: "nea-revive:link", href, options: linkOptions }),
+      })
+    },
+    sendGuiCommand: async (command: any) => {
+      if (command.operation === "getAttribute") {
+        if (command.name === "width") return 1280
+        if (command.name === "height") return 720
+        return null
+      }
+      const sessionId = playerSessions.get(String(command.playerId))
+      const client = sessionId === undefined ? undefined : remoteChannelClients()[sessionId]
+      client?.message.sendClientEvent({
+        tick: remoteEventTick++,
+        args: JSON.stringify({ type: "nea-revive:gui", command }),
+      })
+      return true
+    },
+    writeEntityState: async (entityId: number, state: unknown) => {
+      for (const playerId of playerSessions.keys()) {
+        deliverClientEvent(playerId, { type: "nea-revive:entity-state", entityId, state })
+      }
+    },
+    writeDamageState: async (target: any, state: unknown, events: unknown) => {
+      const event = { type: "nea-revive:damage-state", target, state, events }
+      if (target?.playerId !== undefined) deliverClientEvent(String(target.playerId), event)
+      else for (const playerId of playerSessions.keys()) deliverClientEvent(playerId, event)
+    },
+    sendSoundCommand: async (command: any) => {
+      const sample = typeof command?.sample === "string" ? command.sample.replace(/^\/+/, "") : ""
+      const sampleUrl = sample
+        ? `http://${host}:${requestedPort}/assets/${sample.split("/").map(encodeURIComponent).join("/")}`
+        : undefined
+      for (const playerId of playerSessions.keys()) {
+        deliverClientEvent(playerId, { type: "nea-revive:sound", command: { ...command, sampleUrl } })
+      }
+      return true
+    },
+    onVoxelChange: (change: { x: number, y: number, z: number, voxel: number }) => {
+      handleVoxelChange(change)
+    },
   })
   await runtime.start()
   // 20Hz 逻辑 tick：冲刷聊天 FIFO 并驱动脚本 onTick
   const tickTimer = setInterval(() => runtime.tick(), 50)
   tickTimer.unref?.()
-  const sessions = new Map<string, string>() // sessionId -> playerId
-  const sessionNames = new Map<string, string>() // sessionId -> playerName（来自 createSession）
-  const playerSessions = new Map<string, string>() // playerId -> sessionId
-  const chatLogIds = new Map<string, number>() // sessionId -> chat log id
   // 周期 net-state 同步：脚本对玩家属性的修改（walkSpeed/runSpeed/flySpeed/canFly/
   // spectator 等 DAO3 player API）推送到前端本地物理。初始帧在 join 后发一次，
   // 之后每 200ms 按 runtime.snapshot() 的权威玩家状态补发。
@@ -118,6 +236,13 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
       const player = snap.players.find((p: any) => p.id === playerId)
       const netClient = gameNetClients()[sessionId]
       if (!player || !netClient) continue
+      deliverClientEvent(playerId, {
+        type: "nea-revive:world-physics",
+        gravity: snap.worldPhysics?.gravity,
+        airFriction: snap.worldPhysics?.airFriction,
+        tickRate: snap.worldPhysics?.tickRate,
+        materials: snap.worldPhysics?.materials,
+      })
       // DAO3 玩家 flags：默认禁飞（252 = 254 & ~ALLOW_FLIGHT(2)），
       // canFly→ALLOW_FLIGHT(2)，spectator→SPECTATOR(1)。
       const flags = 252 | (player.canFly ? 2 : 0) | (player.spectator ? 1 : 0)
@@ -129,13 +254,26 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
             id: 1,
             name: String(player.name ?? "Player"),
             avatarSkin: LOCAL_AVATAR_SKIN_PART_IDS,
+            dead: Boolean(player.dead),
           }],
           players: [{
             id: 1,
             position: player.position,
             walkSpeed: player.walkSpeed,
+            walkAcceleration: player.walkAcceleration,
             runSpeed: player.runSpeed,
+            runAcceleration: player.runAcceleration,
+            crouchSpeed: player.crouchSpeed,
+            crouchAcceleration: player.crouchAcceleration,
+            swimSpeed: player.swimSpeed,
+            swimAcceleration: player.swimAcceleration,
             flySpeed: player.flySpeed,
+            flyAcceleration: player.flyAcceleration,
+            jumpPower: player.jumpPower,
+            jumpSpeedFactor: player.jumpSpeedFactor,
+            jumpAccelerationFactor: player.jumpAccelerationFactor,
+            doubleJumpPower: player.doubleJumpPower,
+            stepHeight: importedProject.physics?.stepHeight,
             flags,
           }],
         })
@@ -146,33 +284,6 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
     }
   }, 200)
   netStateTimer.unref?.()
-  // 协议引用必须在 mudbServer.start() 之前注册并捕获；启动后 protocol() 会抛错
-  let gameChatProtocolRef: any = null
-  let gameTerrainProtocolRef: any = null
-  let gameNetProtocolRef: any = null
-  let gameClockProtocolRef: any = null
-  let modelsProtocolRef: any = null
-
-  function gameChatClients(): Record<string, any> {
-    return gameChatProtocolRef?.clients ?? {}
-  }
-
-  function gameTerrainClients(): Record<string, any> {
-    return gameTerrainProtocolRef?.clients ?? {}
-  }
-
-  function gameNetClients(): Record<string, any> {
-    return gameNetProtocolRef?.clients ?? {}
-  }
-
-  function gameClockClients(): Record<string, any> {
-    return gameClockProtocolRef?.clients ?? {}
-  }
-
-  function modelsClients(): Record<string, any> {
-    return modelsProtocolRef?.clients ?? {}
-  }
-
   function sendChatLog(sessionId: string, text: string): void {
     const client = gameChatClients()[sessionId]
     if (!client) return
@@ -240,6 +351,55 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
       response.end(JSON.stringify({ sessions: sessions.size, protocols: box3Protocols.map((p) => p.name), runtime: "nea-runtime-server" }))
       return
     }
+    if (url.pathname === "/api/map/entities") {
+      try {
+        staticEntitySceneJson ??= JSON.stringify(buildStaticEntityScene(options.sourceRoot, importedProject.entities))
+        response.writeHead(200, { "content-type": "application/json; charset=utf-8", "cache-control": "no-cache" })
+        response.end(staticEntitySceneJson)
+      } catch (error) {
+        response.writeHead(500, { "content-type": "text/plain; charset=utf-8" })
+        response.end(String(error))
+      }
+      return
+    }
+    if (request.method === "GET" && url.pathname.startsWith("/assets/")) {
+      const assetsRoot = resolve(options.sourceRoot, "assets")
+      const relative = decodeURIComponent(url.pathname.slice("/assets/".length))
+      const assetPath = resolve(assetsRoot, relative)
+      if (assetPath !== assetsRoot && !assetPath.startsWith(`${assetsRoot}\\`) && !assetPath.startsWith(`${assetsRoot}/`)) {
+        response.writeHead(403)
+        response.end()
+        return
+      }
+      if (!existsSync(assetPath)) {
+        response.writeHead(404)
+        response.end()
+        return
+      }
+      const extension = assetPath.toLowerCase().split(".").pop()
+      const contentType = extension === "mp3" ? "audio/mpeg" : extension === "ogg" ? "audio/ogg" : extension === "wav" ? "audio/wav" : "application/octet-stream"
+      response.writeHead(200, { "content-type": contentType, "access-control-allow-origin": "*", "cache-control": "public,max-age=3600" })
+      response.end(readFileSync(assetPath))
+      return
+    }
+    // gameUI pictureAssets are content-addressed archive entries. Historical
+    // Player resolves picture/<name> through this endpoint rather than the
+    // page origin, so expose the same engine/m/<sha256-base64url> contract.
+    if (request.method === "GET" && url.pathname.startsWith("/engine/m/")) {
+      const hash = url.pathname.slice("/engine/m/".length)
+      if (!/^[A-Za-z0-9_-]{43}$/.test(hash)) {
+        response.writeHead(400); response.end("invalid content hash"); return
+      }
+      const assetPath = resolve(options.assetRoot, "engine", "m", hash)
+      if (!existsSync(assetPath)) {
+        response.writeHead(404); response.end("picture asset not found"); return
+      }
+      const extension = assetPath.toLowerCase().split(".").pop()
+      const contentType = extension === "png" ? "image/png" : extension === "jpg" || extension === "jpeg" ? "image/jpeg" : "application/octet-stream"
+      response.writeHead(200, { "content-type": contentType, "access-control-allow-origin": "*", "cache-control": "public,max-age=3600" })
+      createReadStream(assetPath).pipe(response)
+      return
+    }
     // avatar 模型资源：/avatar/m/{hash} → archive/avatar/m/{hash}
     // （voxweb 前端从 createSession origin 拉取人物皮肤部件）
     if (url.pathname.startsWith("/avatar/m/")) {
@@ -297,6 +457,39 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   // chunkId (voxweb 网格) → 源世界坐标内的方块 box 列表（MuSortedArray 需要排序）。
   // 缓存已计算 chunk：全图 256 chunks 首次 ~1s，后续/重连秒回。
   const chunkBoxCache = new Map<number, Array<Record<string, number>>>()
+
+  function mortonVoxelOffset(x: number, y: number, z: number): number {
+    let offset = 0
+    for (let bit = 0; bit < 10; bit++) {
+      offset |= ((x >>> bit) & 1) << (bit * 3)
+      offset |= ((y >>> bit) & 1) << (bit * 3 + 1)
+      offset |= ((z >>> bit) & 1) << (bit * 3 + 2)
+    }
+    return offset >>> 0
+  }
+
+  function publishVoxelChange(change: { x: number, y: number, z: number, voxel: number }): void {
+    const i = Math.floor((change.x + WORLD_OFFSET[0]) / chunkSize)
+    const j = Math.floor((change.y + WORLD_OFFSET[1]) / chunkSize)
+    const k = Math.floor((change.z + WORLD_OFFSET[2]) / chunkSize)
+    if (i >= 0 && j >= 0 && k >= 0 && i < gridI && j < gridJ && k < gridK) {
+      chunkBoxCache.delete(i + j * gridI + k * gridI * gridJ)
+    }
+    const run = [{
+      offset: mortonVoxelOffset(
+        change.x + WORLD_OFFSET[0],
+        change.y + WORLD_OFFSET[1],
+        change.z + WORLD_OFFSET[2],
+      ),
+      count: 1,
+      block: change.voxel & 0xffff,
+    }]
+    for (const client of Object.values(gameTerrainClients())) client.message.voxelChange(run)
+  }
+
+  handleVoxelChange = publishVoxelChange
+  for (const change of pendingVoxelChanges.splice(0)) publishVoxelChange(change)
+
   function collisionBoxesForChunk(chunkId: number): Array<Record<string, number>> {
     if (!Number.isInteger(chunkId) || chunkId < 0) return []
     const cached = chunkBoxCache.get(chunkId)
@@ -371,6 +564,7 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
     if (schema === gameNet) gameNetProtocolRef = protocol
     if (schema === gameClock) gameClockProtocolRef = protocol
     if (schema.name === "models") modelsProtocolRef = protocol
+    if (schema === remoteChannel) remoteChannelProtocolRef = protocol
     const handlers: Record<string, (client: any, data: unknown, unreliable: boolean) => void> = {}
 
     for (const messageName of Object.keys(schema.server)) {
@@ -388,7 +582,12 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         const playerId = `p-${randomUUID().slice(0, 8)}`
         sessions.set(client.sessionId, playerId)
         playerSessions.set(playerId, client.sessionId)
+        flushPendingClientEvents(playerId)
         runtime.addPlayer({ id: playerId, name: sessionNames.get(client.sessionId) ?? "Player", position: spawn })
+        // The game-net join can race the RemoteChannel protocol's client
+        // registration across the three websocket transports.
+        setTimeout(() => flushPendingClientEvents(playerId), 0)
+        setTimeout(() => flushPendingClientEvents(playerId), 25)
         // voxweb 握手：join 后立即发 secret 原始帧（game-net rawId=10）：
         // varint(10) varint(1) 'E' 0 varint(playerId) uint8(5) varint(playerId) uint8(1) varint(playerId)
         const secret = encodeAnonymousPlayerSecret(1)
@@ -402,6 +601,14 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
               modelsClient.message.appendSkinPartHashes(skinPartHashes)
             }
           }, 5)
+        }
+        if (Object.keys(clientScriptModules).length > 0) {
+          setTimeout(() => {
+            const netClient = gameNetClients()[client.sessionId]
+            if (netClient && typeof netClient.message?.syncClientScriptModules === "function") {
+              netClient.message.syncClientScriptModules(clientScriptModules)
+            }
+          }, 7)
         }
         // net-state 帧：replica.players（avatarSkin）+ state.players（位置）
         setTimeout(() => {
@@ -457,6 +664,23 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         if (!playerId) return
         const detail = (data as { detail?: string }).detail ?? ""
         runtime.dispatchChat(playerId, detail)
+      }
+    }
+
+    if (schema === remoteChannel) {
+      handlers.sendServerEvent = (client, data) => {
+        const playerId = sessions.get(client.sessionId)
+        if (!playerId) return
+        try {
+          const event = JSON.parse(String((data as { args?: string })?.args ?? "null"))
+          if (event?.type === "nea-revive:chat" && typeof event.message === "string") {
+            runtime.dispatchChat(playerId, event.message)
+          } else {
+            runtime.dispatchClientEvent(playerId, event)
+          }
+        } catch (error) {
+          log(`[remote-channel] rejected event from ${client.sessionId}: ${String(error)}`)
+        }
       }
     }
 
@@ -561,6 +785,173 @@ function encodeAnonymousPlayerSecret(playerId: number): Uint8Array {
   writeUint8(1)
   writeVarint(playerId)
   return Uint8Array.from(bytes)
+}
+
+function buildStaticEntityScene(sourceRoot: string, entities: readonly any[]) {
+  const meshes: Record<string, { positions: number[]; uvs: number[]; indices: number[] }> = {}
+  const instances: Array<{
+    id: number
+    mesh: string
+    position: number[]
+    scale: number[]
+    rotation: number[]
+    collision: boolean
+    fixed: boolean
+    halfExtents: number[]
+    mass: number
+    friction: number
+    restitution: number
+    enableInteract: boolean
+    interactHint: string
+    interactRadius: number
+  }> = []
+  const skipped: Array<{ mesh: string; reason: string }> = []
+  for (const [sourceIndex, entity] of entities.entries()) {
+    const mesh = String(entity.source?.mesh ?? entity.mesh ?? "")
+    if (!mesh.endsWith(".vb")) continue
+    const gltfName = mesh.slice(0, -3) + ".gltf"
+    if (!meshes[mesh]) {
+      const gltfPath = resolve(sourceRoot, "assets", gltfName)
+      if (!existsSync(gltfPath)) {
+        if (!skipped.some(entry => entry.mesh === mesh)) skipped.push({ mesh, reason: "missing glTF fallback" })
+        continue
+      }
+      try {
+        meshes[mesh] = readEmbeddedGltfMesh(gltfPath)
+      } catch (error) {
+        if (!skipped.some(entry => entry.mesh === mesh)) skipped.push({ mesh, reason: String(error) })
+        continue
+      }
+    }
+    instances.push({
+      id: sourceIndex + 0x10000,
+      mesh,
+      position: entity.position.map(Number),
+      scale: (entity.source?.scale ?? [1 / 64, 1 / 64, 1 / 64]).map(Number),
+      rotation: (entity.source?.orientation ?? [0, 0, 0, 1]).map(Number),
+      meshOffset: (entity.source?.meshOffset ?? [0, 0, 0]).map(Number),
+      collision: Boolean(entity.source?.collision ?? true),
+      fixed: Boolean(entity.source?.fixed ?? false),
+      halfExtents: (entity.source?.bounds ?? [1, 1, 1]).map((size: unknown, axis: number) =>
+        Math.max(0.01, Math.abs(Number(size) * Number((entity.source?.scale ?? [1 / 64, 1 / 64, 1 / 64])[axis])) / 2),
+      ),
+      mass: Math.max(0.001, Number(entity.source?.mass ?? 1)),
+      friction: Math.max(0, Number(entity.source?.friction ?? 0)),
+      restitution: Math.max(0, Number(entity.source?.restitution ?? 0)),
+      enableInteract: Boolean(entity.source?.enableInteract ?? false),
+      interactHint: String(entity.source?.interactHint ?? ""),
+      interactRadius: Math.max(0, Number(entity.source?.interactRadius ?? 3)),
+      visible: entity.source?.meshInvisible !== true,
+    })
+  }
+  return { meshes, entities: instances, skipped }
+}
+
+function readEmbeddedGltfMesh(path: string) {
+  const gltf = JSON.parse(readFileSync(path, "utf8"))
+  const uri = String(gltf.buffers?.[0]?.uri ?? "")
+  const marker = ";base64,"
+  const markerAt = uri.indexOf(marker)
+  if (markerAt < 0) throw new Error(`glTF has no embedded buffer: ${path}`)
+  const bytes = Buffer.from(uri.slice(markerAt + marker.length), "base64")
+  const positions: number[] = []
+  const uvs: number[] = []
+  const indices: number[] = []
+  const roots = gltf.scenes?.[gltf.scene ?? 0]?.nodes ?? gltf.nodes?.map((_: unknown, index: number) => index) ?? []
+  const visit = (nodeIndex: number, parent: number[]) => {
+    const node = gltf.nodes?.[nodeIndex]
+    if (!node) return
+    const world = multiplyMat4(parent, nodeMatrix(node))
+    const mesh = gltf.meshes?.[node.mesh]
+    for (const primitive of mesh?.primitives ?? []) {
+      if (primitive.attributes?.POSITION === undefined) continue
+      const sourcePositions = readGltfAccessor(gltf, bytes, primitive.attributes.POSITION)
+      const sourceUvs = primitive.attributes.TEXCOORD_0 === undefined
+        ? new Array((sourcePositions.length / 3) * 2).fill(0)
+        : readGltfAccessor(gltf, bytes, primitive.attributes.TEXCOORD_0)
+      const sourceIndices = primitive.indices === undefined
+        ? Array.from({ length: sourcePositions.length / 3 }, (_, index) => index)
+        : readGltfAccessor(gltf, bytes, primitive.indices)
+      const base = positions.length / 3
+      for (let offset = 0; offset < sourcePositions.length; offset += 3) {
+        positions.push(...transformPoint(
+          world,
+          sourcePositions[offset] ?? 0,
+          sourcePositions[offset + 1] ?? 0,
+          sourcePositions[offset + 2] ?? 0,
+        ))
+      }
+      uvs.push(...sourceUvs)
+      indices.push(...sourceIndices.map(index => Number(index) + base))
+    }
+    for (const child of node.children ?? []) visit(Number(child), world)
+  }
+  const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+  for (const root of roots) visit(Number(root), identity)
+  if (positions.length === 0) throw new Error(`glTF has no mesh primitive: ${path}`)
+  return { positions, uvs, indices }
+}
+
+function nodeMatrix(node: any): number[] {
+  if (Array.isArray(node.matrix) && node.matrix.length === 16) return node.matrix.map(Number)
+  const translation = (node.translation ?? [0, 0, 0]).map(Number)
+  const rotation = (node.rotation ?? [0, 0, 0, 1]).map(Number)
+  const scale = (node.scale ?? [1, 1, 1]).map(Number)
+  const tx = translation[0] ?? 0, ty = translation[1] ?? 0, tz = translation[2] ?? 0
+  const qx = rotation[0] ?? 0, qy = rotation[1] ?? 0, qz = rotation[2] ?? 0, qw = rotation[3] ?? 1
+  const sx = scale[0] ?? 1, sy = scale[1] ?? 1, sz = scale[2] ?? 1
+  const x2 = qx + qx, y2 = qy + qy, z2 = qz + qz
+  const xx = qx * x2, xy = qx * y2, xz = qx * z2
+  const yy = qy * y2, yz = qy * z2, zz = qz * z2
+  const wx = qw * x2, wy = qw * y2, wz = qw * z2
+  return [
+    (1 - (yy + zz)) * sx, (xy + wz) * sx, (xz - wy) * sx, 0,
+    (xy - wz) * sy, (1 - (xx + zz)) * sy, (yz + wx) * sy, 0,
+    (xz + wy) * sz, (yz - wx) * sz, (1 - (xx + yy)) * sz, 0,
+    tx, ty, tz, 1,
+  ]
+}
+
+function multiplyMat4(a: number[], b: number[]): number[] {
+  const out = new Array(16).fill(0)
+  for (let column = 0; column < 4; column += 1) {
+    for (let row = 0; row < 4; row += 1) {
+      for (let k = 0; k < 4; k += 1) {
+        const index = column * 4 + row
+        out[index] = (out[index] ?? 0) + (a[k * 4 + row] ?? 0) * (b[column * 4 + k] ?? 0)
+      }
+    }
+  }
+  return out
+}
+
+function transformPoint(matrix: number[], x: number, y: number, z: number): [number, number, number] {
+  return [
+    (matrix[0] ?? 0) * x + (matrix[4] ?? 0) * y + (matrix[8] ?? 0) * z + (matrix[12] ?? 0),
+    (matrix[1] ?? 0) * x + (matrix[5] ?? 0) * y + (matrix[9] ?? 0) * z + (matrix[13] ?? 0),
+    (matrix[2] ?? 0) * x + (matrix[6] ?? 0) * y + (matrix[10] ?? 0) * z + (matrix[14] ?? 0),
+  ]
+}
+
+function readGltfAccessor(gltf: any, bytes: Buffer, accessorIndex: number): number[] {
+  const accessor = gltf.accessors[accessorIndex]
+  const view = gltf.bufferViews[accessor.bufferView]
+  const components = ({ SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4 } as Record<string, number>)[accessor.type]
+  const componentBytes = ({ 5121: 1, 5123: 2, 5125: 4, 5126: 4 } as Record<number, number>)[accessor.componentType]
+  if (!components || !componentBytes) throw new Error(`Unsupported glTF accessor ${accessor.type}/${accessor.componentType}`)
+  const stride = Number(view.byteStride ?? components * componentBytes)
+  const start = Number(view.byteOffset ?? 0) + Number(accessor.byteOffset ?? 0)
+  const out: number[] = []
+  for (let item = 0; item < accessor.count; item += 1) {
+    for (let component = 0; component < components; component += 1) {
+      const offset = start + item * stride + component * componentBytes
+      if (accessor.componentType === 5126) out.push(bytes.readFloatLE(offset))
+      else if (accessor.componentType === 5125) out.push(bytes.readUInt32LE(offset))
+      else if (accessor.componentType === 5123) out.push(bytes.readUInt16LE(offset))
+      else out.push(bytes.readUInt8(offset))
+    }
+  }
+  return out
 }
 
 function compareTerrainBoxesRemoved(a: Record<string, number>, b: Record<string, number>): number {

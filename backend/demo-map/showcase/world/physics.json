@@ -1,0 +1,29 @@
+{
+  "formatVersion": "nea-physics/v1",
+  "gravity": -20,
+  "maxFallSpeed": 50,
+  "stepHeight": 1.25,
+  "playerBody": {
+    "profileId": "historical-player-default-v1",
+    "origin": "body-center",
+    "originStatus": "confirmed",
+    "sizeStatus": "confirmed",
+    "boundsHalfExtents": [0.45, 1.1, 0.45],
+    "shapeHalfExtents": [0.45, 1.1, 0.45],
+    "evidence": "Preserved Player body profile; posture deltas remain evidence-deferred."
+  },
+  "materials": {
+    "129": { "friction": 10, "restitution": 0, "tags": ["stone"] },
+    "147": { "friction": 0.25, "restitution": 0, "tags": ["ice"] },
+    "631": { "friction": 2, "restitution": 0.82, "tags": ["bounce"] }
+  },
+  "colliders": [
+    { "id": "physics-step", "min": [56, 4, 120], "max": [96, 4.5, 124], "material": "physics-step", "tags": ["step-test"] },
+    { "id": "raycast-wall", "min": [184, 4, 40], "max": [232, 8, 44], "material": "raycast-wall", "tags": ["raycast-target"] }
+  ],
+  "triggers": [
+    { "id": "checkpoint-core", "min": [120, 4, 124], "max": [136, 7, 140], "tags": ["checkpoint"] },
+    { "id": "hazard-deferred", "min": [184, 4, 184], "max": [200, 7, 200], "tags": ["hazard"] },
+    { "id": "storage-zone", "min": [56, 4, 184], "max": [72, 7, 200], "tags": ["storage"] }
+  ]
+}

@@ -2,8 +2,8 @@
   "formatVersion": "nea-map/v1",
   "id": "minecraft",
   "display": {
-    "name": "[Minecraft] 我的世界正式版",
-    "description": "从 reference 的 DAO3「[Minecraft]我的世界正式版」项目包（map 100471484）导入：256×128×256 地形、32 种方块、150 gltf 模型、290 图片、20 音频。地形已完整还原（1,167,963 体素 → 42,837 地形盒）；脚本仅导入入口（原 20+ 模块未随导出，见 reference/code/index.js）。"
+    "name": "[Minecraft]我的世界正式版",
+    "description": "Imported DAO3 project export"
   },
   "runtime": {
     "apiVersion": "0.1.0",
@@ -13,38 +13,908 @@
     "compatibilityLevel": "experimental"
   },
   "world": {
-    "shape": [256, 128, 256],
-    "spawn": [64, 3, 48],
+    "shape": [
+      256,
+      128,
+      256
+    ],
+    "spawn": [
+      64,
+      40,
+      64
+    ],
     "entityLimit": 4000,
     "terrain": "world/terrain.json",
     "entities": "world/entities.json",
+    "environment": null,
     "physics": "world/physics.json"
   },
+  "assets": [
+    {
+      "name": "mesh/mc僵尸.gltf",
+      "path": "assets/mesh/mc僵尸.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/MC凋零.gltf",
+      "path": "assets/mesh/MC凋零.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/MC末影人.gltf",
+      "path": "assets/mesh/MC末影人.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/Minecraft-兔子.gltf",
+      "path": "assets/mesh/Minecraft-兔子.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/TNT.gltf",
+      "path": "assets/mesh/TNT.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/下界合金剑.gltf",
+      "path": "assets/mesh/下界合金剑.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/下界合金块.gltf",
+      "path": "assets/mesh/下界合金块.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/下界合金斧.gltf",
+      "path": "assets/mesh/下界合金斧.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/下界合金锭.gltf",
+      "path": "assets/mesh/下界合金锭.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/下界合金锹.gltf",
+      "path": "assets/mesh/下界合金锹.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/下界合金镐.gltf",
+      "path": "assets/mesh/下界合金镐.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/下界疣.gltf",
+      "path": "assets/mesh/下界疣.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/世界崩解之镐.gltf",
+      "path": "assets/mesh/世界崩解之镐.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/中继器(冲能).gltf",
+      "path": "assets/mesh/中继器(冲能).gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/中继器.gltf",
+      "path": "assets/mesh/中继器.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/书.gltf",
+      "path": "assets/mesh/书.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/五行环.gltf",
+      "path": "assets/mesh/五行环.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/倒钻石剑.gltf",
+      "path": "assets/mesh/倒钻石剑.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/兔子.gltf",
+      "path": "assets/mesh/兔子.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/冷光的小宠物.gltf",
+      "path": "assets/mesh/冷光的小宠物.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/凋零头颅.gltf",
+      "path": "assets/mesh/凋零头颅.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/凋零风暴.gltf",
+      "path": "assets/mesh/凋零风暴.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/凋零骷髅头.gltf",
+      "path": "assets/mesh/凋零骷髅头.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/创作者灵感药剂—-药盒.gltf",
+      "path": "assets/mesh/创作者灵感药剂—-药盒.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/单元方块.gltf",
+      "path": "assets/mesh/单元方块.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/压力板.gltf",
+      "path": "assets/mesh/压力板.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/原木.gltf",
+      "path": "assets/mesh/原木.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/史蒂夫普通模型.gltf",
+      "path": "assets/mesh/史蒂夫普通模型.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/告示牌.gltf",
+      "path": "assets/mesh/告示牌.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/命令方块.gltf",
+      "path": "assets/mesh/命令方块.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/四分之一个小行星带.gltf",
+      "path": "assets/mesh/四分之一个小行星带.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/四点隐形屏障.gltf",
+      "path": "assets/mesh/四点隐形屏障.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/圆石.gltf",
+      "path": "assets/mesh/圆石.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/大末影箱.gltf",
+      "path": "assets/mesh/大末影箱.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/寰宇支配之剑.gltf",
+      "path": "assets/mesh/寰宇支配之剑.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/工作台.gltf",
+      "path": "assets/mesh/工作台.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/年度创作者标识.gltf",
+      "path": "assets/mesh/年度创作者标识.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/我的世界——白色兔子.gltf",
+      "path": "assets/mesh/我的世界——白色兔子.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/我的世界投掷器.gltf",
+      "path": "assets/mesh/我的世界投掷器.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/我的世界河豚崽汁.gltf",
+      "path": "assets/mesh/我的世界河豚崽汁.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/拉杆(启动).gltf",
+      "path": "assets/mesh/拉杆(启动).gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/拉杆.gltf",
+      "path": "assets/mesh/拉杆.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/掉落物.gltf",
+      "path": "assets/mesh/掉落物.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/方块碎裂1.gltf",
+      "path": "assets/mesh/方块碎裂1.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/方块碎裂10.gltf",
+      "path": "assets/mesh/方块碎裂10.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/方块碎裂2.gltf",
+      "path": "assets/mesh/方块碎裂2.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/方块碎裂3.gltf",
+      "path": "assets/mesh/方块碎裂3.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/方块碎裂4.gltf",
+      "path": "assets/mesh/方块碎裂4.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/方块碎裂5.gltf",
+      "path": "assets/mesh/方块碎裂5.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/方块碎裂6.gltf",
+      "path": "assets/mesh/方块碎裂6.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/方块碎裂7.gltf",
+      "path": "assets/mesh/方块碎裂7.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/方块碎裂8.gltf",
+      "path": "assets/mesh/方块碎裂8.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/方块碎裂9.gltf",
+      "path": "assets/mesh/方块碎裂9.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/方块箱子.gltf",
+      "path": "assets/mesh/方块箱子.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/木剑.gltf",
+      "path": "assets/mesh/木剑.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/木斧.gltf",
+      "path": "assets/mesh/木斧.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/木棍.gltf",
+      "path": "assets/mesh/木棍.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/木锹.gltf",
+      "path": "assets/mesh/木锹.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/木镐.gltf",
+      "path": "assets/mesh/木镐.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/木门.gltf",
+      "path": "assets/mesh/木门.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末地传送门(激活).gltf",
+      "path": "assets/mesh/末地传送门(激活).gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末地传送门.gltf",
+      "path": "assets/mesh/末地传送门.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末影人.gltf",
+      "path": "assets/mesh/末影人.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末影合金剑.gltf",
+      "path": "assets/mesh/末影合金剑.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末影合金斧.gltf",
+      "path": "assets/mesh/末影合金斧.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末影合金锹.gltf",
+      "path": "assets/mesh/末影合金锹.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末影合金镐.gltf",
+      "path": "assets/mesh/末影合金镐.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末影水晶.gltf",
+      "path": "assets/mesh/末影水晶.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末影珍珠.gltf",
+      "path": "assets/mesh/末影珍珠.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末影箱.gltf",
+      "path": "assets/mesh/末影箱.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末影龙.gltf",
+      "path": "assets/mesh/末影龙.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末影龙息.gltf",
+      "path": "assets/mesh/末影龙息.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末影龙火球.gltf",
+      "path": "assets/mesh/末影龙火球.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/材质错误方块.gltf",
+      "path": "assets/mesh/材质错误方块.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/村民.gltf",
+      "path": "assets/mesh/村民.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/树苗.gltf",
+      "path": "assets/mesh/树苗.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/桶装美溪螈.gltf",
+      "path": "assets/mesh/桶装美溪螈.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/植物小麦.gltf",
+      "path": "assets/mesh/植物小麦.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/植物草.gltf",
+      "path": "assets/mesh/植物草.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/橡木木板.gltf",
+      "path": "assets/mesh/橡木木板.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/沙子.gltf",
+      "path": "assets/mesh/沙子.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/河豚-1.gltf",
+      "path": "assets/mesh/河豚-1.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/河豚.gltf",
+      "path": "assets/mesh/河豚.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/泥土.gltf",
+      "path": "assets/mesh/泥土.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/混沌神剑.gltf",
+      "path": "assets/mesh/混沌神剑.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/潜影盒.gltf",
+      "path": "assets/mesh/潜影盒.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/烈焰棒.gltf",
+      "path": "assets/mesh/烈焰棒.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/烈焰粉.gltf",
+      "path": "assets/mesh/烈焰粉.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/熔炉.gltf",
+      "path": "assets/mesh/熔炉.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/牛.gltf",
+      "path": "assets/mesh/牛.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/猪.gltf",
+      "path": "assets/mesh/猪.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/甘蔗.gltf",
+      "path": "assets/mesh/甘蔗.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/白色床.gltf",
+      "path": "assets/mesh/白色床.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/石剑.gltf",
+      "path": "assets/mesh/石剑.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/石斧.gltf",
+      "path": "assets/mesh/石斧.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/石锹.gltf",
+      "path": "assets/mesh/石锹.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/石镐.gltf",
+      "path": "assets/mesh/石镐.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/箭.gltf",
+      "path": "assets/mesh/箭.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/箱子.gltf",
+      "path": "assets/mesh/箱子.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/粑粑.gltf",
+      "path": "assets/mesh/粑粑.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/粗金.gltf",
+      "path": "assets/mesh/粗金.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/红石块.gltf",
+      "path": "assets/mesh/红石块.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/红石灯(发光).gltf",
+      "path": "assets/mesh/红石灯(发光).gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/红石灯.gltf",
+      "path": "assets/mesh/红石灯.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/红石粉(-).gltf",
+      "path": "assets/mesh/红石粉(-).gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/红石粉(-_).gltf",
+      "path": "assets/mesh/红石粉(-_).gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/红石粉(_).gltf",
+      "path": "assets/mesh/红石粉(_).gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/红石粉(_-).gltf",
+      "path": "assets/mesh/红石粉(_-).gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/红石粉(__).gltf",
+      "path": "assets/mesh/红石粉(__).gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/红石粉(__)_2.gltf",
+      "path": "assets/mesh/红石粉(__)_2.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/红石粉(___).gltf",
+      "path": "assets/mesh/红石粉(___).gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/红石粉(_﹋).gltf",
+      "path": "assets/mesh/红石粉(_﹋).gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/红石粉(十).gltf",
+      "path": "assets/mesh/红石粉(十).gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/红石粉(﹋_).gltf",
+      "path": "assets/mesh/红石粉(﹋_).gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/红石粉(﹋_﹋).gltf",
+      "path": "assets/mesh/红石粉(﹋_﹋).gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/线.gltf",
+      "path": "assets/mesh/线.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/胡萝卜.gltf",
+      "path": "assets/mesh/胡萝卜.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/苦力怕.gltf",
+      "path": "assets/mesh/苦力怕.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/草方块.gltf",
+      "path": "assets/mesh/草方块.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/蜘蛛.gltf",
+      "path": "assets/mesh/蜘蛛.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/酿造台.gltf",
+      "path": "assets/mesh/酿造台.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/金剑.gltf",
+      "path": "assets/mesh/金剑.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/金块.gltf",
+      "path": "assets/mesh/金块.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/金斧.gltf",
+      "path": "assets/mesh/金斧.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/金胡萝卜.gltf",
+      "path": "assets/mesh/金胡萝卜.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/金锭.gltf",
+      "path": "assets/mesh/金锭.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/金锹.gltf",
+      "path": "assets/mesh/金锹.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/金镐.gltf",
+      "path": "assets/mesh/金镐.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/钻石.gltf",
+      "path": "assets/mesh/钻石.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/钻石剑.gltf",
+      "path": "assets/mesh/钻石剑.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/钻石块.gltf",
+      "path": "assets/mesh/钻石块.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/钻石斧.gltf",
+      "path": "assets/mesh/钻石斧.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/钻石锹.gltf",
+      "path": "assets/mesh/钻石锹.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/钻石镐.gltf",
+      "path": "assets/mesh/钻石镐.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/铁剑.gltf",
+      "path": "assets/mesh/铁剑.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/铁块.gltf",
+      "path": "assets/mesh/铁块.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/铁斧.gltf",
+      "path": "assets/mesh/铁斧.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/铁砧.gltf",
+      "path": "assets/mesh/铁砧.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/铁锭.gltf",
+      "path": "assets/mesh/铁锭.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/铁锹.gltf",
+      "path": "assets/mesh/铁锹.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/铁镐.gltf",
+      "path": "assets/mesh/铁镐.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/附魔书.gltf",
+      "path": "assets/mesh/附魔书.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/附魔台.gltf",
+      "path": "assets/mesh/附魔台.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/震金剑.gltf",
+      "path": "assets/mesh/震金剑.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/震金斧.gltf",
+      "path": "assets/mesh/震金斧.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/震金锹.gltf",
+      "path": "assets/mesh/震金锹.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/震金镐.gltf",
+      "path": "assets/mesh/震金镐.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/黏土球.gltf",
+      "path": "assets/mesh/黏土球.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/龙蛋.gltf",
+      "path": "assets/mesh/龙蛋.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "audio/audio/break.mp3",
+      "path": "assets/audio/audio/break.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio/drink.mp3",
+      "path": "assets/audio/audio/drink.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio/eat.mp3",
+      "path": "assets/audio/audio/eat.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio/endportal.mp3",
+      "path": "assets/audio/audio/endportal.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio/eyeplace.mp3",
+      "path": "assets/audio/audio/eyeplace.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio/hurt_2.mp3",
+      "path": "assets/audio/audio/hurt_2.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio/music.mp3",
+      "path": "assets/audio/audio/music.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio/pop.mp3",
+      "path": "assets/audio/audio/pop.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio/portal.mp3",
+      "path": "assets/audio/audio/portal.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio/Shield.mp3",
+      "path": "assets/audio/audio/Shield.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio/step_2.mp3",
+      "path": "assets/audio/audio/step_2.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio/stone.mp3",
+      "path": "assets/audio/audio/stone.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio/use_totem.mp3",
+      "path": "assets/audio/audio/use_totem.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio/weak.mp3",
+      "path": "assets/audio/audio/weak.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio/倒计时.mp3",
+      "path": "assets/audio/audio/倒计时.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio/加速道具.mp3",
+      "path": "assets/audio/audio/加速道具.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio/引擎.mp3",
+      "path": "assets/audio/audio/引擎.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio/引擎加速.mp3",
+      "path": "assets/audio/audio/引擎加速.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio/终点前两圈.mp3",
+      "path": "assets/audio/audio/终点前两圈.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio/鼓掌.mp3",
+      "path": "assets/audio/audio/鼓掌.mp3",
+      "kind": "audio"
+    }
+  ],
   "scripts": {
     "server": "scripts/index.js",
-    "client": null,
+    "client": "scripts/clientIndex.js",
     "serverModules": [
       "scripts/index.js",
-      "scripts/water.js",
-      "scripts/TerrainCopy.js",
-      "scripts/data.js",
-      "scripts/_server_bundle.js",
-      "scripts/teleport.js",
+      "scripts/islandmodule.js",
+      "scripts/playerforward.js",
+      "scripts/script_1.js",
       "scripts/Hearts.js",
-      "scripts/ban.js",
-      "scripts/chat.js",
-      "scripts/Voxel.js",
-      "scripts/world.js",
-      "scripts/bag.js",
-      "scripts/player.js",
       "scripts/PlayerOpTool.js",
-      "scripts/biology.js",
-      "scripts/gui.js",
+      "scripts/Start.js",
+      "scripts/TerrainCopy.js",
+      "scripts/Voxel.js",
+      "scripts/_client_bundle.js",
+      "scripts/_server_bundle.js",
       "scripts/admin.js",
+      "scripts/bag.js",
+      "scripts/ban.js",
+      "scripts/biology.js",
+      "scripts/chat.js",
       "scripts/crafting.js",
+      "scripts/data.js",
+      "scripts/dialog.js",
+      "scripts/gui.js",
+      "scripts/heart.js",
+      "scripts/player.js",
       "scripts/sql.js",
+      "scripts/teleport.js",
+      "scripts/water.js",
+      "scripts/world.js",
       "scripts/月神版兑换码.js",
       "scripts/末影龙.js"
+    ],
+    "clientModules": [
+      "scripts/clientIndex.js",
+      "scripts/heart.js",
+      "scripts/Start.js",
+      "scripts/dialog.js",
+      "scripts/_client_bundle.js"
     ],
     "serverCapabilities": [
       "server.world.events",
@@ -59,6 +929,10 @@
       "server.remote-channel",
       "server.http"
     ],
-    "clientCapabilities": []
+    "clientCapabilities": [
+      "client.core",
+      "client.ui",
+      "client.remote-channel"
+    ]
   }
 }

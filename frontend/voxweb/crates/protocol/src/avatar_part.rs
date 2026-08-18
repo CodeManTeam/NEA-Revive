@@ -248,18 +248,9 @@ mod tests {
     fn decodes_self_written_empty_parts() {
         // leftShoulder id=6 / neck id=9 / rightShoulder id=14
         for (hex, expected_id) in [
-            (
-                "03060c00c000000c00c0803f803f803f803f",
-                6u8,
-            ),
-            (
-                "03090c00c000000c00c0803f803f803f803f",
-                9u8,
-            ),
-            (
-                "030e0c00c000000c00c0803f803f803f803f",
-                14u8,
-            ),
+            ("03060c00c000000c00c0803f803f803f803f", 6u8),
+            ("03090c00c000000c00c0803f803f803f803f", 9u8),
+            ("030e0c00c000000c00c0803f803f803f803f", 14u8),
         ] {
             let bytes: Vec<u8> = (0..hex.len())
                 .step_by(2)

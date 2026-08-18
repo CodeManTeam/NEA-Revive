@@ -1,0 +1,1059 @@
+(function () {
+  "use strict";
+
+  const outbound = [];
+  let uiPictureAssets = Object.create(null);
+  const remoteEvents = createEmitter();
+  const pointerLockEvents = createEmitter();
+  const screenEvents = createEmitter();
+  const clientWorld = { events: createEmitter() };
+  Object.defineProperty(clientWorld, "rendering3d", {
+    enumerable: true,
+    get: () => clientWorld._rendering3d,
+    set: value => {
+      clientWorld._rendering3d = Boolean(value);
+      clientWorld.events.emit("rendering3d", { rendering3d: clientWorld._rendering3d });
+    },
+  });
+  clientWorld._rendering3d = true;
+  let mediaRecorder = null;
+  let mediaChunks = [];
+  let mediaPlayback = null;
+  const serverSounds = new Map();
+  const uiRoot = document.createElement("div");
+  uiRoot.id = "nea-client-ui";
+  uiRoot.style.cssText = "position:fixed;inset:0;z-index:20;pointer-events:none;overflow:hidden";
+  function appendToBody(element) {
+    if (document.body) document.body.appendChild(element);
+    else document.addEventListener("DOMContentLoaded", () => document.body?.appendChild(element), { once: true });
+  }
+  appendToBody(uiRoot);
+  window.addEventListener("nea-historical-ui-event", () => {
+    const detail = window.__NEA_HISTORICAL_UI_EVENT;
+    if (!detail || typeof detail !== "object") return;
+    const event = {
+      type: "gameUI",
+      event: String(detail.kind || ""),
+      nodeId: String(detail.nodeId || ""),
+    };
+    if (detail.value !== undefined) event.value = String(detail.value);
+    if (Number.isFinite(Number(detail.scrollTop))) event.scrollTop = Number(detail.scrollTop);
+    if (Number.isFinite(Number(detail.scrollLeft))) event.scrollLeft = Number(detail.scrollLeft);
+    outbound.push(event);
+    remoteEvents.emit("client", event);
+  });
+  const damageLayer = document.createElement("div");
+  damageLayer.id = "nea-damage-feedback";
+  damageLayer.style.cssText = "position:fixed;inset:0;z-index:19;pointer-events:none;overflow:hidden";
+  // The historical Player uses two image nodes and swaps numbered frames;
+  // keep that contract instead of inventing a CSS heart bar.
+  const healthBar = document.createElement("img");
+  healthBar.id = "health_bar";
+  healthBar.alt = "";
+  healthBar.style.cssText = "position:absolute;left:20px;bottom:74px;width:180px;height:24px;object-fit:contain;object-position:left center;display:block;z-index:1;image-rendering:auto";
+  const extraHpBar = document.createElement("img");
+  extraHpBar.id = "extra_hp_bar";
+  extraHpBar.alt = "";
+  extraHpBar.style.cssText = "position:absolute;left:20px;bottom:74px;width:180px;height:24px;object-fit:contain;object-position:left center;display:none;z-index:1;image-rendering:auto";
+  // A missing project picture must not leak the browser's broken-image glyph
+  // into the HUD. The original Player receives these through gameUI picture
+  // assets; until that asset dictionary is present, keep the slot invisible.
+  for (const imageNode of [healthBar, extraHpBar]) {
+    imageNode.addEventListener("error", () => {
+      imageNode.removeAttribute("src");
+      imageNode.style.display = "none";
+    });
+  }
+  damageLayer.appendChild(healthBar);
+  damageLayer.appendChild(extraHpBar);
+  // Recovered player UI: hearts/Dieui is a hidden fullscreen overlay with a
+  // centered "you died" tip. Keep the layout in viewport ratios from ui.json.
+  const deathOverlay = document.createElement("div");
+  deathOverlay.id = "nea-death-overlay";
+  deathOverlay.style.cssText = "position:absolute;inset:0;background:rgb(65 1 1 / .5);display:none;pointer-events:none;z-index:2";
+  const deathTip = document.createElement("div");
+  deathTip.textContent = "you died";
+  deathTip.style.cssText = "position:absolute;left:29.492%;top:22.754%;width:40.625%;height:7.422%;display:flex;align-items:center;justify-content:center;color:rgb(230 230 230);font:20px Arial,sans-serif;line-height:1.199;text-align:left;white-space:pre;text-shadow:none";
+  deathOverlay.appendChild(deathTip);
+  damageLayer.appendChild(deathOverlay);
+  const gameplayHud = document.createElement("div");
+  gameplayHud.id = "nea-gameplay-hud";
+  gameplayHud.style.cssText = "position:fixed;right:18px;bottom:22px;z-index:22;min-width:180px;padding:9px 12px;background:rgba(8,12,16,.78);border:1px solid rgba(255,255,255,.28);color:white;font:600 13px/1.45 system-ui,sans-serif;pointer-events:none;display:none";
+  appendToBody(gameplayHud);
+  const dialogLayer = document.createElement("div");
+  dialogLayer.id = "nea-historical-dialog";
+  dialogLayer.style.cssText = "position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.35);pointer-events:auto";
+  appendToBody(dialogLayer);
+  let activeDialog = null;
+  function closeHistoricalDialog(result) {
+    if (!activeDialog) return;
+    outbound.push({ type: "dialog", name: "close", rpcId: activeDialog.rpcId, result });
+    activeDialog = null;
+    dialogLayer.replaceChildren();
+    dialogLayer.style.display = "none";
+  }
+  function openHistoricalDialog(dialog) {
+    activeDialog = dialog;
+    dialogLayer.replaceChildren();
+    const box = document.createElement("div");
+    box.style.cssText = "width:min(560px,calc(100vw - 40px));padding:24px;background:#182027;color:#eef4f1;border:1px solid rgba(255,255,255,.35);box-shadow:0 10px 40px rgba(0,0,0,.55);font:15px/1.5 system-ui,sans-serif;pointer-events:auto";
+    if (dialog.config?.title) { const title=document.createElement("h2"); title.textContent=dialog.config.title; title.style.margin="0 0 12px"; box.appendChild(title); }
+    const content=document.createElement("p"); content.textContent=dialog.config?.content || ""; box.appendChild(content);
+    const kind = Object.keys(dialog.config || {})[0];
+    if (kind === "input") {
+      const input=document.createElement("input"); input.placeholder=dialog.config.placeholder || ""; input.style.cssText="display:block;width:100%;box-sizing:border-box;margin:14px 0;padding:9px;background:#0d1317;color:#fff;border:1px solid #778"; box.appendChild(input);
+      const ok=document.createElement("button"); ok.textContent=dialog.config.confirmText || "确定"; ok.onclick=()=>closeHistoricalDialog({type:"input",value:input.value}); box.appendChild(ok);
+    } else if (kind === "select") {
+      (dialog.config.options || []).forEach((value,index)=>{ const button=document.createElement("button"); button.textContent=value; button.style.cssText="display:block;width:100%;margin:6px 0;padding:9px;text-align:left"; button.onclick=()=>closeHistoricalDialog({type:"select",index,value}); box.appendChild(button); });
+    } else {
+      const ok=document.createElement("button"); ok.textContent="确定"; ok.onclick=()=>closeHistoricalDialog({type:"close"}); box.appendChild(ok);
+    }
+    dialogLayer.appendChild(box); dialogLayer.style.display="flex";
+  }
+  const particleLayer = document.createElement("div");
+  particleLayer.id = "nea-particle-layer";
+  particleLayer.style.cssText = "position:fixed;inset:0;z-index:18;pointer-events:none;overflow:hidden";
+  appendToBody(particleLayer);
+  let particleConfig = null;
+  let particleLastMs = performance.now();
+  let particleAccumulator = 0;
+  const damageStyle = document.createElement("style");
+  damageStyle.textContent = "@keyframes neaDamageFloat{0%{opacity:0;transform:translate(-50%,8px) scale(.7)}15%{opacity:1;transform:translate(-50%,-4px) scale(1.12)}100%{opacity:0;transform:translate(-50%,-64px) scale(.9)}}@keyframes neaRespawnFlash{0%{opacity:0}30%{opacity:1}100%{opacity:0}}";
+  document.head.appendChild(damageStyle);
+  appendToBody(damageLayer);
+
+  const chatInput = document.createElement("input");
+  chatInput.id = "nea-chat-input";
+  chatInput.placeholder = "输入消息...";
+  chatInput.style.cssText = "position:fixed;left:20px;bottom:20px;z-index:35;width:min(400px,calc(100vw - 40px));height:34px;padding:0 10px;border:1px solid rgba(255,255,255,.38);border-radius:3px;background:rgba(24,28,31,.92);color:#e2eae5;font:14px system-ui,sans-serif;outline:none;display:none;pointer-events:auto;box-sizing:border-box";
+  appendToBody(chatInput);
+  const chatHistory = document.createElement("div");
+  chatHistory.id = "nea-chat-history";
+  chatHistory.style.cssText = "position:fixed;left:20px;bottom:240px;z-index:34;width:min(400px,calc(100vw - 40px));max-height:200px;overflow:hidden;padding:6px 8px;color:#e2eae5;font:14px/1.4 system-ui,sans-serif;text-shadow:0 1px 2px #000;background:rgba(24,28,31,.56);border-radius:3px;pointer-events:none;box-sizing:border-box";
+  appendToBody(chatHistory);
+  function appendChatLine(text, kind = "user") {
+    const line = document.createElement("div");
+    line.textContent = String(text);
+    line.style.cssText = kind === "system" ? "color:#c8d0d8" : "color:#fff";
+    chatHistory.appendChild(line);
+    while (chatHistory.children.length > 8) chatHistory.firstElementChild?.remove();
+    clearTimeout(chatHistory._hideTimer);
+    chatHistory.style.opacity = "1";
+    chatHistory._hideTimer = setTimeout(() => { chatHistory.style.opacity = ".72"; }, 9000);
+  }
+  function closeChat() {
+    chatInput.style.display = "none";
+    chatInput.value = "";
+    document.getElementById("game")?.focus();
+  }
+  window.addEventListener("keydown", event => {
+    if ((event.code === "KeyT" || event.key === "t" || event.key === "T") && chatInput.style.display === "none") {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      chatInput.style.display = "block";
+      chatInput.focus();
+      return;
+    }
+    if (document.activeElement !== chatInput) return;
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      closeChat();
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      const message = chatInput.value.trim();
+      if (message) {
+        appendChatLine(`Player: ${message}`);
+        outbound.push({ type: "nea-revive:chat", message });
+      }
+      closeChat();
+    }
+  }, true);
+
+  const ui = createUiRoot();
+  const input = {
+    pointerLockEvents,
+    lockPointer: () => document.getElementById("game")?.requestPointerLock(),
+    unlockPointer: () => document.exitPointerLock(),
+  };
+  document.addEventListener("pointerlockchange", () => {
+    pointerLockEvents.emit("pointerlockchange", { isLocked: document.pointerLockElement !== null });
+  });
+  document.addEventListener("pointerlockerror", () => {
+    pointerLockEvents.emit("pointerlockerror", undefined);
+  });
+  window.addEventListener("resize", () => {
+    screenEvents.emit("resize", { screenWidth: window.innerWidth, screenHeight: window.innerHeight });
+  });
+
+  const runtime = {
+    modules: Object.create(null),
+    cache: Object.create(null),
+    install(json) {
+      const modules = JSON.parse(json);
+      if (!modules || typeof modules !== "object" || Array.isArray(modules)) throw new Error("Client modules must be an object");
+      const uiState = typeof modules.__nea_ui_state__ === "string"
+        ? JSON.parse(modules.__nea_ui_state__)
+        : null;
+      delete modules.__nea_ui_state__;
+      runtime.modules = Object.assign(Object.create(null), modules);
+      runtime.cache = Object.create(null);
+      uiPictureAssets = uiState?.pictureAssets && typeof uiState.pictureAssets === "object"
+        ? uiState.pictureAssets
+        : Object.create(null);
+      if (typeof runtime.modules["clientIndex.js"] !== "string") throw new Error("Client modules are missing clientIndex.js");
+      installUiState(uiState);
+      loadModule("clientIndex.js");
+    },
+    receive(json) {
+      const event = JSON.parse(json);
+      if (event?.type === "nea-revive:gui" || event?.type === "nea-historical-gui") applyGuiCommand(event.command);
+      else if (event?.type === "nea-historical-dialog-open") openHistoricalDialog(event.dialog);
+      else if (event?.type === "nea-historical-dialog-cancel") { activeDialog = null; dialogLayer.replaceChildren(); dialogLayer.style.display = "none"; }
+      else if (event?.type === "nea-revive:link") applyPlayerLink(event);
+      else if (event?.type === "nea-revive:damage-state") applyDamageState(event);
+      else if (event?.type === "nea-revive:player-gameplay") applyGameplayState(event);
+      else if (event?.type === "nea-revive:sound") applySoundCommand(event.command);
+      else if (event?.type === "nea-revive:player-ui") applyPlayerUi(event);
+      else remoteEvents.emit("client", event);
+    },
+    drain() {
+      return JSON.stringify(outbound.splice(0));
+    },
+  };
+
+  function applyDamageState(event) {
+    const hp = Number(event.state?.hp);
+    const maxHp = Math.max(1, Number(event.state?.maxHp) || 100);
+    const ratio = clamp(hp / maxHp, 0, 1);
+    const frame = Math.ceil(Math.max(hp, 0) + 1);
+    const image = `picture/health_bar${frame}.png`;
+    const imageUrl = resolvePictureUrl(image);
+    if (imageUrl) {
+      healthBar.src = imageUrl;
+      extraHpBar.src = imageUrl;
+      healthBar.style.display = hp > 20 ? "none" : "block";
+      extraHpBar.style.display = hp > 20 ? "block" : "none";
+    } else {
+      healthBar.removeAttribute("src");
+      extraHpBar.removeAttribute("src");
+      healthBar.style.display = "none";
+      extraHpBar.style.display = "none";
+    }
+    healthBar.dataset.image = image;
+    extraHpBar.dataset.image = image;
+    if (Number(event.events?.hurt) > 0) {
+      // Keep the recovered damage event affordance for maps that opt into it;
+      // the canonical player UI itself does not expose a persistent HUD bar.
+      const amount = document.createElement("div");
+      amount.className = "nea-damage-number";
+      amount.textContent = `${Math.round(Number(event.events.hurt) * 100) / 100}`;
+      amount.style.cssText = "position:absolute;left:50%;top:43%;color:#ff5968;font:700 19px/1 Arial,sans-serif;text-shadow:0 1px 2px #350000;animation:neaDamageFloat 900ms ease-out forwards";
+      damageLayer.appendChild(amount);
+      setTimeout(() => amount.remove(), 950);
+      damageLayer.style.background = "rgb(255 0 0 / .18)";
+      damageLayer.style.boxShadow = "inset 0 0 1px 0 rgba(190,24,36,0.01)";
+      setTimeout(() => { damageLayer.style.background = "transparent"; }, 110);
+    }
+    if (event.events?.die) {
+      deathOverlay.style.display = "block";
+    }
+    if (event.events?.respawn) {
+      deathOverlay.style.display = "none";
+      const flash = document.createElement("div");
+      flash.className = "nea-respawn-flash";
+      flash.style.cssText = "position:absolute;inset:0;background:white;animation:neaRespawnFlash 520ms ease-out forwards";
+      damageLayer.appendChild(flash);
+      setTimeout(() => flash.remove(), 560);
+    }
+    remoteEvents.emit("client", event);
+  }
+
+  function resolvePictureUrl(name) {
+    const asset = uiPictureAssets[String(name || "")];
+    const hash = typeof asset?.hash === "string" ? asset.hash : "";
+    if (!/^[A-Za-z0-9_-]{43}$/.test(hash)) return null;
+    try {
+      const sessionUrl = new URLSearchParams(window.location.search).get("nea");
+      if (!sessionUrl) return null;
+      return new URL(`/engine/m/${hash}`, new URL(sessionUrl).origin).href;
+    } catch {
+      return null;
+    }
+  }
+
+  function applyGameplayState(event) {
+    const modeNames = ["SURVIVAL", "CREATIVE", "ADVENTURE", "SPECTATOR"];
+    const items = Object.entries(event.inventory || {}).filter(([, count]) => Number(count) > 0);
+    const latest = event.item ? `${escapeHtml(event.item)} x${Number(event.count) || 0}` : items.slice(-1).map(([name, count]) => `${escapeHtml(name)} x${count}`).join("");
+    gameplayHud.innerHTML = `<div style="color:#79e5b2">${modeNames[event.gamemode] || "SURVIVAL"}</div>${latest ? `<div>${latest}</div>` : ""}<div style="opacity:.65">${items.length} item types</div>`;
+    gameplayHud.style.display = "block";
+    gameplayHud.style.opacity = "1";
+    clearTimeout(gameplayHud._hideTimer);
+    gameplayHud._hideTimer = setTimeout(() => { gameplayHud.style.opacity = ".35"; }, 2200);
+    if (event.particles) particleConfig = normalizeParticleConfig(event.particles);
+    remoteEvents.emit("client", event);
+  }
+
+  function normalizeParticleConfig(value) {
+    const config = value || {};
+    return {
+      rate: Math.max(0, Math.min(120, Number(config.rate) || 0)),
+      limit: Math.max(0, Math.min(300, Number(config.limit) || 100)),
+      lifetime: Math.max(.05, Math.min(30, Number(config.lifetime) || 10)),
+      size: Array.isArray(config.size) && config.size.length ? config.size.map(Number) : [1, 1, 1, 1, 1],
+      color: Array.isArray(config.color) && config.color.length ? config.color : [[1, 1, 1]],
+      velocity: Array.isArray(config.velocity) ? config.velocity.map(Number) : [0, .5, 0],
+    };
+  }
+
+  function tickParticles(now) {
+    const dt = Math.min(.1, Math.max(0, (now - particleLastMs) / 1000));
+    particleLastMs = now;
+    if (particleConfig?.rate > 0 && particleLayer.childElementCount < particleConfig.limit) {
+      particleAccumulator += particleConfig.rate * dt;
+      while (particleAccumulator >= 1 && particleLayer.childElementCount < particleConfig.limit) {
+        particleAccumulator -= 1;
+        const dot = document.createElement("i");
+        const color = particleConfig.color[Math.floor(Math.random() * particleConfig.color.length)] || [1, 1, 1];
+        const size = Math.max(1, Number(particleConfig.size[0]) || 1) * 2;
+        dot.style.cssText = `position:absolute;left:${45 + Math.random() * 10}%;top:${42 + Math.random() * 16}%;width:${size}px;height:${size}px;border-radius:50%;background:rgb(${Math.round((color[0] ?? 1) * 255)} ${Math.round((color[1] ?? 1) * 255)} ${Math.round((color[2] ?? 1) * 255)});opacity:.9;box-shadow:0 0 ${size * 2}px currentColor;`;
+        particleLayer.appendChild(dot);
+        const vx = Number(particleConfig.velocity[0]) || 0;
+        const vy = Number(particleConfig.velocity[1]) || .5;
+        const vz = Number(particleConfig.velocity[2]) || 0;
+        dot.animate([
+          { transform: "translate3d(0,0,0) scale(.6)", opacity: .9 },
+          { transform: `translate3d(${vx * 24 + (Math.random() - .5) * 80}px,${-vy * 120 - 20}px,${vz * 24}px) scale(1.4)`, opacity: 0 },
+        ], { duration: particleConfig.lifetime * 1000, easing: "linear" }).finished.then(() => dot.remove()).catch(() => dot.remove());
+      }
+    }
+    window.requestAnimationFrame(tickParticles);
+  }
+  window.requestAnimationFrame(tickParticles);
+
+  function applySoundCommand(command = {}) {
+    const soundId = Number(command.soundId);
+    let audio = serverSounds.get(soundId);
+    if (command.action === "play") {
+      if (!command.sampleUrl) return;
+      audio = new window.Audio(String(command.sampleUrl));
+      audio.volume = clamp(Number(command.gain ?? 1), 0, 1);
+      audio.playbackRate = clamp(Number(command.pitch ?? 1), 0.1, 4);
+      audio.addEventListener("ended", () => serverSounds.delete(soundId), { once: true });
+      serverSounds.set(soundId, audio);
+      audio.play().catch(() => {});
+      return;
+    }
+    if (!audio) return;
+    if (command.action === "pause") audio.pause();
+    if (command.action === "stop") { audio.pause(); audio.currentTime = 0; serverSounds.delete(soundId); }
+    if (command.action === "setCurrentTime" || command.action === "setCurrentTimeAndResume") audio.currentTime = Math.max(0, Number(command.currentTime) || 0);
+    if (command.action === "resume" || command.action === "setCurrentTimeAndResume") audio.play().catch(() => {});
+  }
+
+  function applyPlayerUi(event) {
+    document.querySelector("#nea-player-modal")?.remove();
+    const backdrop = document.createElement("div");
+    backdrop.id = "nea-player-modal";
+    backdrop.style.cssText = "position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:rgba(0,0,0,.55);pointer-events:auto";
+    const panel = document.createElement("div");
+    panel.style.cssText = "width:min(420px,calc(100vw - 32px));padding:20px;background:#111820;border:1px solid rgba(255,255,255,.3);color:white;font:14px/1.5 system-ui,sans-serif";
+    if (event.action === "marketplace") {
+      panel.innerHTML = `<strong style="font-size:18px">地图商店</strong><div style="margin-top:12px">${(event.productIds || []).map(id => `<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,.12)">商品 ${escapeHtml(id)}</div>`).join("") || "暂无商品"}</div>`;
+    } else if (event.action === "profile") {
+      panel.innerHTML = `<strong style="font-size:18px">玩家资料</strong><div style="margin-top:12px">用户 ID：${escapeHtml(event.userId)}</div>`;
+    } else {
+      panel.innerHTML = `<strong style="font-size:18px">分享地图</strong><div style="margin-top:12px;white-space:pre-wrap">${escapeHtml(event.content || "")}</div>`;
+    }
+    const close = document.createElement("button");
+    close.textContent = "关闭";
+    close.style.cssText = "margin-top:18px;padding:8px 18px;border:1px solid rgba(255,255,255,.35);background:#2b725d;color:white;cursor:pointer";
+    close.addEventListener("click", () => backdrop.remove());
+    panel.appendChild(close);
+    backdrop.appendChild(panel);
+    backdrop.addEventListener("pointerdown", pointer => { if (pointer.target === backdrop) backdrop.remove(); });
+    document.body.appendChild(backdrop);
+    remoteEvents.emit("client", event);
+  }
+
+  function loadModule(name) {
+    const normalized = normalizeModuleName(name);
+    if (runtime.cache[normalized]) return runtime.cache[normalized].exports;
+    const source = runtime.modules[normalized];
+    if (typeof source !== "string") throw new Error(`Unknown client module: ${normalized}`);
+    const module = { exports: {} };
+    runtime.cache[normalized] = module;
+    const require = request => loadModule(resolveModule(normalized, request));
+    const globals = createGlobals();
+    const names = Object.keys(globals);
+    const values = names.map(key => globals[key]);
+    const compatibleSource = transformClientModuleSource(source);
+    const execute = new Function(...names, "module", "exports", "require", `${compatibleSource}\n//# sourceURL=nea-client://${normalized}`);
+    execute(...values, module, module.exports, require);
+    return module.exports;
+  }
+
+  function transformClientModuleSource(source) {
+    const exported = [];
+    let transformed = source
+      .replace(/^\s*import\s+["'](.+?)["']\s*;?\s*$/gm, (_, request) => `require(${JSON.stringify(request)});`)
+      .replace(/^\s*import\s+\{([^}]+)\}\s+from\s+["'](.+?)["']\s*;?\s*$/gm, (_, bindings, request) => {
+        const destructured = bindings.split(",").map(binding => {
+          const [imported, local] = binding.trim().split(/\s+as\s+/);
+          return local ? `${imported}: ${local}` : imported;
+        }).join(", ");
+        return `const { ${destructured} } = require(${JSON.stringify(request)});`;
+      })
+      .replace(/^\s*import\s+\*\s+as\s+([A-Za-z_$][\w$]*)\s+from\s+["'](.+?)["']\s*;?\s*$/gm, (_, local, request) => `const ${local} = require(${JSON.stringify(request)});`)
+      .replace(/^\s*export\s+\{([^}]+)\}\s*;?\s*$/gm, (_, bindings) => {
+        for (const binding of bindings.split(",")) {
+          const [local, exportedName] = binding.trim().split(/\s+as\s+/);
+          if (local) exported.push([exportedName || local, local]);
+        }
+        return "";
+      })
+      .replace(/^\s*export\s+(const|let|var|function|class)\s+([A-Za-z_$][\w$]*)/gm, (_, kind, name) => {
+        exported.push([name, name]);
+        return `${kind} ${name}`;
+      });
+    if (exported.length) transformed += `\n${exported.map(([name, local]) => `exports[${JSON.stringify(name)}] = ${local};`).join("\n")}`;
+    return transformed;
+  }
+
+  function createGlobals() {
+    return {
+      console,
+      setTimeout,
+      clearTimeout,
+      setInterval,
+      clearInterval,
+      fetch,
+      navigator: {
+        userAgent: window.navigator.userAgent,
+        language: window.navigator.language,
+        getDeviceInfo: () => ({
+          deviceType: /Android|iPhone|iPad|Mobile/i.test(window.navigator.userAgent) ? "Mobile" : "Desktop",
+          screen: { width: window.innerWidth, height: window.innerHeight },
+        }),
+      },
+      Audio: CompatAudio,
+      MediaError: CompatMediaError,
+      MediaErrorCode: Object.freeze({ MEDIA_ERR_ABORTED: 1, MEDIA_ERR_NETWORK: 2, MEDIA_ERR_DECODE: 3, MEDIA_ERR_SRC_NOT_SUPPORTED: 4 }),
+      Blob: window.Blob,
+      media: {
+        async startRecording() {
+          if (!window.navigator.mediaDevices?.getUserMedia) throw new Error("Audio recording is unavailable");
+          const stream = await window.navigator.mediaDevices.getUserMedia({ audio: true });
+          mediaChunks = [];
+          mediaRecorder = new MediaRecorder(stream);
+          mediaRecorder.addEventListener("dataavailable", event => { if (event.data?.size) mediaChunks.push(event.data); });
+          mediaRecorder.start();
+        },
+        stopRecording() {
+          if (!mediaRecorder) return Promise.resolve(new Blob([], { type: "audio/wav" }));
+          return new Promise(resolve => {
+            const recorder = mediaRecorder;
+            recorder.addEventListener("stop", () => {
+              for (const track of recorder.stream.getTracks()) track.stop();
+              mediaRecorder = null;
+              resolve(new Blob(mediaChunks, { type: recorder.mimeType || "audio/webm" }));
+            }, { once: true });
+            recorder.stop();
+          });
+        },
+        async playAudio(spec = {}) {
+          const blob = spec.blob instanceof Blob ? spec.blob : new Blob(mediaChunks, { type: "audio/webm" });
+          if (mediaPlayback) mediaPlayback.pause();
+          mediaPlayback = new Audio(URL.createObjectURL(blob));
+          mediaPlayback.volume = clamp(Number(spec.gain ?? 1), 0, 1);
+          await mediaPlayback.play();
+        },
+        stopPlayAudio() {
+          mediaPlayback?.pause();
+          mediaPlayback = null;
+        },
+      },
+      structuredClone,
+      remoteChannel: {
+        events: remoteEvents,
+        sendServerEvent(event) { outbound.push(structuredClone(event)); },
+      },
+      input,
+      http: { fetch: (...args) => fetch(...args) },
+      world: clientWorld,
+      ui,
+      screen: { events: screenEvents },
+      UiText: { create: () => createUiNode("text") },
+      UiBox: { create: () => createUiNode("box") },
+      UiImage: { create: () => createUiNode("image") },
+      UiInput: { create: () => createUiNode("input") },
+      UiScrollBox: { create: () => createUiNode("scroll") },
+      UiScale: { create: () => ({ scale: 1 }) },
+      UiScreen: {
+        getAllScreen: () => ui.children.filter(child => child.kind === "screen"),
+        create: () => {
+          const screen = createUiNode("screen");
+          screen.size.ratio.copy({ x: 1, y: 1 });
+          screen.visible = true;
+          screen.parent = ui;
+          return screen;
+        },
+      },
+      PointerEventBehavior: {
+        DISABLE_AND_BLOCK_PASS_THROUGH: 0,
+        DISABLE: 1,
+        BLOCK_PASS_THROUGH: 2,
+        ENABLE: 3,
+      },
+      UITextFontFamily: Object.freeze({ Default: "Default", BoldRound: "BoldRound", CodeNewRomanBold: "CodeNewRomanBold", ENSerif: "ENSerif" }),
+      screenWidth: window.innerWidth || 1280,
+      screenHeight: window.innerHeight || 720,
+      Vec2: { create: value => createVector(value) },
+      Vec3: { create: value => createVector(value) },
+    };
+  }
+
+  function createEmitter() {
+    const listeners = new Map();
+    return Object.freeze({
+      on(name, handler) { add(name, handler); return () => remove(name, handler); },
+      add(name, handler) { add(name, handler); },
+      remove(name, handler) { remove(name, handler); },
+      off(name, handler) { if (handler) remove(name, handler); else listeners.delete(name); },
+      removeAll(name, handler) {
+        if (name === undefined) listeners.clear();
+        else if (handler) remove(name, handler);
+        else listeners.delete(name);
+      },
+      emit(name, event) { for (const handler of [...(listeners.get(name) || [])]) handler(event); },
+    });
+    function add(name, handler) {
+      if (typeof handler !== "function") throw new TypeError("Event handler must be a function");
+      const bucket = listeners.get(name) || new Set();
+      bucket.add(handler);
+      listeners.set(name, bucket);
+    }
+    function remove(name, handler) { listeners.get(name)?.delete(handler); }
+  }
+
+  class CompatMediaError {
+    constructor(code, message) {
+      this.code = Number(code) || 0;
+      this.message = String(message || "");
+    }
+  }
+
+  class CompatAudio {
+    constructor(src = "") {
+      this._audio = new window.Audio(String(src));
+      this.events = createEmitter();
+      for (const name of ["loadeddata", "ended", "error"]) {
+        this._audio.addEventListener(name, () => this.events.emit(name, this));
+      }
+    }
+    get src() { return this._audio.src; }
+    set src(value) { this._audio.src = String(value || ""); }
+    get volume() { return this._audio.volume; }
+    set volume(value) { this._audio.volume = clamp(Number(value), 0, 1); }
+    get error() {
+      const error = this._audio.error;
+      return error ? new CompatMediaError(error.code, error.message) : null;
+    }
+    play() { return this._audio.play(); }
+    pause() { this._audio.pause(); }
+    load() { this._audio.load(); }
+    add(name, handler) { this.events.add(name, handler); }
+    on(name, handler) { return this.events.on(name, handler); }
+    remove(name, handler) { this.events.remove(name, handler); }
+  }
+
+  function createVector(value, changed) {
+    const target = {};
+    for (const [key, component] of Object.entries(value || {})) {
+      if (typeof component !== "function") target[key] = component;
+    }
+    Object.defineProperties(target, {
+      copy: { enumerable: false, value(next) {
+        if (next && typeof next === "object") Object.assign(this, next);
+        return this;
+      } },
+      clone: { enumerable: false, value() { return createVector(this); } },
+    });
+    return new Proxy(target, {
+      set(object, key, next) {
+        object[key] = next;
+        changed?.();
+        return true;
+      },
+    });
+  }
+
+  function createUiRoot() {
+    let uiScale = { scale: 1 };
+    const root = {
+      name: "screen",
+      element: uiRoot,
+      children: [],
+      findChildByName(name) { return findChildByName(this, name); },
+    };
+    Object.defineProperty(root, "uiScale", {
+      get: () => uiScale,
+      set: value => {
+        uiScale = value && typeof value === "object" ? value : { scale: 1 };
+        const scale = Number(uiScale.scale) || 1;
+        const apply = node => {
+          if (node.uiScale?.copy) node.uiScale.copy({ scale });
+          for (const child of node.children || []) apply(child);
+        };
+        for (const child of root.children) apply(child);
+      },
+    });
+    return root;
+  }
+
+  function findChildByName(root, name) {
+    if (Array.isArray(name)) {
+      for (const candidate of name) {
+        const found = findChildByName(root, candidate);
+        if (found) return found;
+      }
+      return null;
+    }
+    const wanted = String(name);
+    for (const child of root.children || []) {
+      if (child.name === wanted) return child;
+      const nested = findChildByName(child, wanted);
+      if (nested) return nested;
+    }
+    return null;
+  }
+
+  function installUiState(state) {
+    for (const child of [...ui.children]) child.parent = null;
+    if (!state?.uiTree || typeof state.uiTree !== "object") return;
+    const nodes = new Map();
+    for (const raw of Object.values(state.uiTree)) {
+      if (!raw || raw.id === "ROOT_ID") continue;
+      const valueType = raw.value?.type;
+      const data = valueType === "screen" ? raw.value?.data || {} : raw.value?.data?.data || {};
+      const kind = valueType === "screen" ? "screen" : raw.value?.data?.type || (valueType === "text" ? "text" : "box");
+      const node = createUiNode(kind === "image" ? "image" : kind === "text" ? "text" : kind === "screen" ? "screen" : "box");
+      node.id = String(raw.id);
+      node.name = String(raw.name || raw.id);
+      if (kind === "screen") {
+        node.position.offset.copy({ x: 0, y: 0 });
+        node.position.ratio.copy({ x: 0, y: 0 });
+        node.size.offset.copy({ x: 0, y: 0 });
+        node.size.ratio.copy({ x: 1, y: 1 });
+        node.visible = data.enable !== false;
+        node.zIndex = Number(data.zIndex) || 0;
+      } else {
+        applyRecoveredUiData(node, data);
+      }
+      nodes.set(node.id, { node, raw });
+    }
+    for (const { node, raw } of nodes.values()) {
+      node.parent = nodes.get(String(raw.parentId))?.node || ui;
+    }
+    // Older dump Player packages carried chat children at screen scope while
+    // clientIndex.js expects the historical scrollBox container. Reconstruct
+    // that harmless structural wrapper so the original script can run.
+    if (!findChildByName(ui, "scrollBox")) {
+      const msg = findChildByName(ui, "msgContent");
+      const title = findChildByName(ui, "titleContent");
+      if (msg || title) {
+        const scroll = createUiNode("scroll");
+        scroll.name = "scrollBox";
+        scroll.size.ratio.copy({ x: 1, y: 1 });
+        scroll.parent = ui;
+        if (msg) msg.parent = scroll;
+        if (title) title.parent = scroll;
+      }
+    }
+    // Some archived Player UI snapshots omit optional gameplay containers
+    // that the matching client script still probes at startup. Keep those
+    // probes harmless without changing the script's public API.
+    if (findChildByName(ui, "health_bar")) {
+      for (const name of ["inventoryImage", "shopImage", "chestImage", "shadow", "armor", "text", "invItem", "invQuickItem", "shopItem", "chestItem"]) {
+        if (!findChildByName(ui, name)) {
+          const placeholder = createUiNode("box");
+          placeholder.name = name;
+          placeholder.visible = false;
+          placeholder.parent = ui;
+        }
+      }
+    }
+    // Exports may contain both the 1x and 2x HUD trees enabled at once. The
+    // original client selects one scale; showing both creates duplicated text
+    // and overlapping full-screen panels. Prefer the 2x tree on desktop.
+    const screens = ui.children.filter(child => child.kind === "screen");
+    if (window.innerWidth >= 1000 && screens.some(screen => screen.name.endsWith("-UI2"))) {
+      for (const screen of screens) {
+        if (!screen.name.endsWith("-UI2")) screen.visible = false;
+      }
+    }
+  }
+
+  function applyPlayerLink(event) {
+    const href = String(event?.href || "");
+    if (!/^https?:\/\//i.test(href)) return;
+    if (event?.options?.isConfirm !== false && !window.confirm(`Open ${href}?`)) return;
+    window.open(href, event?.options?.isNewTab === false ? "_self" : "_blank", "noopener");
+  }
+
+  function applyGuiCommand(command) {
+    if (!command || typeof command !== "object") return;
+    const handle = Number(command.handle) || 0;
+    const selector = String(command.selector || "");
+    const reply = (name, payload) => outbound.push({ type: "gui", name, handle, ...payload });
+    if (command.operation === "reset") {
+      for (const element of [...uiRoot.querySelectorAll("[data-nea-gui-tag]")]) element.remove();
+      reply("return", { value: "" });
+      return;
+    }
+    if (command.operation === "append") {
+      const target = uiRoot.querySelector(selector);
+      if (!target) { reply("throw", { message: "GUI selector not found: " + selector }); return; }
+      const parsed = new DOMParser().parseFromString("<nea-root>" + String(command.data || "") + "</nea-root>", "application/xml");
+      if (parsed.querySelector("parsererror")) { reply("throw", { message: "GUI append markup parse failed" }); return; }
+      for (const source of [...parsed.documentElement.children]) target.appendChild(convertGuiElement(source));
+      reply("return", { value: "" });
+      return;
+    }
+    if (command.operation === "remove") {
+      for (const element of uiRoot.querySelectorAll(selector)) element.remove();
+      reply("return", { value: "" });
+      return;
+    }
+    if (command.operation === "setAttribute") {
+      for (const element of uiRoot.querySelectorAll(selector)) applyGuiAttribute(element, command.name, command.value);
+      reply("return", { value: "" });
+      return;
+    }
+    if (command.operation === "getAttribute") {
+      const element = uiRoot.querySelector(selector);
+      if (!element) { reply("throw", { message: "GUI selector not found: " + selector }); return; }
+      reply("return", { value: element.getAttribute(String(command.name || "")) || "" });
+      return;
+    }
+    if (command.operation === "show") {
+      const name = String(command.name || "");
+      const matches = [...uiRoot.querySelectorAll("[data-nea-gui-name=\"" + CSS.escape(name) + "\"]")];
+      if (!command.allowMultiple) matches.slice(1).forEach(element => element.remove());
+      matches.forEach(element => { element.style.display = ""; });
+      reply("return", { value: "" });
+      return;
+    }
+    if (command.operation !== "init") return;
+    for (const entry of Object.values(command.config || {})) {
+      if (!entry || entry.display === false || typeof entry.data !== "string") continue;
+      const documentFragment = new DOMParser().parseFromString(`<nea-root>${entry.data}</nea-root>`, "application/xml");
+      if (documentFragment.querySelector("parsererror")) continue;
+      for (const source of [...documentFragment.documentElement.children]) {
+        const element = convertGuiElement(source);
+        if (entry.name) element.dataset.neaGuiName = String(entry.name);
+        uiRoot.appendChild(element);
+      }
+    }
+    reply("return", { value: "" });
+  }
+
+  function convertGuiElement(source) {
+    const tag = source.tagName.toLowerCase();
+    const element = document.createElement(tag === "image" ? "img" : "div");
+    element.dataset.neaGuiTag = tag;
+    element.style.cssText = "position:absolute;box-sizing:border-box;pointer-events:none;color:white;font-family:sans-serif;white-space:pre-wrap";
+    for (const attribute of [...source.attributes]) applyGuiAttribute(element, attribute.name, attribute.value);
+    if (tag === "label") element.textContent = source.getAttribute("text") || "";
+    for (const child of [...source.children]) element.appendChild(convertGuiElement(child));
+    return element;
+  }
+
+  function applyGuiAttribute(element, rawName, value) {
+    const name = String(rawName || "").toLowerCase();
+    const px = value => `${Number(value) || 0}px`;
+    if (name === "id") element.id = String(value);
+    else if (name === "text") element.textContent = String(value ?? "");
+    else if (name === "left" || name === "top" || name === "right" || name === "bottom") element.style[name] = px(value);
+    else if (name === "width" || name === "height") element.style[name] = px(value);
+    else if (name === "percentwidth") element.style.width = `${Number(value) || 0}%`;
+    else if (name === "percentheight") element.style.height = `${Number(value) || 0}%`;
+    else if (name === "fontsize") element.style.fontSize = px(value);
+    else if (name === "color") element.style.backgroundColor = String(value);
+    else if (name === "textcolor") element.style.color = String(value);
+    else if (name === "opacity") element.style.opacity = String(Number(value));
+    else if (name === "align") element.style.textAlign = String(value);
+    else element.dataset[`nea${name.replace(/[^a-z0-9]/g, "")}`] = String(value);
+  }
+
+  function applyRecoveredUiData(node, data) {
+    const pair = value => Array.isArray(value) ? value : [0, 0];
+    const anchor = pair(data.anchor);
+    const positionOffset = pair(data.position?.offset);
+    const positionRatio = pair(data.position?.ratio);
+    const sizeOffset = pair(data.size?.offset);
+    const sizeRatio = pair(data.size?.ratio);
+    node.anchor.copy({ x: anchor[0], y: anchor[1] });
+    node.position.offset.copy({ x: positionOffset[0], y: positionOffset[1] });
+    node.position.ratio.copy({ x: positionRatio[0], y: positionRatio[1] });
+    node.size.offset.copy({ x: sizeOffset[0], y: sizeOffset[1] });
+    node.size.ratio.copy({ x: sizeRatio[0], y: sizeRatio[1] });
+    if (Array.isArray(data.textColor)) node.textColor.copy({ r: data.textColor[0], g: data.textColor[1], b: data.textColor[2] });
+    if (Array.isArray(data.backgroundColor)) node.backgroundColor.copy({ r: data.backgroundColor[0], g: data.backgroundColor[1], b: data.backgroundColor[2] });
+    if (data.textContent !== undefined) node.textContent = data.textContent;
+    if (data.textFontSize !== undefined) node.textFontSize = data.textFontSize;
+    if (data.backgroundOpacity !== undefined) node.backgroundOpacity = data.backgroundOpacity;
+    if (data.visible !== undefined) node.visible = data.visible;
+    if (data.textAlign !== undefined) node.textAlign = ["left", "center", "right"][Number(data.textAlign)] || data.textAlign;
+    node.zIndex = Number(data.zIndex) || 0;
+  }
+
+  function createUiNode(kind) {
+    const element = document.createElement(kind === "image" ? "img" : kind === "input" ? "input" : "div");
+    element.style.cssText = "position:absolute;box-sizing:border-box;white-space:pre-wrap;color:white;font:16px/1.35 sans-serif;text-shadow:0 1px 2px #000;pointer-events:none";
+    const node = {
+      element,
+      kind,
+      name: "",
+      anchor: createVector({}, refresh),
+      position: { offset: createVector({}, refresh), ratio: createVector({}, refresh), scale: createVector({ x: 1, y: 1 }, refresh) },
+      size: { offset: createVector({}, refresh), ratio: createVector({}, refresh), scale: createVector({ x: 1, y: 1 }, refresh) },
+      textColor: createVector({ r: 255, g: 255, b: 255 }, refresh),
+      textStrokeColor: createVector({}, refresh),
+      backgroundColor: createVector({ r: 0, g: 0, b: 0 }, refresh),
+      children: [],
+      events: createEmitter(),
+      uiScale: createVector({ scale: 1 }, refresh),
+      findChildByName(name) { return findChildByName(this, name); },
+      clone() {
+        const copy = createUiNode(kind);
+        copy.name = node.name;
+        copy.anchor.copy(node.anchor);
+        copy.position.offset.copy(node.position.offset);
+        copy.position.ratio.copy(node.position.ratio);
+        copy.position.scale.copy(node.position.scale);
+        copy.size.offset.copy(node.size.offset);
+        copy.size.ratio.copy(node.size.ratio);
+        copy.size.scale.copy(node.size.scale);
+        copy.textColor.copy(node.textColor);
+        copy.textStrokeColor.copy(node.textStrokeColor);
+        copy.backgroundColor.copy(node.backgroundColor);
+        copy.uiScale.copy(node.uiScale);
+        copy.textContent = node.textContent;
+        copy.textFontSize = node.textFontSize;
+        copy.backgroundOpacity = node.backgroundOpacity;
+        copy.visible = node.visible;
+        copy.borderRadius = node.borderRadius;
+        copy.textAlign = node.textAlign;
+        copy.rotation = node.rotation;
+        copy.richText = node.richText;
+        copy.autoWordWrap = node.autoWordWrap;
+        copy.textLineHeight = node.textLineHeight;
+        copy.textFontFamily = node.textFontFamily;
+        copy.textXAlignment = node.textXAlignment;
+        copy.textYAlignment = node.textYAlignment;
+        copy.autoResize = node.autoResize;
+        copy.textStrokeOpacity = node.textStrokeOpacity;
+        copy.textStrokeThickness = node.textStrokeThickness;
+        copy.image = node.image;
+        copy.imageOpacity = node.imageOpacity;
+        copy.imageDisplayMode = node.imageDisplayMode;
+        copy.placeholder = node.placeholder;
+        copy.placeholderColor.copy(node.placeholderColor);
+        copy.placeholderOpacity = node.placeholderOpacity;
+        copy.pointerEventBehavior = node.pointerEventBehavior;
+        copy.zIndex = node.zIndex;
+        copy.parent = node.parent;
+        for (const child of node.children) child.clone().parent = copy;
+        return copy;
+      },
+    };
+    const scrollPosition = createVector({ x: 0, y: 0 }, () => {
+      element.scrollLeft = Math.max(0, Number(scrollPosition.x) || 0);
+      element.scrollTop = Math.max(0, Number(scrollPosition.y) || 0);
+    });
+    node.scrollPosition = scrollPosition;
+    element.addEventListener("pointerdown", event => node.events.emit("pointerdown", { target: node, nativeEvent: event }));
+    element.addEventListener("pointerup", event => node.events.emit("pointerup", { target: node, nativeEvent: event }));
+    let parent = null;
+    let textContent = "";
+    let fontSize = 16;
+    let backgroundOpacity = 0;
+    let visible = true;
+    let borderRadius = 0;
+    let textAlign = "left";
+    let pointerEventBehavior = 0;
+    let rotation = 0;
+    let richText = false;
+    let autoWordWrap = false;
+    let textLineHeight = 1.2;
+    let textFontFamily = "Default";
+    let textXAlignment = "Center";
+    let textYAlignment = "Center";
+    let autoResize = "NONE";
+    let textStrokeOpacity = 1;
+    let textStrokeThickness = 0;
+    let imageOpacity = 1;
+    let imageDisplayMode = 0;
+    let placeholder = "Type something here";
+    let placeholderOpacity = 1;
+    const placeholderColor = createVector({ r: 255, g: 255, b: 255 }, refresh);
+    Object.defineProperties(node, {
+      parent: { get: () => parent, set(value) {
+        if (parent?.children) parent.children = parent.children.filter(child => child !== node);
+        parent = value;
+        const target = value?.element || uiRoot;
+        if (value) {
+          if (!value.children.includes(node)) value.children.push(node);
+          const inheritedScale = value.uiScale?.scale ?? (value === ui ? ui.uiScale?.scale : undefined);
+          if (Number.isFinite(Number(inheritedScale)) && Number(node.uiScale?.scale ?? 1) === 1) {
+            node.uiScale.copy({ scale: Number(inheritedScale) || 1 });
+          }
+          target.appendChild(element);
+        } else element.remove();
+        refresh();
+      } },
+      textContent: { get: () => textContent, set(value) { textContent = String(value ?? ""); refresh(); } },
+      textFontSize: { get: () => fontSize, set(value) { fontSize = Number(value) || 16; refresh(); } },
+      backgroundOpacity: { get: () => backgroundOpacity, set(value) { backgroundOpacity = clamp(Number(value) || 0, 0, 1); refresh(); } },
+      visible: { get: () => visible, set(value) { visible = Boolean(value); refresh(); } },
+      borderRadius: { get: () => borderRadius, set(value) { borderRadius = Math.max(0, Number(value) || 0); refresh(); } },
+      textAlign: { get: () => textAlign, set(value) { textAlign = String(value || "left"); refresh(); } },
+      rotation: { get: () => rotation, set(value) { rotation = Number(value) || 0; refresh(); } },
+      richText: { get: () => richText, set(value) { richText = Boolean(value); refresh(); } },
+      autoWordWrap: { get: () => autoWordWrap, set(value) { autoWordWrap = Boolean(value); refresh(); } },
+      textLineHeight: { get: () => textLineHeight, set(value) { textLineHeight = Number(value) || 1.2; refresh(); } },
+      textFontFamily: { get: () => textFontFamily, set(value) { textFontFamily = String(value || "Default"); refresh(); } },
+      textXAlignment: { get: () => textXAlignment, set(value) { textXAlignment = String(value || "Center"); refresh(); } },
+      textYAlignment: { get: () => textYAlignment, set(value) { textYAlignment = String(value || "Center"); refresh(); } },
+      autoResize: { get: () => autoResize, set(value) { autoResize = String(value || "NONE").toUpperCase(); refresh(); } },
+      textStrokeOpacity: { get: () => textStrokeOpacity, set(value) { textStrokeOpacity = Number(value) || 0; refresh(); } },
+      textStrokeThickness: { get: () => textStrokeThickness, set(value) { textStrokeThickness = Math.max(0, Number(value) || 0); refresh(); } },
+      image: {
+        get: () => kind === "image" ? (element.getAttribute("src") || "") : (element.dataset.neaImage || ""),
+        set(value) {
+          const src = String(value || "");
+          const resolved = resolvePictureUrl(src);
+          if (kind === "image") {
+            if (resolved) element.src = resolved;
+            else element.removeAttribute("src");
+          }
+          else {
+            // Dump Player UI declares health_bar as a text node, then the
+            // client script assigns health_bar.image dynamically.
+            element.dataset.neaImage = src;
+            element.style.backgroundImage = resolved ? `url("${resolved.replace(/"/g, '%22')}")` : "none";
+            element.style.backgroundRepeat = "no-repeat";
+            element.style.backgroundPosition = "center";
+            element.style.backgroundSize = "contain";
+          }
+          refresh();
+        }
+      },
+      imageOpacity: { get: () => imageOpacity, set(value) { imageOpacity = Number(value) || 0; refresh(); } },
+      imageDisplayMode: { get: () => imageDisplayMode, set(value) { imageDisplayMode = Number(value) || 0; refresh(); } },
+      complete: { get: () => kind !== "image" || element.complete },
+      placeholder: { get: () => placeholder, set(value) { placeholder = String(value ?? ""); refresh(); } },
+      placeholderColor: { get: () => placeholderColor },
+      placeholderOpacity: { get: () => placeholderOpacity, set(value) { placeholderOpacity = clamp(Number(value), 0, 1); refresh(); } },
+      isFocus: { get: () => kind === "input" && document.activeElement === element },
+      zIndex: { get: () => Number(element.style.zIndex) || 0, set(value) { element.style.zIndex = String(Number(value) || 0); } },
+      pointerEventBehavior: { get: () => pointerEventBehavior, set(value) { pointerEventBehavior = value; element.style.pointerEvents = Number(value) ? "auto" : "none"; } },
+    });
+    node.focus = () => { if (kind === "input") element.focus(); };
+    node.blur = () => { if (kind === "input") element.blur(); return textContent; };
+    if (kind === "input") {
+      element.addEventListener("input", () => { textContent = element.value; node.events.emit("input", node); });
+      element.addEventListener("focus", () => node.events.emit("focus", node));
+      element.addEventListener("blur", () => node.events.emit("blur", node));
+    }
+    if (kind === "scroll") {
+      element.style.overflow = "auto";
+      element.addEventListener("scroll", () => {
+        scrollPosition.x = element.scrollLeft;
+        scrollPosition.y = element.scrollTop;
+        node.events.emit("scroll", node);
+      });
+    }
+    function refresh() {
+      if (kind === "text") element.textContent = textContent;
+      if (kind === "input") { element.value = textContent; element.placeholder = placeholder; }
+      element.style.left = uiLength((node.position.ratio.x || 0) * (node.position.scale.x || 1), node.position.offset.x);
+      element.style.top = uiLength((node.position.ratio.y || 0) * (node.position.scale.y || 1), node.position.offset.y);
+      element.style.width = autoResize.includes("X") ? "max-content" : uiLength((node.size.ratio.x || 0) * (node.size.scale.x || 1), node.size.offset.x);
+      element.style.height = autoResize.includes("Y") ? "max-content" : uiLength((node.size.ratio.y || 0) * (node.size.scale.y || 1), node.size.offset.y);
+      element.style.transform = `translate(${-(Number(node.anchor.x) || 0) * 100}%, ${-(Number(node.anchor.y) || 0) * 100}%)`;
+      element.style.fontSize = `${fontSize}px`;
+      element.style.color = rgb(node.textColor);
+      element.style.backgroundColor = rgba(node.backgroundColor, backgroundOpacity);
+      element.style.display = visible ? (kind === "text" ? "flex" : "block") : "none";
+      element.style.borderRadius = `${borderRadius}px`;
+      element.style.textAlign = textAlign;
+      element.style.justifyContent = textXAlignment.toLowerCase() === "left" ? "flex-start" : textXAlignment.toLowerCase() === "right" ? "flex-end" : "center";
+      element.style.alignItems = textYAlignment.toLowerCase() === "top" ? "flex-start" : textYAlignment.toLowerCase() === "bottom" ? "flex-end" : "center";
+      element.style.fontFamily = textFontFamily === "CodeNewRomanBold" ? "'Courier New',monospace" : textFontFamily === "ENSerif" ? "Georgia,serif" : textFontFamily === "BoldRound" ? "Arial Rounded MT Bold,Arial,sans-serif" : "Arial,sans-serif";
+      element.style.lineHeight = String(textLineHeight);
+      element.style.whiteSpace = autoWordWrap ? "pre-wrap" : "pre";
+      element.style.transform = `translate(${-(Number(node.anchor.x) || 0) * 100}%, ${-(Number(node.anchor.y) || 0) * 100}%) rotate(${rotation}deg) scale(${Math.max(0, Number(node.uiScale.scale) || 0)})`;
+      const rendersImage = kind === "image" || Boolean(element.dataset.neaImage);
+      element.style.opacity = rendersImage ? String(clamp(imageOpacity, 0, 1)) : "1";
+      if (kind === "image") element.style.objectFit = imageDisplayMode === 1 ? "contain" : imageDisplayMode === 2 ? "cover" : "fill";
+      if (kind === "text") element.style.webkitTextStroke = `${textStrokeThickness}px rgba(0,0,0,${clamp(textStrokeOpacity, 0, 1)})`;
+      if (kind === "input") element.style.setProperty("--nea-placeholder-color", rgba(placeholderColor, placeholderOpacity));
+    }
+    return node;
+  }
+
+  function uiLength(ratioValue, offsetValue) {
+    const ratio = Number(ratioValue) || 0;
+    const offset = Number(offsetValue) || 0;
+    return ratio === 0 ? `${offset}px` : `calc(${ratio * 100}% + ${offset}px)`;
+  }
+
+  function rgb(value) {
+    return `rgb(${Number(value.r) || 0} ${Number(value.g) || 0} ${Number(value.b) || 0})`;
+  }
+
+  function rgba(value, alpha) {
+    return `rgb(${Number(value.r) || 0} ${Number(value.g) || 0} ${Number(value.b) || 0} / ${clamp(alpha, 0, 1)})`;
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]);
+  }
+
+  function resolveModule(from, request) {
+    if (typeof request !== "string" || (!request.startsWith("./") && !request.startsWith("../"))) {
+      throw new Error(`Unsupported client require: ${request}`);
+    }
+    const base = from.split("/").slice(0, -1);
+    for (const part of request.split("/")) {
+      if (part === "." || part === "") continue;
+      if (part === "..") base.pop(); else base.push(part);
+    }
+    let name = normalizeModuleName(base.join("/"));
+    if (runtime.modules[name] === undefined && runtime.modules[`${name}.js`] !== undefined) name += ".js";
+    if (runtime.modules[name] === undefined && runtime.modules[`${name}/index.js`] !== undefined) name += "/index.js";
+    return name;
+  }
+
+  function normalizeModuleName(name) {
+    const parts = [];
+    for (const part of String(name).replace(/\\/g, "/").split("/")) {
+      if (!part || part === ".") continue;
+      if (part === "..") throw new Error("Client module escaped its package");
+      parts.push(part);
+    }
+    return parts.join("/");
+  }
+
+  window.__neaClientRuntimeInstall = json => runtime.install(json);
+  window.__neaClientRuntimeReceive = json => runtime.receive(json);
+  window.__neaClientRuntimeDrain = () => runtime.drain();
+})();

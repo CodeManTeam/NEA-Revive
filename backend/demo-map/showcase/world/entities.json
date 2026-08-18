@@ -1,0 +1,9 @@
+{
+  "entities": [
+    { "id": "showcase-core", "kind": "prop", "position": [128, 9, 128], "tags": ["showcase-core", "spawn-area"] },
+    { "id": "physics-lab", "kind": "prop", "position": [64, 9, 64], "tags": ["lab-physics", "api-lab"] },
+    { "id": "raycast-lab", "kind": "prop", "position": [192, 9, 64], "tags": ["lab-raycast", "api-lab"] },
+    { "id": "storage-lab", "kind": "prop", "position": [64, 9, 192], "tags": ["lab-storage", "api-lab"] },
+    { "id": "deferred-lab", "kind": "prop", "position": [192, 9, 192], "tags": ["lab-deferred", "api-lab"] }
+  ]
+}

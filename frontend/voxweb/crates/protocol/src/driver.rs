@@ -213,6 +213,16 @@ impl SessionDriver {
         encode_outbound_raw(table, "game-net", "input", &payload)
     }
 
+    /// Encode a client Script Runtime event for remoteChannel.sendServerEvent.
+    pub fn send_remote_event(
+        &self,
+        table: &ProtocolTable,
+        tick: u32,
+        event: serde_json::Value,
+    ) -> Result<Vec<u8>, String> {
+        encode_outbound(table, &Outbound::RemoteServerEvent { tick, event })
+    }
+
     fn encode(&self, table: &ProtocolTable, outbound: &Outbound) -> Result<SendFrame, String> {
         Ok(SendFrame {
             bytes: encode_outbound(table, outbound)?,

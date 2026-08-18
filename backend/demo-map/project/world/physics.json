@@ -1,0 +1,43 @@
+{
+  "formatVersion": "nea-physics/v1",
+  "gravity": -20,
+  "maxFallSpeed": 50,
+  "stepHeight": 1.25,
+  "playerBody": {
+    "profileId": "historical-player-default-v1",
+    "origin": "body-center",
+    "originStatus": "confirmed",
+    "sizeStatus": "confirmed",
+    "boundsHalfExtents": [0.45, 1.1, 0.45],
+    "shapeHalfExtents": [0.45, 1.1, 0.45],
+    "evidence": "Player physics module 7166 exports PLAYER_WIDTH=0.45 and PLAYER_HEIGHT=1.1; body.ry/PLAYER_HEIGHT is used as the normal player scale and collision bounds use position plus/minus rx/ry/rz"
+  },
+  "materials": {
+    "129": { "friction": 10, "restitution": 0, "tags": ["stone"] },
+    "147": { "friction": 0.25, "restitution": 0, "tags": ["ice"] },
+    "631": { "friction": 2, "restitution": 0.82, "tags": ["bounce"] }
+  },
+  "colliders": [
+    {
+      "id": "training-step",
+      "min": [36, 4, 37],
+      "max": [38, 4.5, 40],
+      "material": "training-step",
+      "tags": ["step-test"]
+    }
+  ],
+  "triggers": [
+    {
+      "id": "checkpoint-alpha",
+      "min": [24, 4, 36],
+      "max": [28, 7, 40],
+      "tags": ["checkpoint"]
+    },
+    {
+      "id": "hazard-alpha",
+      "min": [40, 4, 36],
+      "max": [44, 7, 40],
+      "tags": ["hazard"]
+    }
+  ]
+}

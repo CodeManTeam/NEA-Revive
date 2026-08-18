@@ -45,9 +45,6 @@ export function validateMapManifest(value) {
     throw new Error("Recovered Player requires every world dimension to be divisible by 32");
   }
   const spawn = requireFiniteVector(world.spawn, "/world/spawn");
-  if (spawn.some((component, index) => component < 0 || component >= shape[index])) {
-    throw new Error("World spawn is outside world shape");
-  }
   const serverCapabilities = validateCapabilities(
     scripts.serverCapabilities ?? scripts.capabilities ?? [],
     scripts.serverCapabilities === undefined ? "/scripts/capabilities" : "/scripts/serverCapabilities",
@@ -118,8 +115,11 @@ export function validateUiSource(value) {
   const validatedPictures = {};
   for (const [name, value] of Object.entries(pictureAssets)) {
     const asset = requireRecord(value, `/ui/pictureAssets/${name}`);
-    if (typeof asset.hash !== "string" || typeof asset.metadataHash !== "string" || !Number.isInteger(asset.width) || !Number.isInteger(asset.height)) throw new Error(`Invalid client UI picture asset: ${name}`);
-    validatedPictures[name] = Object.freeze({ hash: asset.hash, metadataHash: asset.metadataHash, width: asset.width, height: asset.height });
+    if (typeof asset.hash !== "string") throw new Error(`Invalid client UI picture asset: ${name}`);
+    const metadataHash = typeof asset.metadataHash === "string" ? asset.metadataHash : asset.hash;
+    const width = Number.isInteger(asset.width) ? asset.width : 0;
+    const height = Number.isInteger(asset.height) ? asset.height : 0;
+    validatedPictures[name] = Object.freeze({ hash: asset.hash, metadataHash, width, height });
   }
   return Object.freeze({ format: "nea-recovered-client-ui", version: 1, sourceMessage: "gameUI.reset", running: record.running, defaultScreenId: uiTreeState.defaultScreenId, pictureAssets: Object.freeze(validatedPictures), uiTree: uiTreeState.uiTree });
 }
@@ -295,8 +295,8 @@ export function validateTerrainSource(value, shape) {
       const from = requireIntegerVector(box.from, `/terrain/boxes/${index}/from`, 0, 1023);
       const to = requireIntegerVector(box.to, `/terrain/boxes/${index}/to`, 0, 1023);
       assertPositionInside(from, shape, `/terrain/boxes/${index}/from`);
-      assertPositionInside(to, shape, `/terrain/boxes/${index}/to`);
-      if (to.some((component, axis) => component < from[axis])) throw new Error(`Terrain box ${index} has an inverted range`);
+      if (to.some((component, axis) => component > shape[axis])) throw new Error(`Terrain box ${index} extends outside world shape`);
+      if (to.some((component, axis) => component <= from[axis])) throw new Error(`Terrain box ${index} has an empty or inverted range`);
       return Object.freeze({
         from,
         to,
@@ -317,7 +317,7 @@ export function validateTerrainSource(value, shape) {
   });
 }
 
-export function validateEntitySource(value, shape) {
+export function validateEntitySource(value, _shape) {
   const record = requireRecord(value, "/entities");
   if (!Array.isArray(record.entities)) throw new Error("Entity source requires an entities array");
   const ids = new Set();
@@ -327,15 +327,13 @@ export function validateEntitySource(value, shape) {
     if (ids.has(id)) throw new Error(`Duplicate entity id: ${id}`);
     ids.add(id);
     const position = requireFiniteVector(entity.position, `/entities/entities/${index}/position`);
-    if (position.some((component, axis) => component < 0 || component >= shape[axis])) {
-      throw new Error(`Entity ${id} is outside world shape`);
-    }
     const kind = entity.kind ?? "prop";
     if (!["player", "entity", "prop"].includes(kind)) throw new Error(`Unsupported entity kind: ${kind}`);
     const tags = requireStringArray(entity.tags ?? [], `/entities/entities/${index}/tags`)
       .map((tag, tagIndex) => requireIdentifier(tag, `/entities/entities/${index}/tags/${tagIndex}`));
     const mesh = entity.mesh === undefined || entity.mesh === null ? null : requireText(entity.mesh, `/entities/entities/${index}/mesh`, 512);
-    return Object.freeze({ id, kind, position, tags: Object.freeze([...new Set(tags)]), mesh });
+    const source = entity.source === undefined ? null : requireRecord(entity.source, `/entities/entities/${index}/source`);
+    return Object.freeze({ id, kind, position, tags: Object.freeze([...new Set(tags)]), mesh, source });
   }));
 }
 

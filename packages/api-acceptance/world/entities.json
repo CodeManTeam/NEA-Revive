@@ -1,0 +1,67 @@
+{
+  "entities": [
+    {
+      "id": "api-model-cube",
+      "kind": "prop",
+      "name": "MODEL / TRANSFORM",
+      "position": [12, 5, 35],
+      "bounds": [2, 2, 2],
+      "mesh": "mesh/api-cube.gltf",
+      "meshScale": [0.08, 0.08, 0.08],
+      "fixed": true,
+      "gravity": false,
+      "collides": true,
+      "showEntityName": true,
+      "customName": "MODEL API",
+      "tags": ["api-station", "model-test"]
+    },
+    {
+      "id": "api-interact",
+      "kind": "prop",
+      "name": "INTERACTION",
+      "position": [32, 4, 31],
+      "bounds": [1.5, 1.5, 1.5],
+      "fixed": true,
+      "gravity": false,
+      "collides": true,
+      "enableInteract": true,
+      "interactRadius": 5,
+      "interactHint": "运行实体 API 测试",
+      "showEntityName": true,
+      "customName": "INTERACT API",
+      "tags": ["api-station", "interaction-test"]
+    },
+    {
+      "id": "api-physics",
+      "kind": "prop",
+      "name": "PHYSICS",
+      "position": [52, 8, 31],
+      "bounds": [2, 2, 2],
+      "fixed": false,
+      "gravity": true,
+      "collides": true,
+      "mass": 2,
+      "friction": 0.4,
+      "restitution": 0.75,
+      "showEntityName": true,
+      "customName": "PHYSICS API",
+      "tags": ["api-station", "physics-test"]
+    },
+    {
+      "id": "api-remote",
+      "kind": "prop",
+      "name": "REMOTE CHANNEL",
+      "position": [72, 4, 31],
+      "bounds": [1.5, 1.5, 1.5],
+      "fixed": true,
+      "gravity": false,
+      "collides": true,
+      "enableInteract": true,
+      "interactRadius": 5,
+      "interactHint": "测试 RemoteChannel",
+      "showEntityName": true,
+      "customName": "REMOTE API",
+      "tags": ["api-station", "remote-test"]
+    }
+  ]
+}

@@ -2,17 +2,19 @@
 // createSession → mudb 3-WS → gameNet.join → parkour script onPlayerJoin
 // → world.say → gameChat log 回传；gameChat.noticeMessage → onChat → echo。
 import { strict as assert } from "node:assert"
+import { rm } from "node:fs/promises"
 import { MuClient } from "mudb"
 import { MuWebSocket } from "mudb/socket/web/client"
-import { box3Protocols, gameChat, gameClock, gameNet } from "../protocol"
+import { box3Protocols, gameChat, gameClock, gameNet, remoteChannel } from "../protocol"
 import { startRuntimeServer } from "./runtime-server"
 
 const sourceRoot = "D:/Projects/Gaming/NEA-Revive/packages/parkour"
 const assetRoot = "D:/Projects/Gaming/NEA-Revive/backend/local-player/archive"
-const buildRoot = "D:/Projects/Gaming/NEA-Revive/.build/runtime-server-build"
+const buildRoot = `D:/Projects/Gaming/NEA-Revive/.build/runtime-server-build-${process.pid}`
 
 const server = await startRuntimeServer({ port: 0, sourceRoot, assetRoot, buildRoot, quiet: true })
 const chatLogs: Array<{ text: string; id: number }> = []
+const remoteEvents: any[] = []
 
 // createSession（voxweb 契约）
 const sessionResponse = await fetch(`http://${server.host}:${server.port}/api/createSession`, {
@@ -48,6 +50,9 @@ for (const schema of box3Protocols) {
   }
   if (schema === gameClock) {
     handlers.pong = () => { pongReceived = true }
+  }
+  if (schema === remoteChannel) {
+    handlers.sendClientEvent = data => remoteEvents.push(JSON.parse(data.args))
   }
   protocol.configure({ message: handlers } as any)
   if (schema === gameChat) chatProtocol = protocol
@@ -86,6 +91,8 @@ try {
   await waitFor(() => chatLogs.some((entry) => entry.text.includes("进入了地图")))
   const joinMessage = chatLogs.find((entry) => entry.text.includes("进入了地图"))!
   console.log("[ok] join -> parkour onPlayerJoin -> world.say:", joinMessage.text)
+  await waitFor(() => remoteEvents.some(event => event.type === "parkour:checkpoint" && event.index === 1))
+  console.log("[ok] spawn -> checkpoint entity contact -> remote event")
 
   // 2) 聊天命令 → onChat → world.say echo
   chatProtocol.server.message.noticeMessage({ detail: "加速", title: "" })
@@ -101,4 +108,5 @@ try {
 } finally {
   if (client.running) client.destroy()
   await server.close()
+  await rm(buildRoot, { recursive: true, force: true })
 }

@@ -48,7 +48,9 @@ struct PlayerPhysicsConfig {
 impl Default for PlayerPhysicsConfig {
     fn default() -> Self {
         Self {
-            flags: 254,
+            // Match the server's non-flight default. Flight must never be
+            // available during the short pre-net-state handshake window.
+            flags: 252,
             walk: [
                 move_speed(MoveMode::Walk),
                 move_acceleration(MoveMode::Walk),
@@ -84,9 +86,12 @@ pub struct NeaPlayerPhysics {
     flying: bool,
     occupancy: u64,
     surface_friction: f32,
+    surface_restitution: f32,
     body_mass: f32,
     body_friction: f32,
     body_restitution: f32,
+    gravity_per_tick: f32,
+    velocity_damping_per_tick: f32,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -111,9 +116,12 @@ impl NeaPlayerPhysics {
             flying: false,
             occupancy: 0,
             surface_friction: DEFAULT_SURFACE_FRICTION,
+            surface_restitution: 0.0,
             body_mass: PLAYER_MASS,
             body_friction: PLAYER_FRICTION,
             body_restitution: 0.0,
+            gravity_per_tick: GRAVITY_PER_TICK,
+            velocity_damping_per_tick: VELOCITY_DAMPING_PER_TICK,
         }
     }
 
@@ -142,6 +150,14 @@ impl NeaPlayerPhysics {
         };
     }
 
+    pub fn set_surface_restitution(&mut self, restitution: f32) {
+        self.surface_restitution = if restitution.is_finite() && restitution >= 0.0 {
+            restitution
+        } else {
+            0.0
+        };
+    }
+
     pub fn set_body_properties(&mut self, mass: f32, friction: f32, restitution: f32) {
         if mass.is_finite() && mass > 0.0 {
             self.body_mass = mass;
@@ -151,6 +167,15 @@ impl NeaPlayerPhysics {
         }
         if restitution.is_finite() && restitution >= 0.0 {
             self.body_restitution = restitution;
+        }
+    }
+
+    pub fn set_world_physics(&mut self, gravity: f32, velocity_damping: f32, tick_rate: f32) {
+        if gravity.is_finite() && tick_rate.is_finite() && tick_rate > 0.0 {
+            self.gravity_per_tick = gravity * (tick_rate / TICKS_PER_SECOND);
+        }
+        if velocity_damping.is_finite() && velocity_damping >= 0.0 {
+            self.velocity_damping_per_tick = velocity_damping * (tick_rate / TICKS_PER_SECOND);
         }
     }
 
@@ -349,7 +374,7 @@ impl NeaPlayerPhysics {
             self.body_mass,
             self.body_friction,
             self.surface_friction,
-            self.body_restitution,
+            self.body_restitution.max(self.surface_restitution),
             solid,
         );
         self.velocity = terrain.velocity;
@@ -388,7 +413,7 @@ impl NeaPlayerPhysics {
     }
 
     fn restore_platform_velocity(&mut self, dt: f32) {
-        let inverse_damping = (VELOCITY_DAMPING_PER_TICK * TICKS_PER_SECOND * dt).exp();
+        let inverse_damping = (self.velocity_damping_per_tick * TICKS_PER_SECOND * dt).exp();
         for axis in 0..3 {
             self.velocity[axis] +=
                 inverse_damping * self.platform_velocity[axis] * TICKS_PER_SECOND;
@@ -583,12 +608,13 @@ impl NeaPlayerPhysics {
 
     fn integrate_velocity(&mut self, dt: f32, gravity: bool) {
         let tick_delta = TICKS_PER_SECOND * dt;
-        let velocity_scale = (-VELOCITY_DAMPING_PER_TICK * tick_delta).exp();
-        let acceleration_factor = (1.0 - velocity_scale) / VELOCITY_DAMPING_PER_TICK;
+        let damping = self.velocity_damping_per_tick;
+        let velocity_scale = (-damping * tick_delta).exp();
+        let acceleration_factor = if damping > 1.0e-6 { (1.0 - velocity_scale) / damping } else { tick_delta };
         self.velocity[0] *= velocity_scale;
         self.velocity[1] *= velocity_scale;
         if gravity {
-            self.velocity[1] += acceleration_factor * GRAVITY_PER_TICK * TICKS_PER_SECOND;
+            self.velocity[1] += acceleration_factor * self.gravity_per_tick * TICKS_PER_SECOND;
         }
         self.velocity[2] *= velocity_scale;
     }

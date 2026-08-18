@@ -1,3 +1,4 @@
-﻿// stub：原模块未随 DAO3 导出，本地提供空实现使 index.js 可加载
+// Missing from source export; compatibility placeholder.
+globalThis.FindBlockName ??= () => ({ Function() {} });
+globalThis.FindItemName ??= () => ({ Function() {} });
 module.exports = {};
-

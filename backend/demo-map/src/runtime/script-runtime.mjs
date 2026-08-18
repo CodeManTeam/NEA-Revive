@@ -17,6 +17,7 @@ import { GameRGBColor, GameRGBAColor } from "./colors.mjs";
 import { GameBounds3, GameZoneSystem } from "./game-zones.mjs";
 import { GameWorld } from "./game-world.mjs";
 import { GameSoundEffect } from "./game-sound-effect.mjs";
+import { GameAnimation } from "./game-animation.mjs";
 import { normalizeEntitySound, normalizePlayerSound, normalizeWorldSound, Sound } from "./game-sound.mjs";
 import { GameBodyPart } from "./game-body-part.mjs";
 import { raycastWorld, RuntimeRaycastResult } from "./game-raycast.mjs";
@@ -27,7 +28,17 @@ import { EntityBackendBridge } from "./entity-backend-bridge.mjs";
 
 const EMPTY_PLAYER_TAGS = Object.freeze(new Set());
 const GUI_CAPABILITY_MEMBERS = new Set(["init", "show", "remove", "getAttribute", "setAttribute", "onMessage", "ui"]);
-const WORLD_CONFIG_CAPABILITY_MEMBERS = new Set(["gravity", "airFriction", "fogColor", "projectName"]);
+const WORLD_CONFIG_CAPABILITY_MEMBERS = new Set([
+  "gravity", "airFriction", "fogColor", "fogStartDistance", "fogHeightOffset",
+  "fogHeightFalloff", "fogUniformDensity", "maxFog", "snowDensity", "snowSizeLo",
+  "snowSizeHi", "snowFallSpeed", "snowSpinSpeed", "snowColor", "snowTexture",
+  "rainDensity", "rainDirection", "rainSpeed", "rainSizeLo", "rainSizeHi",
+  "rainInterference", "rainColor", "lightMode", "sunPhase", "sunFrequency",
+  "lunarPhase", "sunDirection", "sunLight", "skyLeftLight", "skyRightLight",
+  "skyBottomLight", "skyTopLight", "skyFrontLight", "skyBackLight", "useOBB",
+  "projectName", "teleport", "breakVoxelSound", "placeVoxelSound", "playerJoinSound",
+  "playerLeaveSound", "ambientSound",
+]);
 
 export const GameButtonType = Object.freeze({
   WALK: "walk",
@@ -111,10 +122,13 @@ export class ScriptRuntime {
   #chatFifo;
   #outboundEvents = [];
   #collisionFilters = new Map();
+  #tempChats = new Map();
+  #animations = new Set();
   #entityBackendBridge;
   #world;
   #worldPhysicsSnapshot;
   #initialWorldPhysics;
+  #worldMaterials;
   #seed = 0;
   #now;
   #prevTickMS;
@@ -136,6 +150,7 @@ export class ScriptRuntime {
     fluidLeave: new EventSignal(),
     die: new EventSignal(),
     entityContact: new EventSignal(),
+    entitySeparate: new EventSignal(),
     playerPurchaseSuccess: new EventSignal(),
     keyDown: new EventSignal(),
     keyUp: new EventSignal(),
@@ -174,6 +189,12 @@ export class ScriptRuntime {
     this.#now = options.now ?? Date.now;
     this.#prevTickMS = this.#now();
     this.#initialWorldPhysics = normalizeInitialWorldPhysics(options.physics);
+    this.#worldMaterials = Object.freeze(Object.fromEntries(
+      Object.entries(options.physics?.materials ?? {}).map(([id, material]) => [id, Object.freeze({
+        friction: Number(material.friction ?? 8),
+        restitution: Number(material.restitution ?? 0),
+      })]),
+    ));
     this.playerBodyProfile = options.physics?.playerBody;
     if (!this.playerBodyProfile) throw new Error("Runtime requires an explicit player body profile");
     this.sendClientEvent = options.sendClientEvent ?? (() => {});
@@ -205,14 +226,23 @@ export class ScriptRuntime {
       colliders: options.physics?.colliders ?? [],
       triggers: options.physics?.triggers ?? [],
     });
-    this.voxels = new GameVoxelsRuntime({ shape: options.shape, catalog: options.blockCatalog, collisionWorld: this.collisionWorld });
+    this.voxels = new GameVoxelsRuntime({
+      shape: options.shape,
+      catalog: options.blockCatalog,
+      collisionWorld: this.collisionWorld,
+      onVoxelChange: options.onVoxelChange,
+    });
     this.physics = new FixedStepPlayerPhysics(this.collisionWorld, options.physics);
     this.currentTick = 0;
     this.started = false;
     for (const capability of this.capabilities) {
       if (!KNOWN_CAPABILITIES.has(capability)) throw new Error(`Unknown runtime capability: ${capability}`);
     }
-    for (const entity of options.entities ?? []) this.#entities.set(entity.id, createRuntimeEntity(entity, this));
+    for (const entity of options.entities ?? []) this.#entities.set(entity.id, createRuntimeEntity({
+      ...entity,
+      _backendEntityId: Number.isSafeInteger(entity.sourceIndex) ? 0x10000 + entity.sourceIndex : null,
+      _backendEntityBound: false,
+    }, this));
   }
 
   static async load(projectRoot, options = {}) {
@@ -234,6 +264,20 @@ export class ScriptRuntime {
         name: entity.name ?? entity.source?.name,
         position: entity.position,
         tags: [...new Set([...sourceTags, ...packageTags])],
+        mesh: entity.mesh ?? entity.source?.mesh,
+        bounds: entity.bounds ?? entity.source?.bounds,
+        meshScale: entity.meshScale ?? entity.source?.scale,
+        meshOrientation: entity.meshOrientation ?? entity.source?.orientation,
+        collides: entity.collides ?? entity.source?.collision,
+        fixed: entity.fixed ?? entity.source?.fixed,
+        gravity: entity.gravity ?? entity.source?.gravity,
+        mass: entity.mass ?? entity.source?.mass,
+        friction: entity.friction ?? entity.source?.friction,
+        restitution: entity.restitution ?? entity.source?.restitution,
+        meshMetalness: entity.meshMetalness ?? entity.source?.metalness,
+        meshEmissive: entity.meshEmissive ?? entity.source?.emissive,
+        meshShininess: entity.meshShininess ?? entity.source?.shininess,
+        anchorOffset: entity.anchorOffset ?? entity.source?.anchorOffset,
         source: entity.source,
         sourceIndex: index,
         enableDamage: entity.enableDamage ?? entity.source?.enableDamage,
@@ -264,6 +308,7 @@ export class ScriptRuntime {
       shape: world.shape,
       blockCatalog: options.blockCatalog,
       voxels: terrainSnapshot.voxels ?? [],
+      onVoxelChange: options.onVoxelChange,
       logger: options.logger,
       sendClientEvent: options.sendClientEvent,
       sendChatMessage: options.sendChatMessage,
@@ -275,6 +320,7 @@ export class ScriptRuntime {
       chatMessagesPerTick: options.chatMessagesPerTick,
       writePlayerState: options.writePlayerState,
       writeDamageState: options.writeDamageState,
+      sendSoundCommand: options.sendSoundCommand,
       createEntity: options.createEntity,
       writeEntityState: options.writeEntityState,
       destroyEntity: options.destroyEntity,
@@ -308,7 +354,7 @@ export class ScriptRuntime {
       modules: this.moduleSources,
       // Real map scripts run heavy top-level work at load (e.g. the captured
       // parkour map's water-flood scan); keep a generous bound.
-      timeout: 15_000,
+      timeout: 60_000,
       environment: this.#moduleEnvironment,
       environmentKey: this.#moduleEnvironmentKey,
     });
@@ -342,6 +388,10 @@ export class ScriptRuntime {
     this.#deliverChatBatch(this.#chatFifo.drainTickBoundary());
     const prevTick = this.currentTick;
     this.currentTick += 1;
+    for (const animation of this.#animations) {
+      animation.advance(this.currentTick);
+      if (["finished", "cancelled"].includes(animation.playState)) this.#animations.delete(animation);
+    }
     const now = this.#now();
     const timing = createTickTiming(this.currentTick, prevTick, now, this.#prevTickMS);
     this.#prevTickMS = now;
@@ -410,16 +460,20 @@ export class ScriptRuntime {
         const wasInContact = entity._contactPlayers.has(player);
         if (overlap && !wasInContact) {
           entity._contactPlayers.add(player);
+          const event = Object.freeze({ tick: this.currentTick, entity, self: entity, other: player });
           entity._signals.contact.emit(
-            Object.freeze({ tick: this.currentTick, entity, self: entity, other: player }),
+            event,
             error => this.#reportError(`${entity.id}.contact`, error),
           );
+          this.#signals.entityContact.emit(event, error => this.#reportError("entityContact", error));
         } else if (!overlap && wasInContact) {
           entity._contactPlayers.delete(player);
+          const event = Object.freeze({ tick: this.currentTick, entity, self: entity, other: player });
           entity._signals.contactSeparate.emit(
-            Object.freeze({ tick: this.currentTick, entity, self: entity, other: player }),
+            event,
             error => this.#reportError(`${entity.id}.contactSeparate`, error),
           );
+          this.#signals.entitySeparate.emit(event, error => this.#reportError("entitySeparate", error));
         }
       }
     }
@@ -500,6 +554,7 @@ export class ScriptRuntime {
       }
       if (!entity) continue;
       entity._backendEntityId = backendEntityId;
+      entity._backendEntityBound = true;
       this.#queueDamageStateWrite(entity);
       bound += 1;
     }
@@ -554,7 +609,13 @@ export class ScriptRuntime {
   dispatchChat(playerId, message) {
     const player = this.#players.get(playerId);
     if (!player) return false;
-    this.#signals.chat.emit(createGameChatEvent(this.currentTick, player, message), error => this.#reportError("chat", error));
+    const text = String(message ?? "").trim();
+    if (!text) return false;
+    // The native player echoes submitted chat into the game-chat stream before
+    // map callbacks run. Keep that visible behavior for the local runner.
+    Promise.resolve(this.sendChatMessage(undefined, { text: `${player.name}: ${text}` }))
+      .catch(error => this.#reportError("chat-send", error));
+    this.#signals.chat.emit(createGameChatEvent(this.currentTick, player, text), error => this.#reportError("chat", error));
     return true;
   }
 
@@ -604,6 +665,12 @@ export class ScriptRuntime {
       messages: Object.freeze(this.#messages.map(message => ({ ...message }))),
       outboundEvents: Object.freeze(this.#outboundEvents.map(event => structuredClone(event))),
       physics: this.collisionWorld.diagnostics(),
+      worldPhysics: Object.freeze({
+        gravity: Number(this.#world?.gravity ?? -0.1),
+        airFriction: Number(this.#world?.airFriction ?? 0.01),
+        tickRate: this.tickRate,
+        materials: this.#worldMaterials,
+      }),
     });
   }
 
@@ -648,6 +715,8 @@ export class ScriptRuntime {
       nextDie: filter => this.#next("server.world.events", this.#signals.die, filter),
       onEntityContact: handler => this.#listen("server.world.events", this.#signals.entityContact, handler),
       nextEntityContact: filter => this.#next("server.world.events", this.#signals.entityContact, filter),
+      onEntitySeparate: handler => this.#listen("server.world.events", this.#signals.entitySeparate, handler),
+      nextEntitySeparate: filter => this.#next("server.world.events", this.#signals.entitySeparate, filter),
       onPlayerPurchaseSuccess: handler => this.#listen("server.world.events", this.#signals.playerPurchaseSuccess, handler),
       nextPlayerPurchaseSuccess: filter => this.#next("server.world.events", this.#signals.playerPurchaseSuccess, filter),
       onVoxelContact: handler => this.#listen("server.world.events", this.#signals.voxelContact, handler),
@@ -693,6 +762,7 @@ export class ScriptRuntime {
           meshScale: spec?.meshScale,
           meshOrientation: spec?.meshOrientation,
           meshOffset: spec?.meshOffset,
+          anchorOffset: spec?.anchorOffset,
           meshColor: spec?.meshColor,
           meshInvisible: spec?.meshInvisible,
           meshMetalness: spec?.meshMetalness,
@@ -704,6 +774,17 @@ export class ScriptRuntime {
           showHealthBar: spec?.showHealthBar,
           hp: spec?.hp,
           maxHp: spec?.maxHp,
+          particleRate: spec?.particleRate,
+          particleRateSpread: spec?.particleRateSpread,
+          particleLimit: spec?.particleLimit,
+          particleLifetime: spec?.particleLifetime,
+          particleLifetimeSpread: spec?.particleLifetimeSpread,
+          particleSize: spec?.particleSize,
+          particleSizeSpread: spec?.particleSizeSpread,
+          particleColor: spec?.particleColor,
+          particleVelocity: spec?.particleVelocity,
+          particleVelocitySpread: spec?.particleVelocitySpread,
+          particleDamping: spec?.particleDamping,
         }, this);
         this.#entities.set(id, entity);
         const event = createGameEntityEvent(this.currentTick, entity);
@@ -736,7 +817,49 @@ export class ScriptRuntime {
       },
       clearCollisionFilters: () => this.#collisionFilters.clear(),
       collisionFilters: () => [...this.#collisionFilters.values()].map(pair => [...pair]),
+      teleport: (target, position, serverId) => {
+        // DAO3's privileged overload moves a batch to another map. The local
+        // runner cannot launch an external published container, but preserves
+        // the async contract and stable destination server id for scripts.
+        if (typeof target === "string" && Array.isArray(position)) {
+          const destination = serverId && serverId !== "public" ? String(serverId) : `local-${target}-${this.projectName}`;
+          return Promise.resolve({ serverId: destination });
+        }
+        const entity = target?.isPlayer ? target.player : target;
+        if (!entity || !entity.position) throw new TypeError("world.teleport target must be an entity");
+        entity.position = Vector3.from(position);
+        if (entity.isPlayer) entity.player.spawnPoint = Vector3.from(position);
+        return entity;
+      },
+      animate: (keyframes, playback) => this._createAnimation(world, keyframes, playback),
+      getAnimations: () => this._getAnimations(world),
+      getEntityAnimations: () => Object.freeze([...this.#animations].filter(animation => animation.target !== world && !animation.target?._entity)),
+      getPlayerAnimations: () => Object.freeze([...this.#animations].filter(animation => Boolean(animation.target?._entity))),
       sound: spec => this._playSound(normalizeWorldSound(spec)),
+      createTempChat: users => {
+        const id = `local-chat-${this.#tempChats.size + 1}`;
+        const members = new Set(Array.isArray(users) ? users.map(String) : []);
+        this.#tempChats.set(id, members);
+        return Promise.resolve(id);
+      },
+      destroyTempChat: chatId => {
+        const existed = this.#tempChats.delete(String(chatId));
+        return Promise.resolve(existed);
+      },
+      addTempChatPlayer: (chatId, users) => {
+        const members = this.#tempChats.get(String(chatId));
+        if (!members) return Promise.resolve([]);
+        for (const user of Array.isArray(users) ? users : [users]) members.add(String(user));
+        return Promise.resolve([...members]);
+      },
+      removeTempChatPlayer: (chatId, users) => {
+        const members = this.#tempChats.get(String(chatId));
+        if (!members) return Promise.resolve([]);
+        for (const user of Array.isArray(users) ? users : [users]) members.delete(String(user));
+        return Promise.resolve([...members]);
+      },
+      getTempChats: () => Promise.resolve([...this.#tempChats.keys()]),
+      getTempChatUsers: chatId => Promise.resolve([...(this.#tempChats.get(String(chatId)) ?? [])]),
     };
     const world = Object.defineProperties(new GameWorld(), Object.getOwnPropertyDescriptors(worldProperties));
     Object.defineProperty(world, "projectName", { value: this.projectName, enumerable: true, writable: false, configurable: false });
@@ -809,6 +932,7 @@ export class ScriptRuntime {
       GameButtonType,
       GameCameraMode,
       GameWorld,
+      GameEntity: class GameEntity {},
       GameSoundEffect,
       GameBodyPart,
       Vec3: Object.freeze({ create: value => Vector3.from(value) }),
@@ -957,6 +1081,12 @@ export class ScriptRuntime {
     return Promise.resolve(this.showDialog(this.#playerIds.get(player), structuredClone(config)));
   }
 
+  _entityContactsForPlayer(player) {
+    return [...this.#entities.values()]
+      .filter(entity => !entity.destroyed && entity._contactPlayers.has(player))
+      .map(entity => Object.freeze({ other: entity, force: new Vector3(0, 0, 0), axis: new Vector3(0, 0, 0) }));
+  }
+
   _cancelPlayerDialogs(player) {
     this.#require("server.player");
     return this.cancelDialogs(this.#playerIds.get(player));
@@ -979,7 +1109,7 @@ export class ScriptRuntime {
     const hideFloat = Boolean(options?.hideFloat);
     this.#messages.push({ tick: this.currentTick, entityId: entity.id, text, duration, hideFloat });
     this.logger.info(`[script:entity:${entity.id}] ${text}`);
-    if (!Number.isSafeInteger(entity._backendEntityId) || entity._backendEntityId < 1) return;
+    if (entity._backendEntityBound !== true || !Number.isSafeInteger(entity._backendEntityId) || entity._backendEntityId < 1) return;
     this.#queueChat(undefined, {
       text,
       senderId: entity._backendEntityId,
@@ -994,6 +1124,14 @@ export class ScriptRuntime {
       ? normalizePlayerSound(spec, entity._backendPlayerId)
       : normalizeEntitySound(spec, entity._backendEntityId));
   }
+
+  _createAnimation(target, keyframes, playback) {
+    const animation = new GameAnimation(target, keyframes, playback, this.currentTick);
+    this.#animations.add(animation);
+    return animation;
+  }
+
+  _getAnimations(target) { return Object.freeze([...this.#animations].filter(animation => animation.target === target)); }
 
   _playSound(spec) {
     this.#require("server.world.entities");
@@ -1105,7 +1243,10 @@ export class ScriptRuntime {
   _hurtEntity(entity, amount, options) {
     this.#require("server.world.events");
     const damage = Number(amount);
-    if (entity.destroyed || Number.isNaN(damage) || !entity.enableDamage || Number(entity.hp) <= 0) return;
+    // Historical Player semantics: damage is ignored while dead, but negative
+    // damage (healing) is still accepted so hp can cross back to non-negative
+    // and emit respawn.
+    if (entity.destroyed || Number.isNaN(damage) || !entity.enableDamage || (Number(entity.hp) < 0 && damage >= 0)) return;
     const normalized = normalizeHurtOptions(options);
     const attacker = damage < 0 ? null : this.#resolveHurtAttacker(normalized.attacker);
     const damageType = damage < 0 ? "" : normalized.damageType;
@@ -1113,20 +1254,28 @@ export class ScriptRuntime {
     if (damage < 0) {
       if (Number(entity.hp) < Number(entity.maxHp)) entity._hp = Math.min(Number(entity.maxHp), Number(entity.hp) - damage);
     } else {
-      entity._hp = Math.max(0, Number(entity.hp) - damage);
+      entity._hp = Number(entity.hp) - damage;
     }
     entity._lastAttacker = attacker;
     entity._lastDamageType = damageType;
     const damageEvent = createGameDamageEvent(this.currentTick, entity, damage, attacker, damageType);
     entity._signals.takeDamage.emit(damageEvent, error => this.#reportError("entityTakeDamage", error));
     this.#signals.takeDamage.emit(damageEvent, error => this.#reportError("takeDamage", error));
-    const died = previousHp > 0 && Number(entity.hp) <= 0;
+    const died = previousHp >= 0 && Number(entity.hp) < 0;
+    const respawned = previousHp < 0 && Number(entity.hp) >= 0;
     if (died) {
       const dieEvent = createGameDieEvent(this.currentTick, entity, attacker, damageType);
       entity._signals.die.emit(dieEvent, error => this.#reportError("entityDie", error));
       this.#signals.die.emit(dieEvent, error => this.#reportError("die", error));
     }
-    this.#queueDamageStateWrite(entity, { hurt: damage, die: died });
+    if (entity.hurtSound?.sample) this._soundEntity(entity, entity.hurtSound);
+    if (died && entity.dieSound?.sample) this._soundEntity(entity, entity.dieSound);
+    if (respawned) {
+      const respawnEvent = createGameRespawnEvent(this.currentTick, entity);
+      entity._signals.respawn?.emit(respawnEvent, error => this.#reportError("entityRespawn", error));
+      this.#signals.respawn.emit(respawnEvent, error => this.#reportError("respawn", error));
+    }
+    this.#queueDamageStateWrite(entity, { hurt: damage, die: died, respawn: respawned });
   }
 
   _damagePlayer(player, amount) {
@@ -1139,6 +1288,54 @@ export class ScriptRuntime {
     } finally {
       player.enableDamage = enabled;
     }
+  }
+
+  _givePlayer(player, name, count = 1) {
+    const item = String(name);
+    const amount = Math.trunc(Number(count));
+    if (!item || !Number.isSafeInteger(amount) || amount === 0) throw new TypeError("Give requires a non-empty item and nonzero integer count");
+    const next = Math.max(0, (player._inventory.get(item) ?? 0) + amount);
+    if (next === 0) player._inventory.delete(item);
+    else player._inventory.set(item, next);
+    this._syncPlayerGameplay(player, { action: "give", item, amount, count: next });
+    return next;
+  }
+
+  _clearPlayerBuffs(player) {
+    player._buffs.clear();
+    this._syncPlayerGameplay(player, { action: "buff-clear" });
+    return Object.freeze({});
+  }
+
+  _setPlayerGameMode(player, mode) {
+    const value = Math.max(0, Math.min(3, Math.trunc(Number(mode) || 0)));
+    player._gameMode = value;
+    player.spectator = value === 3;
+    player.canFly = value === 1 || value === 3;
+    this.#queuePlayerStateWrite(player);
+    this._syncPlayerGameplay(player, { action: "gamemode", mode: value });
+    return value;
+  }
+
+  _syncPlayerGameplay(player, detail) {
+    const playerId = this.#playerIds.get(player);
+    if (!playerId) return;
+    const event = {
+      type: "nea-revive:player-gameplay",
+      ...detail,
+      gamemode: player._gameMode,
+      inventory: Object.fromEntries(player._inventory),
+      buffs: [...player._buffs],
+    };
+    Promise.resolve(this.sendClientEvent(playerId, event)).catch(error => this.#reportError("gameplay-send", error));
+  }
+
+  _sendPlayerUiEvent(player, action, payload = {}) {
+    const playerId = this.#playerIds.get(player);
+    if (!playerId) return false;
+    Promise.resolve(this.sendClientEvent(playerId, { type: "nea-revive:player-ui", action, ...structuredClone(payload) }))
+      .catch(error => this.#reportError("player-ui-send", error));
+    return true;
   }
 
   #resolveHurtAttacker(attacker) {
@@ -1210,6 +1407,94 @@ export class ScriptRuntime {
   _entityPhysicsChanged(entity) {
     this.#entityBackendBridge.queueStateWrite(entity);
   }
+
+  _particleFieldChanged(entity) {
+    if (entity?.isPlayer) {
+      this._syncPlayerGameplay(entity, { action: "particles", particles: particleSnapshot(entity) });
+      return;
+    }
+    this.#entityBackendBridge.queueStateWrite(entity);
+  }
+}
+
+function createParticleState(input = {}) {
+  return {
+    _particleRate: Number(input.particleRate ?? 0),
+    _particleRateSpread: Number(input.particleRateSpread ?? 0),
+    _particleLimit: Math.max(0, Math.trunc(Number(input.particleLimit ?? 100))),
+    _particleLifetime: Number(input.particleLifetime ?? 10),
+    _particleLifetimeSpread: Number(input.particleLifetimeSpread ?? 0),
+    _particleSize: Array.isArray(input.particleSize) ? [...input.particleSize].map(Number) : [1, 1, 1, 1, 1],
+    _particleSizeSpread: Number(input.particleSizeSpread ?? 0),
+    _particleColor: Array.isArray(input.particleColor) ? structuredClone(input.particleColor) : [[1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1]],
+    _particleVelocity: Vector3.from(input.particleVelocity ?? [0, 0, 0]),
+    _particleVelocitySpread: Vector3.from(input.particleVelocitySpread ?? [0, 0, 0]),
+    _particleDamping: Number(input.particleDamping ?? 0),
+  };
+}
+
+function createParticleAccessors() {
+  return {
+    get particleRate() { return this._particleRate; },
+    set particleRate(value) { this._particleRate = Number(value); this._runtime?._particleFieldChanged(this); },
+    get particleRateSpread() { return this._particleRateSpread; },
+    set particleRateSpread(value) { this._particleRateSpread = Number(value); this._runtime?._particleFieldChanged(this); },
+    get particleLimit() { return this._particleLimit; },
+    set particleLimit(value) { this._particleLimit = Math.max(0, Math.trunc(Number(value))); this._runtime?._particleFieldChanged(this); },
+    get particleLifetime() { return this._particleLifetime; },
+    set particleLifetime(value) { this._particleLifetime = Number(value); this._runtime?._particleFieldChanged(this); },
+    get particleLifetimeSpread() { return this._particleLifetimeSpread; },
+    set particleLifetimeSpread(value) { this._particleLifetimeSpread = Number(value); this._runtime?._particleFieldChanged(this); },
+    get particleSize() { return this._particleSize; },
+    set particleSize(value) { this._particleSize = Array.isArray(value) ? [...value].map(Number) : []; this._runtime?._particleFieldChanged(this); },
+    get particleSizeSpread() { return this._particleSizeSpread; },
+    set particleSizeSpread(value) { this._particleSizeSpread = Number(value); this._runtime?._particleFieldChanged(this); },
+    get particleColor() { return this._particleColor; },
+    set particleColor(value) { this._particleColor = Array.isArray(value) ? structuredClone(value) : []; this._runtime?._particleFieldChanged(this); },
+    get particleVelocity() { return this._particleVelocity; },
+    set particleVelocity(value) { this._particleVelocity = Vector3.from(value); this._runtime?._particleFieldChanged(this); },
+    get particleVelocitySpread() { return this._particleVelocitySpread; },
+    set particleVelocitySpread(value) { this._particleVelocitySpread = Vector3.from(value); this._runtime?._particleFieldChanged(this); },
+    get particleDamping() { return this._particleDamping; },
+    set particleDamping(value) { this._particleDamping = Number(value); this._runtime?._particleFieldChanged(this); },
+  };
+}
+
+function particleSnapshot(entity) {
+  return Object.freeze({
+    rate: finiteOr(entity.particleRate, 0),
+    rateSpread: finiteOr(entity.particleRateSpread, 0),
+    limit: finiteOr(entity.particleLimit, 100),
+    lifetime: finiteOr(entity.particleLifetime, 10),
+    lifetimeSpread: finiteOr(entity.particleLifetimeSpread, 0),
+    size: Object.freeze([...(entity.particleSize ?? [])]),
+    sizeSpread: finiteOr(entity.particleSizeSpread, 0),
+    color: structuredClone(entity.particleColor ?? []),
+    velocity: Vector3.from(entity.particleVelocity ?? [0, 0, 0]).toArray(),
+    velocitySpread: Vector3.from(entity.particleVelocitySpread ?? [0, 0, 0]).toArray(),
+    damping: finiteOr(entity.particleDamping, 0),
+  });
+}
+
+function finiteOr(value, fallback) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
+function hasParticleState(entity) {
+  const velocity = Vector3.from(entity.particleVelocity ?? [0, 0, 0]);
+  const spread = Vector3.from(entity.particleVelocitySpread ?? [0, 0, 0]);
+  return finiteOr(entity.particleRate, 0) !== 0
+    || finiteOr(entity.particleRateSpread, 0) !== 0
+    || finiteOr(entity.particleLimit, 100) !== 100
+    || finiteOr(entity.particleLifetime, 10) !== 10
+    || finiteOr(entity.particleLifetimeSpread, 0) !== 0
+    || (Array.isArray(entity.particleSize) && entity.particleSize.some(value => Number(value) !== 1))
+    || finiteOr(entity.particleSizeSpread, 0) !== 0
+    || (Array.isArray(entity.particleColor) && entity.particleColor.length > 0)
+    || velocity.x !== 0 || velocity.y !== 0 || velocity.z !== 0
+    || spread.x !== 0 || spread.y !== 0 || spread.z !== 0
+    || finiteOr(entity.particleDamping, 0) !== 0;
 }
 
 function normalizeInitialWorldPhysics(physics) {
@@ -1255,7 +1540,8 @@ export function createRuntimeEntity(input, runtime = null) {
     _name: input.name ?? input.source?.name ?? String(input.id),
     _source: input.source ?? null,
     _sourceIndex: Number.isSafeInteger(input.sourceIndex) ? input.sourceIndex : null,
-    _backendEntityId: null,
+    _backendEntityId: Number.isSafeInteger(input._backendEntityId) ? input._backendEntityId : null,
+    _backendEntityBound: Boolean(input._backendEntityBound),
     _position: position,
     _velocity: Vector3.from(input.velocity ?? [0, 0, 0]),
     _runtime: runtime,
@@ -1267,6 +1553,7 @@ export function createRuntimeEntity(input, runtime = null) {
     _meshScale: requireBoundedVector3(input.meshScale ?? [1 / 64, 1 / 64, 1 / 64], "entity meshScale"),
     _meshOrientation: quaternionFrom(input.meshOrientation ?? [0, 0, 0, 1]),
     _meshOffset: requireBoundedVector3(input.meshOffset ?? [0, 0, 0], "entity meshOffset"),
+    _anchorOffset: requireBoundedVector3(input.anchorOffset ?? [0, 0, 0], "entity anchorOffset"),
     _meshColor: requireRgbaColor(input.meshColor ?? [1, 1, 1, 1], "entity meshColor"),
     _meshMetalness: requireFiniteRange(input.meshMetalness ?? 0, "entity meshMetalness", 0, 1),
     _meshEmissive: requireFiniteRange(input.meshEmissive ?? 0, "entity meshEmissive", 0, 1),
@@ -1281,8 +1568,11 @@ export function createRuntimeEntity(input, runtime = null) {
     _customName: String(input.customName ?? ""),
     _nameRadius: requireFiniteRange(input.nameRadius ?? 16, "entity nameRadius", 0, 4096),
     _nameColor: requireRgbColor(input.nameColor ?? [1, 1, 1], "entity nameColor"),
+    ...createEntitySoundSlots(),
     enableInteract: Boolean(input.enableInteract ?? false),
+    interactRadius: Number(input.interactRadius ?? 3),
     interactHint: String(input.interactHint ?? ""),
+    interactColor: requireRgbColor(input.interactColor ?? [1, 1, 1], "entity interactColor"),
     _tags: tags,
     _signals: { click: new EventSignal(), interact: new EventSignal(), destroy: new EventSignal(), voxelContact: new EventSignal(), voxelSeparate: new EventSignal(), fluidEnter: new EventSignal(), fluidLeave: new EventSignal(), takeDamage: new EventSignal(), die: new EventSignal(), contact: new EventSignal(), contactSeparate: new EventSignal() },
     _contactPlayers: new Set(),
@@ -1292,6 +1582,7 @@ export function createRuntimeEntity(input, runtime = null) {
     _showHealthBar: Boolean(input.showHealthBar ?? true),
     _hp: Number(input.hp ?? 100),
     _maxHp: Number(input.maxHp ?? 100),
+    ...createParticleState(input),
     get id() { return this._id; },
     get kind() { return this._kind; },
     get name() { return this._name; },
@@ -1308,6 +1599,8 @@ export function createRuntimeEntity(input, runtime = null) {
     set hp(value) { this._hp = Number(value); this._runtime?._damageFieldChanged(this); },
     get maxHp() { return this._maxHp; },
     set maxHp(value) { this._maxHp = Number(value); this._runtime?._damageFieldChanged(this); },
+    ...createParticleAccessors(),
+    get dead() { return this._hp < 0; },
     get position() { return this._position; },
     set position(value) { this._position.copy(Vector3.from(value)); this._runtime?._entityTransformChanged(this); },
     get velocity() { return this._velocity; },
@@ -1344,6 +1637,8 @@ export function createRuntimeEntity(input, runtime = null) {
     },
     get meshOffset() { return this._meshOffset; },
     set meshOffset(value) { this._meshOffset.copy(requireBoundedVector3(value, "entity meshOffset")); this._runtime?._entityPhysicsChanged(this); },
+    get anchorOffset() { return this._anchorOffset; },
+    set anchorOffset(value) { this._anchorOffset.copy(requireBoundedVector3(value, "entity anchorOffset")); this._runtime?._entityPhysicsChanged(this); },
     get meshColor() { return this._meshColor; },
     set meshColor(value) { this._meshColor.copy(requireRgbaColor(value, "entity meshColor")); this._runtime?._entityPhysicsChanged(this); },
     get meshMetalness() { return this._meshMetalness; },
@@ -1360,19 +1655,26 @@ export function createRuntimeEntity(input, runtime = null) {
     set nameRadius(value) { this._nameRadius = requireFiniteRange(value, "entity nameRadius", 0, 4096); this._runtime?._entityPhysicsChanged(this); },
     get nameColor() { return this._nameColor; },
     set nameColor(value) { this._nameColor.copy(requireRgbColor(value, "entity nameColor")); this._runtime?._entityPhysicsChanged(this); },
-    get tags() { return this._tags; },
+    tags() { return Object.freeze([...this._tags]); },
     get fluidContacts() { return Object.freeze([...this._body.fluids.values()].map(contact => Object.freeze({ voxel: contact.voxel, volume: contact.volume }))); },
+    get entityContacts() { return Object.freeze([...this._contactPlayers].map(other => Object.freeze({ other, force: new Vector3(0, 0, 0), axis: new Vector3(0, 0, 0) }))); },
+    get voxelContacts() { return activeVoxelContacts(this._body); },
+    get contactForce() { return new Vector3(0, 0, 0); },
     addTag(tag) { this._tags.add(String(tag)); },
     removeTag(tag) { this._tags.delete(String(tag)); },
     hasTag(tag) { return this._tags.has(String(tag)); },
+    animate(keyframes, playback) {
+      if (!this._runtime) throw new Error("Entity is not attached to a Script Runtime");
+      return this._runtime._createAnimation(this, keyframes, playback);
+    },
+    getAnimations() { return this._runtime?._getAnimations(this) ?? Object.freeze([]); },
     say(message, options) {
       if (!this._runtime) throw new Error("Entity is not attached to a Script Runtime");
       this._runtime._messageEntity(this, message, options);
     },
-    // DAO3 玩法 API（minecraft index.js 用到）：占位实现，避免 zone 回调崩溃。
-    Give(name, count) { this._runtime?.logger.info(`[script:give] entity ${this.id} +${count ?? 1} ${name}（本地占位）`); },
-    BuffClear() { return Object.freeze({}); },
-    get gamemode() { return { gamemode: mode => this._runtime?.logger.info(`[script:gamemode] entity ${this.id} -> ${mode}（本地占位）`) }; },
+    Give(name, count) { if (!this.isPlayer) return 0; return this._runtime._givePlayer(this, name, count); },
+    BuffClear() { if (!this.isPlayer) return Object.freeze({}); return this._runtime._clearPlayerBuffs(this); },
+    get gamemode() { return { gamemode: mode => this.isPlayer ? this._runtime._setPlayerGameMode(this, mode) : 0 }; },
     sound(spec) {
       if (!this._runtime) throw new Error("Entity is not attached to a Script Runtime");
       return this._runtime._soundEntity(this, spec);
@@ -1383,6 +1685,8 @@ export function createRuntimeEntity(input, runtime = null) {
     nextInteract(filter) { return this._signals.interact.next(filter); },
     onEntityContact(handler) { return this._signals.contact.on(handler); },
     nextEntityContact(filter) { return this._signals.contact.next(filter); },
+    onEntitySeparate(handler) { return this._signals.contactSeparate.on(handler); },
+    nextEntitySeparate(filter) { return this._signals.contactSeparate.next(filter); },
     destroy() {
       if (!this._runtime) throw new Error("Entity is not attached to a Script Runtime");
       this._runtime._destroyEntity(this);
@@ -1406,7 +1710,7 @@ export function createRuntimeEntity(input, runtime = null) {
       this._runtime._hurtEntity(this, amount, options);
     },
     snapshot() {
-      return Object.freeze({ id: this.id, name: this.name, kind: this.kind, position: this.position.toArray(), tags: [...this.tags].sort(), destroyed: this.destroyed, enableInteract: this.enableInteract, interactHint: this.interactHint, enableDamage: this.enableDamage, showHealthBar: this.showHealthBar, hp: this.hp, maxHp: this.maxHp });
+      return Object.freeze({ id: this.id, name: this.name, kind: this.kind, position: this.position.toArray(), tags: [...this._tags].sort(), destroyed: this.destroyed, enableInteract: this.enableInteract, interactHint: this.interactHint, enableDamage: this.enableDamage, showHealthBar: this.showHealthBar, hp: this.hp, maxHp: this.maxHp, ...(this.dead ? { dead: true } : {}), ...(hasParticleState(this) ? { particles: particleSnapshot(this) } : {}) });
     },
   };
 }
@@ -1437,6 +1741,7 @@ function createRuntimePlayer(runtime, input) {
   const boxId = String(input.boxId ?? userId).slice(0, 15);
   const userKey = String(input.userKey ?? stablePlayerUserKey(userId));
   const player = {
+    _runtime: runtime,
     _id: String(input.id),
     _name: String(input.name),
     _userId: userId,
@@ -1455,12 +1760,16 @@ function createRuntimePlayer(runtime, input) {
     _tags: new Set(),
     _signals: { click: new EventSignal(), destroy: new EventSignal(), voxelContact: new EventSignal(), voxelSeparate: new EventSignal(), fluidEnter: new EventSignal(), fluidLeave: new EventSignal(), press: new EventSignal(), release: new EventSignal(), keyDown: new EventSignal(), keyUp: new EventSignal(), respawn: new EventSignal(), takeDamage: new EventSignal(), die: new EventSignal() },
     _wearables: [],
+    _inventory: new Map(),
+    _buffs: new Set(),
+    _gameMode: 0,
     _destroyed: false,
     _zone: { selector: "" },
     _enableDamage: false,
     _showHealthBar: true,
     _hp: 100,
     _maxHp: 100,
+    ...createParticleState(input),
     _spawnPoint: Vector3.from(input.position ?? [0, 0, 0]),
     get spawnPoint() { return this._spawnPoint; },
     set spawnPoint(value) { this._spawnPoint = Vector3.from(value); },
@@ -1471,12 +1780,21 @@ function createRuntimePlayer(runtime, input) {
     cameraYaw: 0,
     cameraPitch: 0,
     cameraMode: GameCameraMode.FOLLOW,
+    cameraEntity: null,
+    cameraPosition: Vector3.from(input.position ?? [0, 0, 0]),
+    cameraTarget: Vector3.from(input.position ?? [0, 0, 0]),
+    cameraUp: new Vector3(0, 1, 0),
     cameraFovY: 0.25,
+    enable3DCursor: false,
+    cameraFreezedAxis: "NONE",
+    freezedForwardDirection: null,
+    cameraDistance: 6,
     disableInputDirection: "NONE",
     swapInputDirection: false,
     reverseInputDirection: "NONE",
     facingDirection: new Vector3(1, 0, 0),
     canFly: false,
+    get gameMode() { return this._gameMode; },
     _walkSpeed: 0.22,
     _runSpeed: 0.4,
     _runAcceleration: 0.35,
@@ -1497,6 +1815,7 @@ function createRuntimePlayer(runtime, input) {
     invisible: false,
     showName: true,
     showIndicator: false,
+    ...createPlayerSoundSlots(),
     walkButton: false,
     crouchButton: false,
     jumpButton: false,
@@ -1525,7 +1844,13 @@ function createRuntimePlayer(runtime, input) {
     set hp(value) { this._hp = Number(value); runtime._damageFieldChanged(this); },
     get maxHp() { return this._maxHp; },
     set maxHp(value) { this._maxHp = Number(value); runtime._damageFieldChanged(this); },
-    get tags() { return this._tags; },
+    ...createParticleAccessors(),
+    get dead() { return this._hp < 0; },
+    get voxelContacts() { return activeVoxelContacts(this._body); },
+    get entityContacts() { return Object.freeze(runtime._entityContactsForPlayer(this)); },
+    get fluidContacts() { return Object.freeze([...this._body.fluids.values()].map(contact => Object.freeze({ voxel: contact.voxel, volume: contact.volume }))); },
+    get contactForce() { return sumContactForce(this._body); },
+    tags() { return Object.freeze([...this._tags]); },
     addTag(tag) { this._tags.add(String(tag)); },
     removeTag(tag) { this._tags.delete(String(tag)); },
     hasTag(tag) { return this._tags.has(String(tag)); },
@@ -1556,15 +1881,31 @@ function createRuntimePlayer(runtime, input) {
     nextDie(filter) { return this._signals.die.next(filter); },
     forceRespawn() { return runtime._forceRespawnPlayer(this); },
     kick() { runtime._kickPlayer(this); },
+    setCameraPitch(value) { this.cameraPitch = Number(value) || 0; },
+    setCameraYaw(value) { this.cameraYaw = Number(value) || 0; },
+    animate(keyframes, playback) { return runtime._createAnimation(this, keyframes, playback); },
+    getAnimations() { return runtime._getAnimations(this); },
     link(href, options) { runtime._linkPlayer(this, href, options); },
     setSkinByName(skinName) { runtime._setPlayerSkin(this, skinName); },
     resetToDefaultSkin() { runtime._resetPlayerSkin(this); },
     clearSkin() { runtime._clearPlayerSkin(this); },
     directMessage(message) { return runtime._messagePlayer(this, message); },
-    // DAO3 玩法 API（minecraft index.js 用到）：本地为占位实现，避免事件回调崩溃。
-    Give(name, count) { runtime.logger.info(`[script:give] ${this.name} +${count ?? 1} ${name}（本地占位）`); },
-    BuffClear() { return Object.freeze({}); },
-    get gamemode() { return { gamemode: mode => runtime.logger.info(`[script:gamemode] ${this.name} -> ${mode}（本地占位）`) }; },
+    async getMiaoShells() { return 0; },
+    async querySocial() { return Object.freeze([]); },
+    async querySocialStatistic() { return Object.freeze({ followingNum: 0, followerNum: 0, friendsNum: 0 }); },
+    openUserProfileDialog(userId) { return runtime._sendPlayerUiEvent(this, "profile", { userId: Number(userId) }); },
+    openMarketplace(productIds) {
+      if (!Array.isArray(productIds)) throw new TypeError("openMarketplace productIds must be an array");
+      return runtime._sendPlayerUiEvent(this, "marketplace", { productIds: productIds.map(Number).filter(Number.isFinite) });
+    },
+    share(content = "") {
+      const text = String(content);
+      const truncated = text.length > 40 ? `${text.slice(0, 39)}……` : text;
+      return runtime._sendPlayerUiEvent(this, "share", { content: `${truncated}\n#神奇代码岛 #地图` });
+    },
+    Give(name, count) { return runtime._givePlayer(this, name, count); },
+    BuffClear() { return runtime._clearPlayerBuffs(this); },
+    get gamemode() { return { gamemode: mode => runtime._setPlayerGameMode(this, mode) }; },
     wearables(bodyPart) { return this._wearables.filter(item => item.bodyPart === bodyPart); },
     addWearable(spec) { const wearable = { ...structuredClone(spec) }; this._wearables.push(wearable); return wearable; },
     removeWearable(wearable) { const index = this._wearables.indexOf(wearable); if (index >= 0) this._wearables.splice(index, 1); },
@@ -1622,8 +1963,10 @@ function createRuntimePlayer(runtime, input) {
         health: this.health,
         hp: this.hp,
         maxHp: this.maxHp,
+        dead: this.dead,
         enableDamage: this.enableDamage,
         showHealthBar: this.showHealthBar,
+        particles: particleSnapshot(this),
         spawnPoint: this.spawnPoint.toArray(),
         movementBounds: { lo: this.movementBounds.lo.toArray(), hi: this.movementBounds.hi.toArray() },
         color: { r: this.color.r, g: this.color.g, b: this.color.b },
@@ -1633,6 +1976,9 @@ function createRuntimePlayer(runtime, input) {
         avatar: this.avatar,
         url: this.url.toString(),
         canFly: this.canFly,
+        gamemode: this._gameMode,
+        inventory: Object.fromEntries(this._inventory),
+        buffs: [...this._buffs],
         cameraMode: this.cameraMode,
         cameraFovY: this.cameraFovY,
         invisible: this.invisible,
@@ -1661,6 +2007,33 @@ function createRuntimePlayer(runtime, input) {
     },
   };
   return player;
+}
+
+function createEntitySoundSlots() {
+  return Object.fromEntries(["chatSound", "hurtSound", "dieSound", "interactSound"].map(name => [name, {
+    sample: "",
+    gain: 1,
+    gainRange: 0,
+    pitch: 1,
+    pitchRange: 0,
+    radius: 32,
+  }]));
+}
+
+function createPlayerSoundSlots() {
+  const slots = [
+    "action0", "action1", "chat", "crouch", "die", "doubleJump", "endFly",
+    "enterWater", "hurt", "interact", "jump", "land", "leaveWater", "music",
+    "spawn", "startFly", "step", "swim",
+  ];
+  return Object.fromEntries(slots.map(name => [name, {
+    sample: "",
+    gain: 1,
+    gainRange: 0,
+    pitch: 1,
+    pitchRange: 0,
+    radius: 32,
+  }]));
 }
 
 function stablePlayerUserKey(value) {
@@ -1840,6 +2213,27 @@ export class RuntimeKeyBoardEvent {
     this.tick = tick;
     this.keyCode = keyCode;
   }
+}
+
+export function activeVoxelContacts(body) {
+  if (!body?.contacts) return Object.freeze([]);
+  return Object.freeze([...body.contacts.values()]
+    .filter(contact => contact.collider?.kind === "voxel")
+    .map(contact => Object.freeze({
+      x: contact.collider.x,
+      y: contact.collider.y,
+      z: contact.collider.z,
+      voxel: contact.collider.blockId,
+      axis: Vector3.from(contact.normal),
+      force: Vector3.from(contact.force ?? [0, 0, 0]),
+    })));
+}
+
+export function sumContactForce(body) {
+  const total = new Vector3(0, 0, 0);
+  if (!body?.contacts) return total;
+  for (const contact of body.contacts.values()) total.addEq(Vector3.from(contact.force ?? [0, 0, 0]));
+  return total;
 }
 
 export function createContactEvent(tick, entity, contact) {

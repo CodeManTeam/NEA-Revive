@@ -1,0 +1,52 @@
+{
+  "format": "dao3-project-export/v1",
+  "source": "D:\\Projects\\Gaming\\NEA-Revive\\reference\\[Minecraft]我的世界正式版-master-export",
+  "importedAt": "2026-08-17T15:30:50.158Z",
+  "projectHash": "QmWyP1DLobdm6QyA4peQcyr9MBczHZ41rtWr6p7btpawfE",
+  "shape": [
+    256,
+    128,
+    256
+  ],
+  "spawn": [
+    64,
+    40,
+    64
+  ],
+  "terrainBoxes": 42837,
+  "terrainCells": 1167963,
+  "scripts": [
+    "clientIndex.js",
+    "index.js",
+    "islandmodule.js",
+    "playerforward.js",
+    "script_1.js"
+  ],
+  "missingModules": [
+    "Hearts.js",
+    "PlayerOpTool.js",
+    "Start.js",
+    "TerrainCopy.js",
+    "Voxel.js",
+    "_client_bundle.js",
+    "_server_bundle.js",
+    "admin.js",
+    "bag.js",
+    "ban.js",
+    "biology.js",
+    "chat.js",
+    "crafting.js",
+    "data.js",
+    "dialog.js",
+    "gui.js",
+    "heart.js",
+    "player.js",
+    "sql.js",
+    "teleport.js",
+    "water.js",
+    "world.js",
+    "月神版兑换码.js",
+    "末影龙.js"
+  ],
+  "assets": 169
+}
