@@ -447,7 +447,9 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         } catch { /* 忽略无效请求体 */ }
         const sessionId = `local-${randomUUID()}`
         sessionNames.set(sessionId, playerName)
-        const wsUrl = `ws://${request.headers.host ?? `${host}:${requestedPort}`}${path}`
+        const forwardedProto = String(request.headers["x-forwarded-proto"] ?? "").split(",", 1)[0]?.trim()
+        const wsScheme = forwardedProto === "https" ? "wss" : "ws"
+        const wsUrl = `${wsScheme}://${request.headers.host ?? `${host}:${requestedPort}`}${path}`
         response.writeHead(200, { "content-type": "application/json; charset=utf-8" })
         response.end(JSON.stringify({
           config: {
