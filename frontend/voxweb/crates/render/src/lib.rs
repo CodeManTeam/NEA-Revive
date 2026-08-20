@@ -21,6 +21,7 @@ pub mod nea_alpha;
 pub mod nea_atlas;
 pub mod nea_avatar_shader;
 pub mod nea_environment;
+pub mod nea_entity;
 pub mod nea_fluid;
 pub mod nea_mesh;
 pub mod nea_oit;

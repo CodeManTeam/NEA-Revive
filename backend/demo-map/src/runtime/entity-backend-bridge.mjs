@@ -70,7 +70,7 @@ export function runtimeEntityProjectionPayload(entity) {
     meshMetalness: entity.meshMetalness,
     meshEmissive: entity.meshEmissive,
     meshShininess: entity.meshShininess,
-    enableInteract: entity.enableInteract,
+    ...runtimeEntityInteractionPayload(entity),
   };
 }
 
@@ -87,7 +87,16 @@ export function runtimeEntityStatePayload(entity) {
     restitution: Number(entity.restitution),
     nameplate: runtimeEntityNameplatePayload(entity),
     model: runtimeEntityModelPayload(entity),
+    ...runtimeEntityInteractionPayload(entity),
     ...(hasParticleState(entity) ? { particles: runtimeEntityParticlePayload(entity) } : {}),
+  };
+}
+
+function runtimeEntityInteractionPayload(entity) {
+  return {
+    enableInteract: Boolean(entity.enableInteract),
+    interactHint: String(entity.interactHint ?? ""),
+    interactRadius: Number(entity.interactRadius ?? 3),
   };
 }
 

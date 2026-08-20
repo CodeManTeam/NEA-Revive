@@ -5,11 +5,13 @@
 import { readFileSync, writeFileSync } from "node:fs"
 import { createReadStream } from "node:fs"
 import { createInterface } from "node:readline"
-import { join } from "node:path"
+import { join, resolve } from "node:path"
 import { MuReadStream } from "mudb/stream"
 import { gameTerrain } from "./protocol.ts"
 
-const captureRoot = "D:/Projects/Gaming/NEA-Project/Evidence/dump/private/live-captures/20260729-181217"
+const captureRoot = process.env.NEA_CAPTURE_ROOT
+  ? resolve(process.env.NEA_CAPTURE_ROOT)
+  : resolve(import.meta.dirname, "../../evidence/dump/private/live-captures/20260729-181217")
 
 // ---- decodeVoxelChunk（从 box3-server 移植）----
 const chunkMask = 31

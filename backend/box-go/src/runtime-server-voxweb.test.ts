@@ -5,7 +5,7 @@ import { strict as assert } from "node:assert"
 import { rm } from "node:fs/promises"
 import { MuClient } from "mudb"
 import { MuWebSocket } from "mudb/socket/web/client"
-import { box3Protocols, gameChat, gameClock, gameNet, gameTerrain } from "../protocol"
+import { box3Protocols, gameChat, gameClock, gameNet, gameTerrain, dialog } from "../protocol"
 import { startRuntimeServer } from "./runtime-server"
 
 const sourceRoot = "D:/Projects/Gaming/NEA-Revive/packages/parkour"
@@ -35,8 +35,11 @@ const rawFrames: Uint8Array[] = []
 const resets: any[] = []
 const chunkResponses: any[] = []
 const voxelChanges: any[] = []
+const dialogOpens: any[] = []
 let terrainProtocol: any
 let netProtocol: any
+let dialogProtocol: any
+let chatProtocol: any
 
 for (const schema of box3Protocols) {
   const protocol = client.protocol(schema as any)
@@ -50,12 +53,19 @@ for (const schema of box3Protocols) {
     handlers.chunkResponse = (data: any) => chunkResponses.push(structuredClone(data))
     handlers.voxelChange = (data: any) => voxelChanges.push(structuredClone(data))
   }
+  if (schema === dialog) {
+    handlers.open = (data: any) => dialogOpens.push(structuredClone(data))
+    handlers.cancelDialogs = () => undefined
+    handlers.cancelDialog = () => undefined
+  }
   protocol.configure({
     message: handlers as any,
     raw: (bytes: Uint8Array) => rawFrames.push(Uint8Array.from(bytes)),
   } as any)
   if (schema === gameTerrain) terrainProtocol = protocol
   if (schema === gameNet) netProtocol = protocol
+  if (schema === dialog) dialogProtocol = protocol
+  if (schema === gameChat) chatProtocol = protocol
 }
 
 function waitFor(predicate: () => boolean, timeoutMs = 8000): Promise<void> {
@@ -150,6 +160,30 @@ try {
   terrainProtocol.server.message.fetchHashes({ startI: 0, startJ: 0, startK: 0, chunkIds: [chunkId], dirtyChunks: [] })
   await new Promise((resolve) => setTimeout(resolve, 100))
 
+  // 6) 帮助 命令 → canonical dialog.open → close 解析 pending promise。
+  //    聊天输入走 game-chat.noticeMessage，触发 parkour world.onChat，其
+  //    调用 entity.player.dialog()，后端经 mudb dialog.open 推送前端。
+  chatProtocol.server.message.noticeMessage({ detail: "帮助", title: "" })
+  await waitFor(() => dialogOpens.length > 0)
+  const opened = dialogOpens[0]
+  console.log(`[ok] dialog open rpcId=${opened.rpcId} config.type=${opened.config.type}`)
+  assert.ok(opened.rpcId > 0, "dialog open should carry a positive rpcId")
+  assert.ok(opened.config, "dialog open should carry a config")
+  dialogProtocol.server.message.close({ rpcId: opened.rpcId, result: { type: "close" } })
+  await new Promise((resolve) => setTimeout(resolve, 100))
+
+  // Multiple dialogs may be in flight; responses are matched by rpcId rather
+  // than arrival order so an out-of-order client response cannot resolve the
+  // wrong script promise.
+  chatProtocol.server.message.noticeMessage({ detail: "帮助", title: "" })
+  chatProtocol.server.message.noticeMessage({ detail: "帮助", title: "" })
+  await waitFor(() => dialogOpens.length >= 3)
+  const second = dialogOpens[1]
+  const third = dialogOpens[2]
+  dialogProtocol.server.message.close({ rpcId: third.rpcId, result: { type: "text", value: "third" } })
+  dialogProtocol.server.message.close({ rpcId: second.rpcId, result: { type: "text", value: "second" } })
+  await new Promise((resolve) => setTimeout(resolve, 100))
+  console.log(`[ok] dialog rpcId matching: ${second.rpcId} <- second, ${third.rpcId} <- third`)
   console.log("runtime-server voxweb handshake test passed")
 } finally {
   if (client.running) client.destroy()

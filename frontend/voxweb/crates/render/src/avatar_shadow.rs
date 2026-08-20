@@ -4,7 +4,6 @@ use wgpu::util::DeviceExt;
 
 use crate::avatar_pipeline::{AvatarPartGpu, avatar_instance_layout, avatar_vertex_layout};
 use crate::nea_avatar_shader::NEA_AVATAR_SHADOW_WGSL;
-use crate::nea_mesh::MeshBuffers;
 use crate::nea_shadow::{CASCADE_COUNT, NeaShadowFrame, NeaShadowMap};
 
 pub struct AvatarShadowRenderer {

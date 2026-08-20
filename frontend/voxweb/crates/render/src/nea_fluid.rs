@@ -271,8 +271,11 @@ impl NeaFluidPipeline {
         now_seconds: f32,
         eye_fluid: Option<[f32; 4]>,
         exposure: f32,
+        environment: &crate::nea_environment::NeaEnvironment,
+        map: Option<&crate::nea_environment::MapEnvironment>,
     ) {
-        let mut globals = default_globals();
+        let mut globals =
+            crate::nea_environment::environment_globals(512.0, 16.0, environment, map);
         globals[GLOBALS_MVP_OFFSET..GLOBALS_MVP_OFFSET + 16].copy_from_slice(mvp);
         globals[GLOBALS_EYE_EXPOSURE_OFFSET..GLOBALS_EYE_EXPOSURE_OFFSET + 3].copy_from_slice(eye);
         globals[GLOBALS_EYE_EXPOSURE_OFFSET + 3] = exposure;

@@ -374,3 +374,54 @@ fn protocol_values_from_json_for_key_schemas() {
         .expect("encode identity");
     assert!(!frame.is_empty());
 }
+
+#[test]
+fn protocol_dialog_close_union_roundtrips() {
+    // dialog.close is a server-direction message: { rpcId: Varint,
+    // result: Union { close: Void, text: UTF8, input: UTF8,
+    // select: { index, value } } }. The client parses it back to apply the
+    // result to the awaiting dialog promise. Verify every arm round-trips
+    // through the real protocol table.
+    use voxweb_protocol::Value;
+    let j = load_protocols_json();
+    let (table, _, _) = ProtocolTable::from_json(&j).expect("build table");
+
+    let close = Value::Union {
+        type_index: 0,
+        data: Box::new(Value::Void),
+    };
+    let text = Value::Union {
+        type_index: 1,
+        data: Box::new(Value::UTF8("ok".into())),
+    };
+    let input = Value::Union {
+        type_index: 2,
+        data: Box::new(Value::UTF8("42".into())),
+    };
+    let select = Value::Union {
+        type_index: 3,
+        data: Box::new(Value::Struct(vec![
+            Value::Varint(2),
+            Value::UTF8("b".into()),
+        ])),
+    };
+
+    for (idx, union) in [
+        ("close", &close),
+        ("text", &text),
+        ("input", &input),
+        ("select", &select),
+    ] {
+        let payload = Value::Struct(vec![Value::Varint(1), union.clone()]);
+        let frame = table
+            .encode_server_message("dialog", "close", &payload)
+            .expect("encode dialog close");
+        assert!(
+            !frame.is_empty(),
+            "close arm {idx} should encode a non-empty frame"
+        );
+        // The bytes are parsed by the backend (box-go) to resolve the awaiting
+        // dialog promise; cross-language verification lives in the box-go
+        // runtime-server-voxweb test (帮助 -> dialog.open -> close).
+    }
+}

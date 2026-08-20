@@ -41,7 +41,6 @@ struct NeaSessionState {
     client_json_str: String,
     server_json_str: String,
     table: ProtocolTable,
-    sent_join: bool,
 }
 
 impl NeaSessionState {
@@ -54,7 +53,6 @@ impl NeaSessionState {
             client_json_str,
             server_json_str,
             table,
-            sent_join: false,
         })
     }
 }

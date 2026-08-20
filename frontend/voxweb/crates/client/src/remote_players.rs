@@ -29,6 +29,7 @@ pub struct RemotePlayerPose {
     pub name: String,
     pub scale: f32,
     pub body: RigidBody,
+    #[allow(dead_code)]
     pub dead: bool,
 }
 

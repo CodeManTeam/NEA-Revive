@@ -13,7 +13,7 @@ This subproject demonstrates the first creator workflow for the recovered DAO3/B
 ## Commands
 
 ```powershell
-cd D:\Projects\Gaming\NEA-Project\demo-map
+cd D:\Projects\Gaming\NEA-Revive\backend\demo-map
 npm test
 npm run test:control-bridge
 npm run build

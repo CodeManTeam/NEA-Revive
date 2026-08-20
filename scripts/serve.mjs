@@ -13,7 +13,7 @@ const backendPort = Number(process.env.NEA_BACKEND_PORT ?? 18081)
 const frontendPort = Number(process.env.NEA_FRONTEND_PORT ?? 18082)
 const mapArg = process.argv.includes("--map")
   ? process.argv[process.argv.indexOf("--map") + 1]
-  : (process.env.NEA_MAP ?? "parkour")
+  : (process.env.NEA_MAP ?? "there-is-backroom")
 const runtimeBuildRoot = process.env.NEA_BUILD_ROOT
   ? resolve(process.env.NEA_BUILD_ROOT)
   : resolve(rootDir, ".build", mapArg)

@@ -4,6 +4,7 @@
 //! writes to a WriteStream; patch reads from a ReadStream. Values are a plain
 //! enum tree so schemas can be described at runtime (like the JS MuStruct
 //! constructor spec) instead of via Rust generics.
+#![allow(unused_assignments)]
 
 use crate::stream::{ReadStream, WriteStream};
 

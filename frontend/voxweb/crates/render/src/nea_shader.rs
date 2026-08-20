@@ -70,10 +70,15 @@ fn tile_offset(pos: vec3f, face_u: vec3f, face_v: vec3f) -> vec2f {
 }
 
 // getTexCoord: (0.5/r) + ((size-1)/r)*tile + base (recovered 734.js).
-// The Rust geometry bakes the tile ORIGIN + (size-1)/r span into vertex
-// UVs; the shader adds the half-texel offset so NEAREST sampling never
-// crosses the tile border.
+// Vertex UVs carry only the tile ORIGIN; `tile` is the per-voxel-unit
+// in-tile repeat (fract(world_pos) dotted with the face axes) and the
+// shader adds it plus the half-texel offset so NEAREST sampling never
+// crosses the tile border. atlas_params.y < 2 selects entity mode, where
+// UVs are already full-texture coordinates and must be used verbatim.
 fn get_tex_coord(base: vec2f, tile: vec2f) -> vec2f {
+  if (globals.atlas_params.y < 2.0) {
+    return base;
+  }
   let uv_offset = vec2f(0.5 / globals.atlas_params.x) +
     ((globals.atlas_params.y - 1.0) / globals.atlas_params.x) * tile;
   return base + uv_offset;
@@ -312,9 +317,11 @@ fn shade_voxel(in: VsOut) -> vec4f {
   let face_u = a * base_u + b * base_v;
   let face_v = a * base_v - b * base_u;
   let in_tile = tile_offset(fract(in.world_pos), face_u, face_v);
+  // Vertex UVs carry only the tile ORIGIN; the in-tile repeat comes from
+  // fract(world_pos) here (recovered tileOffset semantics).
   let tex_coord = get_tex_coord(in.uv, in_tile);
   let color = textureSample(atlas, atlas_sampler, tex_coord);
-  let material = textureSample(material_atlas, material_sampler, tex_coord);
+  let material = select(textureSample(material_atlas, material_sampler, tex_coord), vec4f(0.5, 0.5, 0.5, 1.0), globals.atlas_params.y < 2.0);
   let emissive = material.b;
   let face_shadow = step(0.0, dot(in.normal, globals.light_direction_gamma.xyz));
   let packed_shadow = saturate(
@@ -357,29 +364,27 @@ fn fs_main(in: VsOut) -> @location(0) vec4f {
   let in_tile = tile_offset(fract(in.world_pos), face_u, face_v);
   let tex_coord = get_tex_coord(in.uv, in_tile);
   let albedo = textureSample(atlas, atlas_sampler, tex_coord).rgb;
-  // The original renderer samples material.r/g/b as metalness, smoothness,
-  // and emissive, and perturbs the geometric normal with bump.g/b.
-  let material = textureSample(material_atlas, material_sampler, tex_coord);
-  let bump_coord = get_bump_tex_coord(in.uv + in_tile * (15.0 / 512.0));
-  let bump = textureSample(bump_atlas, bump_sampler, bump_coord);
-  let dh = bump.gb - vec2f(0.5);
-  let shaded_normal = normalize(0.5 * face_normal + dh.x * face_u + dh.y * face_v);
-  let normal_light = saturate(dot(shaded_normal, normalize(globals.light_direction_gamma.xyz)));
-  let face_shadow = step(0.0, dot(shaded_normal, globals.light_direction_gamma.xyz));
+  // The recovered WebGPU voxel pipeline only consumes material.b (emissive).
+  // Metalness/smoothness and the bump atlas belong to the older WebGL path.
+  let material = select(textureSample(material_atlas, material_sampler, tex_coord), vec4f(0.5, 0.5, 0.5, 1.0), globals.atlas_params.y < 2.0);
+  let normal_light = saturate(dot(face_normal, normalize(globals.light_direction_gamma.xyz)));
+  let face_shadow = step(0.0, dot(face_normal, globals.light_direction_gamma.xyz));
   var shadow = face_shadow;
   if (shadow_data.enabled_splits.x > 0.0) {
     shadow = face_shadow * sample_shadows(in.world_pos, face_normal, in.pos);
   }
-  let nu = 0.5 * dot(shaded_normal, face_u) + 0.5;
-  let nv = 0.5 * dot(shaded_normal, face_v) + 0.5;
+  let nu = 0.5 * dot(face_normal, face_u) + 0.5;
+  let nv = 0.5 * dot(face_normal, face_v) + 0.5;
   let interpolated_light =
     ((1.0 - nu) * (1.0 - nv)) * in.light00 +
     (nu * (1.0 - nv)) * in.light01 +
     ((1.0 - nu) * nv) * in.light10 +
     (nu * nv) * in.light11;
-  let ao = interpolated_light.a * bump.a;
+  // Recovered WebGPU terrain shader sets `surf.ao = 1.`. The packed alpha
+  // channel is sky visibility, not ambient occlusion for local RGB light.
+  let ao = 1.0;
   let irradiance = 100.0 * interpolated_light.rgb +
-    interpolated_light.a * directional_sky(shaded_normal);
+    interpolated_light.a * directional_sky(face_normal);
   // 空气透视 fog factor（与 apply_fog 同一计算，供 F5 显示）
   var view_dir = in.world_pos - globals.eye_exposure.xyz;
   let dist = max(length(view_dir), 0.000001);
@@ -399,39 +404,7 @@ fn fs_main(in: VsOut) -> @location(0) vec4f {
   // NEA-Project's live Player WGSL uses globalShade here. Its global-light
   // floor keeps shadowed stone readable instead of multiplying it to black.
   let direct = global_shade(normal_light * shadow) * globals.light_color_global.rgb;
-  var lit: vec3f;
-  if (material.g < 0.01) {
-    lit = albedo * (ao * (direct + irradiance) + 400.0 * material.b);
-  } else {
-    let n = shaded_normal;
-    let v = normalize(globals.eye_exposure.xyz - in.world_pos);
-    let l = normalize(globals.light_direction_gamma.xyz);
-    let h = normalize(v + l);
-    let no_v = saturate(dot(n, v));
-    let no_l = saturate(dot(n, l));
-    let no_h = saturate(dot(n, h));
-    let lo_h = saturate(dot(l, h));
-    let roughness = 1.0 - material.g;
-    let linear_roughness = roughness * roughness;
-    let diffuse_color = ((1.0 - material.r) / 3.141592653589793) * albedo;
-    let f0 = 0.04 * (1.0 - material.r) + albedo * material.r;
-    let dfg = prefiltered_dfg(roughness, no_v);
-    let specular_color = f0 * dfg.x + vec3f(dfg.y);
-    let brdf = d_ggx(linear_roughness, no_h) *
-      v_smith_ggx_correlated(linear_roughness, no_v, no_l) *
-      f_schlick(f0, lo_h);
-    lit = (no_l * shadow * ao) * globals.light_color_global.rgb *
-      (diffuse_color + brdf);
-    let diffuse_irradiance = ao * irradiance;
-    lit += diffuse_irradiance * diffuse_color;
-    let reflection = -normalize(reflect(v, n));
-    let sky_visibility = 0.25 *
-      (in.light00.a + in.light01.a + in.light10.a + in.light11.a);
-    let reflected_sky = sky_visibility * directional_sky(reflection);
-    let specular_irradiance = mix(reflected_sky, diffuse_irradiance, linear_roughness);
-    lit += specular_irradiance * specular_color;
-    lit += 400.0 * material.b * albedo;
-  }
+  let lit = albedo * (ao * (direct + irradiance) + 400.0 * material.b);
   let fog_color = globals.fog_params2.x * directional_sky(view_dir) * globals.fog_params3.rgb;
   let fogged = mix(lit, fog_color, fog_amount);
   let mapped = aces_tone_map(globals.eye_exposure.w * fogged);
@@ -491,13 +464,16 @@ mod tests {
         assert!(NEA_FRAGMENT_WGSL.contains("@fragment"), "fragment entry");
         assert!(NEA_FRAGMENT_WGSL.contains("textureSample"), "sampling call");
         assert!(NEA_FRAGMENT_WGSL.contains("material_atlas"));
-        assert!(NEA_FRAGMENT_WGSL.contains("get_bump_tex_coord"));
-        assert!(NEA_FRAGMENT_WGSL.contains("lit = albedo * (ao * (direct + irradiance)"));
-        assert!(NEA_FRAGMENT_WGSL.contains("fn d_ggx"));
-        assert!(NEA_FRAGMENT_WGSL.contains("fn prefiltered_dfg"));
+        assert!(NEA_FRAGMENT_WGSL.contains("let ao = 1.0"));
+        assert!(!NEA_FRAGMENT_WGSL.contains("let dh = bump.gb"));
+        assert!(
+            NEA_FRAGMENT_WGSL
+                .contains("lit = albedo * (ao * (direct + irradiance) + 400.0 * material.b)")
+        );
+        assert!(!NEA_FRAGMENT_WGSL.contains("if (material.g < 0.01)"));
         assert!(NEA_FRAGMENT_WGSL.contains("bump_atlas"));
         assert!(NEA_FRAGMENT_WGSL.contains("emissive = material.b"));
-        assert!(NEA_FRAGMENT_WGSL.contains("textureSample(bump_atlas"));
+        assert!(!NEA_FRAGMENT_WGSL.contains("textureSample(bump_atlas"));
         assert!(!NEA_FRAGMENT_WGSL.contains("perturb_normal"));
         assert!(NEA_FRAGMENT_WGSL.contains("global_shade"));
         assert!(NEA_FRAGMENT_WGSL.contains("light_color_global"));
@@ -512,9 +488,7 @@ mod tests {
         assert!(NEA_FRAGMENT_WGSL.contains("array<vec2f, 16>"));
         assert!(NEA_FRAGMENT_WGSL.contains("let direct = global_shade(normal_light * shadow)"));
         assert!(NEA_FRAGMENT_WGSL.contains("((1.0 - nu) * (1.0 - nv)) * in.light00"));
-        assert!(
-            NEA_FRAGMENT_WGSL.contains("interpolated_light.a * directional_sky(shaded_normal)")
-        );
+        assert!(NEA_FRAGMENT_WGSL.contains("interpolated_light.a * directional_sky(face_normal)"));
         assert!(!NEA_FRAGMENT_WGSL.contains("max(interpolated_light.a, 0.35)"));
         assert!(NEA_FRAGMENT_WGSL.contains("direct + irradiance"));
         assert!(NEA_FRAGMENT_WGSL.contains("shadow = face_shadow * sample_shadows"));

@@ -936,6 +936,31 @@ test("capability manifest keeps packaged assets partial without a generic runtim
   assert.equal(result.status, "partial");
 });
 
+test("capability manifest uses the generic project asset resolver for captured audio names", () => {
+  const result = manifest({
+    serverSource: `world.sound("audio/door.mp3");`,
+    assets: [{ name: "audio/audio_door.mp3", kind: "audio" }],
+  });
+  const resource = result.resources.find(item => item.reference === "audio/door.mp3");
+  assert.equal(resource.assetName, "audio/door.mp3");
+  assert.equal(resource.availability, "packaged");
+  assert.equal(resource.runtimeSupport, "project-asset-http");
+  assert.equal(resource.state, "ready");
+});
+
+test("capability manifest does not resolve an ambiguous captured asset declaration", () => {
+  const result = manifest({
+    serverSource: `world.sound("audio/door.mp3");`,
+    assets: [
+      { name: "audio/audio_door.mp3", path: "assets/a.mp3", kind: "audio" },
+      { name: "audio/audio_door.mp3", path: "assets/b.mp3", kind: "audio" },
+    ],
+  });
+  const resource = result.resources.find(item => item.reference === "audio/door.mp3");
+  assert.equal(resource.availability, "unresolved");
+  assert.equal(resource.state, "blocked");
+});
+
 test("capability manifest blocks missing project UI images and keeps metadata-only pictures partial", () => {
   const uiTree = {
     ROOT_ID: { id: "ROOT_ID", type: 0, name: "Root", parentId: "", childrenIds: ["screen"] },

@@ -23,8 +23,34 @@ pub struct NeaEnvironment {
     pub sky_bottom: [f32; 3],
     pub sky_front: [f32; 3],
     pub sky_back: [f32; 3],
+    pub global_light: f32,
+    pub gamma: f32,
     pub exposure: f32,
 }
+
+/// Recovered DAO3 map environment fields (`environment.json`) in raw form.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct MapEnvironment {
+    pub sun_direction: [f32; 3],
+    pub sun_color: [f32; 3],
+    pub sky_left: [f32; 3],
+    pub sky_right: [f32; 3],
+    pub sky_top: [f32; 3],
+    pub sky_bottom: [f32; 3],
+    pub sky_front: [f32; 3],
+    pub sky_back: [f32; 3],
+    pub global_light: f32,
+    pub gamma: f32,
+    pub fog_start_distance: f32,
+    pub fog_density: f32,
+    pub fog_height_falloff: f32,
+}
+
+/// DAO3 map colors are 0..1; the preserved Player shading uses HDR
+/// magnitudes for the noon default (sun ~448, sky ~280). Scale map colors
+/// onto the same range so a full-value map sun matches the recovered noon.
+const MAP_SUN_SCALE: f32 = 448.52;
+const MAP_SKY_SCALE: f32 = 280.0;
 
 impl NeaEnvironment {
     /// The default phase is fixed because the preserved schema defaults
@@ -40,12 +66,80 @@ impl NeaEnvironment {
             sky_bottom: [182.88173, 203.10341, 224.27666],
             sky_front: [203.125, 239.0755, 272.44034],
             sky_back: [203.125, 239.0755, 272.44034],
+            global_light: DEFAULT_GLOBAL_LIGHT,
+            gamma: DEFAULT_GAMMA,
             exposure: 1.0,
         };
         Self {
             exposure: environment.target_exposure(1.0),
             ..environment
         }
+    }
+
+    /// Build the shading environment from a map's recovered `environment`
+    /// fields. `global_light` defaults to the recovered schema default 0.3
+    /// when the map omits it (null / negative sentinel).
+    pub fn from_map(map: &MapEnvironment) -> Self {
+        let environment = Self {
+            sun_direction: map.sun_direction,
+            sun_color: map.sun_color.map(|c| c * MAP_SUN_SCALE),
+            sky_left: map.sky_left.map(|c| c * MAP_SKY_SCALE),
+            sky_right: map.sky_right.map(|c| c * MAP_SKY_SCALE),
+            sky_top: map.sky_top.map(|c| c * MAP_SKY_SCALE),
+            sky_bottom: map.sky_bottom.map(|c| c * MAP_SKY_SCALE),
+            sky_front: map.sky_front.map(|c| c * MAP_SKY_SCALE),
+            sky_back: map.sky_back.map(|c| c * MAP_SKY_SCALE),
+            global_light: if map.global_light < 0.0 {
+                DEFAULT_GLOBAL_LIGHT
+            } else {
+                map.global_light
+            },
+            gamma: if map.gamma > 0.0 {
+                map.gamma
+            } else {
+                DEFAULT_GAMMA
+            },
+            exposure: 1.0,
+        };
+        Self {
+            exposure: environment.target_exposure(1.0),
+            ..environment
+        }
+    }
+
+    /// A map without a usable sun (zero direction or black sun color) must
+    /// not render directional shadows; the DAO3 Player skips the sun pass
+    /// for such environments (e.g. fully indoor maps).
+    pub fn sun_active(&self) -> bool {
+        self.sun_direction != [0.0; 3] && self.sun_color != [0.0; 3]
+    }
+
+    /// Overwrite the sun/sky/globalLight slots of a globals record with this
+    /// environment so per-frame pipelines shade with the map's sky.
+    pub fn apply_to_globals(&self, values: &mut [f32; GLOBALS_FLOATS]) {
+        values[GLOBALS_LIGHT_GAMMA_OFFSET..GLOBALS_LIGHT_GAMMA_OFFSET + 3]
+            .copy_from_slice(&self.sun_direction);
+        values[GLOBALS_LIGHT_GAMMA_OFFSET + 3] = DEFAULT_GAMMA;
+        set_rgb(values, GLOBALS_LIGHT_COLOR_OFFSET, self.sun_color);
+        values[GLOBALS_LIGHT_COLOR_OFFSET + 3] = self.global_light;
+        set_rgb(values, GLOBALS_SKY_LEFT_OFFSET, self.sky_left);
+        set_rgb(values, GLOBALS_SKY_RIGHT_OFFSET, self.sky_right);
+        set_rgb(values, GLOBALS_SKY_TOP_OFFSET, self.sky_top);
+        set_rgb(values, GLOBALS_SKY_BOTTOM_OFFSET, self.sky_bottom);
+        set_rgb(values, GLOBALS_SKY_FRONT_OFFSET, self.sky_front);
+        set_rgb(values, GLOBALS_SKY_BACK_OFFSET, self.sky_back);
+    }
+
+    /// Overwrite the world-fog slot with the map's recovered fog parameters
+    /// in the preserved `fogParams` layout
+    /// (start distance, height base, height falloff, density).
+    pub fn apply_map_fog(values: &mut [f32; GLOBALS_FLOATS], map: &MapEnvironment) {
+        values[GLOBALS_FOG_OFFSET..GLOBALS_FOG_OFFSET + 4].copy_from_slice(&[
+            map.fog_start_distance,
+            -128.0,
+            map.fog_height_falloff,
+            map.fog_density,
+        ]);
     }
 
     /// Recovered camera exposure target. `ambient` is the voxel worker''s
@@ -58,9 +152,18 @@ impl NeaEnvironment {
             .fold(0.0_f32, f32::max);
         let direct = ambient * self.sun_color.iter().copied().fold(0.0_f32, f32::max);
         let indirect = (1.0 - ambient) * sky;
+        // Preserved Player expression:
+        //   (globalLight ? indirect * globalLight : 1)
+        // A zero globalLight is not a zero contribution. Indoor maps use the
+        // fallback 1.0 as the eye-adaptation baseline for emissive lighting.
+        let indirect_exposure = if self.global_light != 0.0 {
+            indirect * self.global_light
+        } else {
+            1.0
+        };
         let denominator = ambient * direct
             + EMISSIVE_SCALE / 32.0
-            + (1.0 - ambient) * (EMISSIVE_SCALE / 20.0) * indirect * DEFAULT_GLOBAL_LIGHT;
+            + (1.0 - ambient) * (EMISSIVE_SCALE / 20.0) * indirect_exposure;
         1.0 / denominator.max(f32::MIN_POSITIVE)
     }
 }
@@ -106,6 +209,25 @@ pub fn recovered_default_globals(atlas_size: f32, tile_size: f32) -> [f32; GLOBA
     set_rgb(&mut values, GLOBALS_SKY_BACK_OFFSET, environment.sky_back);
     values[GLOBALS_ATLAS_OFFSET] = atlas_size;
     values[GLOBALS_ATLAS_OFFSET + 1] = tile_size;
+    values
+}
+
+/// Default globals with the sun/sky/globalLight slots replaced by a map's
+/// recovered environment (used by every per-frame pipeline writer).
+pub fn environment_globals(
+    atlas_size: f32,
+    tile_size: f32,
+    environment: &NeaEnvironment,
+    map: Option<&MapEnvironment>,
+) -> [f32; GLOBALS_FLOATS] {
+    let mut values = recovered_default_globals(atlas_size, tile_size);
+    environment.apply_to_globals(&mut values);
+    if let Some(map) = map {
+        if map.gamma > 0.0 {
+            values[GLOBALS_LIGHT_GAMMA_OFFSET + 3] = map.gamma;
+        }
+        NeaEnvironment::apply_map_fog(&mut values, map);
+    }
     values
 }
 
@@ -163,6 +285,62 @@ mod tests {
         assert_eq!(
             &globals[GLOBALS_SKY_FRONT_OFFSET..GLOBALS_SKY_FRONT_OFFSET + 3],
             &[0.1, 0.2, 0.3]
+        );
+    }
+
+    #[test]
+    fn backroom_dark_map_disables_sun_and_shadows() {
+        // Verbatim recovered Backroom fields: globalLight 0, black sky/sun,
+        // zero sun direction — the map must shade dark with no sun shadows.
+        let map = MapEnvironment {
+            global_light: 0.0,
+            ..Default::default()
+        };
+        let environment = NeaEnvironment::from_map(&map);
+        assert!(!environment.sun_active());
+        assert!(environment.target_exposure(1.0).is_finite());
+        let sealed_room_exposure = environment.target_exposure(0.0);
+        assert!((sealed_room_exposure - (1.0 / 8.125)).abs() < 1.0e-6);
+        let globals = environment_globals(512.0, 16.0, &environment, Some(&map));
+        assert_eq!(
+            &globals[GLOBALS_LIGHT_COLOR_OFFSET..GLOBALS_LIGHT_COLOR_OFFSET + 4],
+            &[0.0, 0.0, 0.0, 0.0]
+        );
+        assert_eq!(
+            &globals[GLOBALS_FOG_OFFSET..GLOBALS_FOG_OFFSET + 4],
+            &[0.0, -128.0, 0.0, 0.0]
+        );
+    }
+
+    #[test]
+    fn lit_map_keeps_sun_active_and_maps_colors() {
+        let map = MapEnvironment {
+            sun_direction: [0.5, 0.86, 0.1],
+            sun_color: [1.0, 1.0, 1.0],
+            sky_front: [0.5, 0.5, 0.5],
+            global_light: 0.3,
+            fog_start_distance: 64.0,
+            fog_density: 0.01,
+            ..Default::default()
+        };
+        let environment = NeaEnvironment::from_map(&map);
+        assert!(environment.sun_active());
+        let globals = environment_globals(512.0, 16.0, &environment, Some(&map));
+        assert!((globals[GLOBALS_LIGHT_COLOR_OFFSET] - MAP_SUN_SCALE).abs() < 1.0e-3);
+        assert!((globals[GLOBALS_SKY_FRONT_OFFSET] - 0.5 * MAP_SKY_SCALE).abs() < 1.0e-3);
+        assert!((globals[GLOBALS_FOG_OFFSET] - 64.0).abs() < 1.0e-4);
+        assert!((globals[GLOBALS_FOG_OFFSET + 3] - 0.01).abs() < 1.0e-4);
+    }
+
+    #[test]
+    fn missing_global_light_falls_back_to_schema_default() {
+        let map = MapEnvironment {
+            global_light: -1.0,
+            ..Default::default()
+        };
+        assert_eq!(
+            NeaEnvironment::from_map(&map).global_light,
+            DEFAULT_GLOBAL_LIGHT
         );
     }
 }

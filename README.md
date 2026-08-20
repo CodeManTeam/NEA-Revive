@@ -1,8 +1,8 @@
 # NEA-Revive
 
-**类似 DAO3 的开发者社区本地化运行器。** 给定一个「项目包」（地图 + 代码 + 素材 + 音乐），
-后端 + 前端能在本地完整运行它。已导入两个项目包：**跑酷（parkour）** 与
-**[Minecraft] 我的世界正式版（minecraft，256×128×256）**。
+**DAO3/box3 历史项目本地复活运行器。** 给定一个「项目包」（地图 + 代码 + 素材 + 音乐），
+通过通用运行时和 VoxWeb Player 在本地复活它。当前首个正式内容目标是
+**There is Backroom-新年快乐（there-is-backroom）**；Parkour 是既有的技术验证和回归地图。
 
 ## 这是什么
 
@@ -34,9 +34,9 @@ NEA-Revive/
 cd frontend\voxweb
 trunk build --release
 
-# 2. 启动后端 + 前端静态（--map 选择项目包：parkour | minecraft）
+# 2. 启动后端 + 前端静态（--map 选择项目包）
 cd ..\..\
-node scripts\serve.mjs --map minecraft
+node scripts\serve.mjs --map there-is-backroom
 
 # 3. 打开（浏览器需 WebGPU，Edge/Chrome ≥113）
 # http://127.0.0.1:18082/start.html?nea=http://127.0.0.1:18081/api/createSession
@@ -48,7 +48,9 @@ minecraft）由 terrain reset 帧动态下发，前后端均已通用化，不�
 
 ## 项目包格式
 
-每个地图一个目录，核心是 `nea.map.json`：
+每个地图一个目录。当前项目包存在两类清单格式：`nea.map.json`（nea-map/v1）和
+导入产物使用的 `dao3.project.json`（dao3-project/v1）。运行时通过导入器和 manifest
+读取对应格式。典型 `nea.map.json` 示例：
 
 ```jsonc
 {
@@ -90,12 +92,17 @@ minecraft）由 terrain reset 帧动态下发，前后端均已通用化，不�
 - [x] 独立工作目录 + git 管理
 - [x] 后端握手链（secret/reset/fetchChunk/net-state/avatar）
 - [x] 前端握手 + 地形渲染 + 人物模型 + 加载界面
-- [x] parkour 项目包（首个，地形 + 55 方块 + 真实贴图集）
+- [x] parkour 项目包（技术验证和回归地图，地形 + 55 方块 + 真实贴图集）
 - [x] 世界 shape 通用化（前后端从 reset 帧读取，支持 256×128×256）
 - [x] minecraft 项目包（第二个：voxel-sparse 地形 1.17M 体素 → 42,837 盒）
+- [x] there-is-backroom 项目包（内容和脚本较完整，作为首个正式复活目标）
+- [ ] Backroom 原始脚本 API 依赖清点（DAO3 API 文档 + 脚本调用 + 历史证据）
+- [ ] Backroom 可检查启动闭环
+- [ ] Backroom 最小完整游玩闭环
 - [ ] minecraft 完整玩法脚本（原 index.js 依赖 20+ 未导出模块）
 - [ ] 全图流式加载/视锥裁剪（当前 ?nea= 烟测渲染出生点周围 5×5 × 全高）
 
 ## 开发指引
 
-详见 [`AGENTS.md`](AGENTS.md)。
+详见 [`AGENTS.md`](AGENTS.md) 和
+[`docs/project-revival-development-plan.md`](docs/project-revival-development-plan.md)。

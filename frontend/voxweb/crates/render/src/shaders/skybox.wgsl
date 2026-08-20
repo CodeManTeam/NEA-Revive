@@ -68,6 +68,7 @@ fn recovered_default_sky(ray_y: f32) -> vec3<f32> {
 
 @fragment
 fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
+    if g.sun_dir_time.w < 0.0 { return vec4<f32>(g.fog_color.rgb, 1.0); }
     let near = g.inv_view_proj * vec4<f32>(in.ndc, 0.0, 1.0);
     let far = g.inv_view_proj * vec4<f32>(in.ndc, 1.0, 1.0);
     let ray = normalize((far.xyz / far.w) - (near.xyz / near.w));

@@ -45,3 +45,11 @@ Shared/dsh-session-*/
 
 # === packages 内导入的二进制素材（源在 reference/）===
 packages/minecraft/assets/
+
+# === 私有 DAO3 项目包与 dump 派生素材（仅部署，不进入 Git）===
+/packages/there-is-backroom/
+/packages/there-is-backroom-runtime-build/
+/packages/minecraft-hydrated/
+/packages/model-lab/
+/packages/elf-world/
+/backend/local-player/archive/engine/m/

@@ -2,15 +2,23 @@
 
 Audit date: 2026-08-18
 
+本文是 `frontend/voxweb` 与历史 Player 的前端 parity 审计，不代表整个
+NEA-Revive 项目的完成度。后续实现状态以本文件的发现和
+[`frontend-player-parity-development-plan.md`](./frontend-player-parity-development-plan.md)
+为准；项目总体复活路线见 [`project-revival-development-plan.md`](./project-revival-development-plan.md)。
+
+后续修复记录：审计中关于 shadow submission 的 P1 问题已在 2026-08-18 的实现中修复，
+当前仍需保留视觉 capture 验证；不要把该条当作未修复的代码缺陷。
+
 ## Scope and evidence boundary
 
 This audit compares the current Rust/WASM/WebGPU player in `frontend/voxweb`
 with the historical Player bundle launched by
-`D:/Projects/Gaming/NEA-Project/Frontend/demo-map`.
+`${NEA_PROJECT_ROOT}/Frontend/demo-map`.
 
 The old `demo-map` directory is not the renderer source. It launches an
 archived, minified Next.js Player from
-`D:/Projects/Gaming/NEA-Project/Backend/local-player/archive/project/bedwars/client-runtime`.
+`${NEA_PROJECT_ROOT}/Backend/local-player/archive/project/bedwars/client-runtime`.
 Consequently this is a feature- and pipeline-level audit, not a source diff.
 The strongest historical evidence is the archived bundle, especially chunks
 `734.8dcb480d99773395.js`, `491.987dc3d747ee296d.js`,

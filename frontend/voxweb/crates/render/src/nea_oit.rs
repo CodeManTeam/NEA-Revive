@@ -15,11 +15,16 @@ struct OitUniform {
 }
 
 pub struct NeaOit {
+    #[allow(dead_code)]
     device: wgpu::Device,
+    #[allow(dead_code)]
     width: u32,
+    #[allow(dead_code)]
     height: u32,
+    #[allow(dead_code)]
     opaque_texture: wgpu::Texture,
     opaque_view: wgpu::TextureView,
+    #[allow(dead_code)]
     nodes: [wgpu::Buffer; BAND_COUNT],
     offsets: [wgpu::Buffer; BAND_COUNT],
     layout: wgpu::BindGroupLayout,

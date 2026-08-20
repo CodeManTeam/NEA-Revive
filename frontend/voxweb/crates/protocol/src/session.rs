@@ -432,13 +432,27 @@ mod tests {
         let schema = table.client_schema("game-terrain", "reset").unwrap();
         let mut frame = crate::WriteStream::new(128);
         frame.write_varint(
-            table.client_id_bases[table.protocols.iter().position(|p| p.name == "game-terrain").unwrap()]
-                + table.protocols.iter().find(|p| p.name == "game-terrain").unwrap()
-                    .client_messages.iter().position(|(n, _)| n == "reset").unwrap() as u32,
+            table.client_id_bases[table
+                .protocols
+                .iter()
+                .position(|p| p.name == "game-terrain")
+                .unwrap()]
+                + table
+                    .protocols
+                    .iter()
+                    .find(|p| p.name == "game-terrain")
+                    .unwrap()
+                    .client_messages
+                    .iter()
+                    .position(|(n, _)| n == "reset")
+                    .unwrap() as u32,
         );
         schema.diff(&schema.identity(), &schema.identity(), &mut frame);
         let mut ctx = SessionCtx::default();
-        let handlers = SessionHandlers { on_message: Some(observe), ..Default::default() };
+        let handlers = SessionHandlers {
+            on_message: Some(observe),
+            ..Default::default()
+        };
         handle_frame(&table, &mut ctx, &handlers, &frame.bytes).unwrap();
     }
 }

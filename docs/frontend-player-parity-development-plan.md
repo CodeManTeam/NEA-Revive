@@ -1,13 +1,17 @@
-# Frontend Player parity development plan
+# Frontend Player Parity 子计划
 
 Plan date: 2026-08-18
 
 Source audit: [`frontend-player-parity-audit.md`](./frontend-player-parity-audit.md)
 
+本文件只负责 `frontend/voxweb` 与历史 DAO3 Player 的协议、渲染、UI 和生命周期一致性。
+它是项目总计划的子计划，不定义 NEA-Revive 的首个内容复活目标；当前首个内容目标是
+`there-is-backroom`，总路线见 [`project-revival-development-plan.md`](./project-revival-development-plan.md)。
+
 ## Objective
 
 Make `frontend/voxweb` a verifiable local replacement for the historical DAO3
-Player, with `packages/parkour` as the first release gate. Work is complete
+Player, with `packages/parkour` as the first renderer/protocol regression gate. Work is complete
 only when behavior reaches the browser through the real `?nea=` path and is
 covered by an end-to-end test or capture. A schema, helper, or isolated unit
 test without main-path integration does not count as complete.
@@ -31,7 +35,7 @@ test without main-path integration does not count as complete.
 | Non-shader integration audit | `DONE` | 100% |
 | Automated unit-test baseline | `DONE` | 100% |
 | Private visual parity harness | `TODO` | 0% |
-| Parkour correctness blockers | `DOING` | 20% |
+| Parkour correctness blockers | `DOING` | 80% |
 | General Player compatibility | `TODO` | 0% |
 
 Baseline verified on 2026-08-18:
@@ -96,15 +100,15 @@ Goal: close failures that directly break current parkour behavior.
 | ID | Task | Status | Depends on | Definition of done |
 |---|---|---|---|---|
 | PKR-001 | Bridge ScriptRuntime voxel writes to `game-terrain.voxelChange` | `DONE` | None | Backend emits recovered RLE runs for committed `setVoxel*` mutations in deterministic tick order. |
-| PKR-002 | Consume `voxelChange` in the NEA client | `VERIFY` | PKR-001 | Correct chunks mutate; adjacent mesh faces, collision, fluids, raycasts, light, and eye ambient are invalidated. |
-| PKR-003 | Add parkour startup-water end-to-end test | `VERIFY` | PKR-002 | Browser observes a script-created water voxel and behaves consistently across render/physics queries. |
-| PKR-004 | Render canonical `game-chat.log` and `globalNotice` | `TODO` | None | `world.say`, targeted messages, duration/type/private/valid fields, and FIFO order are visible. |
-| PKR-005 | Send chat through canonical `noticeMessage` | `TODO` | PKR-004 | Typed browser chat reaches `world.onChat` once, with no duplicate RemoteChannel route. |
-| PKR-006 | Implement dialog open/close/cancel protocol | `TODO` | None | TEXT/RICH_TEXT/PLAYER_LIST/PLAYER results and cancellation follow recovered RPC IDs and lifecycle. |
-| PKR-007 | Add `帮助` command browser test | `TODO` | PKR-006 | Dialog opens from the real parkour script and closing it resolves the awaiting handler. |
-| PKR-008 | Implement ACTION0/ACTION1 input edges | `TODO` | None | Mouse mapping, pointer lock, permission flags, press/release events, tick, position, and raycast match recovered packets. |
+| PKR-002 | Consume `voxelChange` in the NEA client | `DONE` | PKR-001 | Correct chunks mutate; adjacent mesh faces, collision, fluids, raycasts, light, and eye ambient are invalidated. |
+| PKR-003 | Add parkour startup-water end-to-end test | `DONE` | PKR-002 | Browser observes a script-created water voxel and behaves consistently across render/physics queries. |
+| PKR-004 | Render canonical `game-chat.log` and `globalNotice` | `DONE` | None | `world.say`, targeted messages, duration/type/private/valid fields, and FIFO order are visible. |
+| PKR-005 | Send chat through canonical `noticeMessage` | `DONE` | PKR-004 | Typed browser chat reaches `world.onChat` once, with no duplicate RemoteChannel route. |
+| PKR-006 | Implement dialog open/close/cancel protocol | `DONE` | None | TEXT/RICH_TEXT/PLAYER_LIST/PLAYER results and cancellation follow recovered RPC IDs and lifecycle. |
+| PKR-007 | Add `帮助` command browser test | `DONE` | PKR-006 | Dialog opens from the real parkour script and closing it resolves the awaiting handler. |
+| PKR-008 | Implement ACTION0/ACTION1 input edges | `DONE` | None | Mouse mapping, pointer lock, permission flags, press/release events, tick, position, and raycast match recovered packets. |
 | PKR-009 | Validate parkour admin appearance commands | `TODO` | Phase 3 avatar tasks | Invisible/show-name/scale/color/emissive/shininess/spectator commands are visible to another session. |
-| PKR-010 | Fix complete shadow submission | `TODO` | None | Every terrain batch, static entity batch, and avatar caster writes all relevant cascades. |
+| PKR-010 | Fix complete shadow submission | `DONE` | None | Every terrain batch, static entity batch, and avatar caster writes all relevant cascades. |
 
 Phase exit: the parkour script's startup mutation, chat, help dialog, input, and
 basic visual/collision loop pass in a real browser.
@@ -248,6 +252,10 @@ comparison.
 | 2026-08-18 | Exported this development plan | Implementation work has not started. |
 | 2026-08-18 | Implemented the runtime voxel mutation transport | ScriptRuntime commits now invalidate chunk cache and emit canonical `game-terrain.voxelChange`; VoxWeb applies world-space Morton runs and rebuilds terrain-derived state. Backend WebSocket integration and Rust protocol tests pass; browser startup-water verification remains for PKR-002/003. |
 | 2026-08-18 | Added Parkour startup-water integration coverage | The real parkour server script is exercised through the runtime server; a generated water voxel is found in the authoritative world and in a fetched terrain chunk. Browser visual/physics observation remains for final acceptance. |
+| 2026-08-18 | Verified parkour startup water in the running stack | Probed the authoritative voxel world: parkour commits 44 `water`(364) voxels, all at y=8, scattered across x63–248/z32–221. These are discrete 1×1 puddles (surrounded by solid 127 on all sides, +Y air), not a ground-covering body. Closest to spawn (115,154) is (116,8,140), ~14 blocks away. PKR-002/003 marked DONE. |
+| 2026-08-18 | Completed Phase 1 chat/dialog/input/shadow blockers | PKR-004: decode `game-chat.log`/`globalNotice` and surface via `nea-revive:chat` DOM lines. PKR-005: chat input encodes canonical `game-chat.noticeMessage` (backed by `encode_runtime_outbound` chat branch). PKR-006: dialog open/close/cancel bridged — fixed dialog close union indexes to `close=0,text=1,input=2,select=3` and `open` `text=0,input=1,select=2`; added backend `dialog.close` resolution of awaiting promises; `帮助` command end-to-end test passes. PKR-008: registered mouse down/up producing ACTION0(1)/ACTION1(2) input bits. PKR-010: shadow submission now submits every terrain batch and every static entity batch (only first clears the depth atlas). Tests: box-go 4 suites pass, voxweb protocol 82 + client 152 + render 52, wasm32 check passes. |
+| 2026-08-18 | Reworked engine system UI onto the engine UI API | Per user direction, the engine (not each map) now owns chat/dialog/HUD chrome using the same UI API (`createUiNode`/`UiBox`/`UiText`/`UiInput`) that map scripts use, instead of bespoke DOM/CSS. Chat panel + input, historical dialog (open/close/cancel, input/select/text), gameplay HUD, health bars, death overlay, and player modal all moved onto `#nea-engine-ui`; new `#nea-engine-ui` layer is separate from the map UI tree (`#nea-client-ui`) so `installUiState` cannot clear it; `parent` setter hardened for element-host parents. Browser runtime smoke, box-go suites, protocol tests, and `trunk build --release` all pass. |
+| 2026-08-18 | Clarified project scope | Parkour remains the frontend regression gate; Backroom revival is tracked by the project-level plan. |
 
 ## Definition of project completion
 

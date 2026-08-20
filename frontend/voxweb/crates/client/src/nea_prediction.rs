@@ -19,6 +19,7 @@ pub struct PredictionInput {
 
 #[derive(Clone)]
 struct PredictionFrame {
+    #[allow(dead_code)]
     tick: u32,
     authoritative: bool,
     dirty: bool,
@@ -74,6 +75,7 @@ impl PredictionHistory {
     }
 
     #[allow(clippy::too_many_arguments)]
+    #[allow(dead_code)]
     pub fn reconcile_and_replay(
         &mut self,
         authoritative_tick: u32,
@@ -151,6 +153,7 @@ impl PredictionHistory {
         true
     }
 
+    #[allow(dead_code)]
     fn discard_before(&mut self, tick: u32) {
         while self.frames.front().is_some_and(|frame| frame.tick < tick) {
             self.frames.pop_front();

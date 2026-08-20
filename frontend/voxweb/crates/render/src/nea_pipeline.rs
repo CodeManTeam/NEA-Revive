@@ -40,6 +40,7 @@ pub struct NeaTerrainPipeline {
     pub surface_format: wgpu::TextureFormat,
     /// Depth format used by the pipeline (None = no depth test).
     pub depth_format: Option<wgpu::TextureFormat>,
+    entity_mode: bool,
 }
 
 impl NeaTerrainPipeline {
@@ -269,6 +270,7 @@ impl NeaTerrainPipeline {
             uniform_buffer,
             surface_format,
             depth_format,
+            entity_mode: label.contains("entities"),
         }
     }
 
@@ -281,8 +283,15 @@ impl NeaTerrainPipeline {
         eye_fluid: Option<[f32; 4]>,
         exposure: f32,
         debug_mode: f32,
+        environment: &crate::nea_environment::NeaEnvironment,
+        map: Option<&crate::nea_environment::MapEnvironment>,
     ) {
-        let mut globals = recovered_default_globals(512.0, 16.0);
+        let mut globals = crate::nea_environment::environment_globals(
+            512.0,
+            if self.entity_mode { 1.0 } else { 16.0 },
+            environment,
+            map,
+        );
         globals[GLOBALS_MVP_OFFSET..GLOBALS_MVP_OFFSET + 16].copy_from_slice(mvp);
         globals[GLOBALS_EYE_EXPOSURE_OFFSET..GLOBALS_EYE_EXPOSURE_OFFSET + 3].copy_from_slice(eye);
         globals[GLOBALS_EYE_EXPOSURE_OFFSET + 3] = exposure;
@@ -293,6 +302,12 @@ impl NeaTerrainPipeline {
 
     /// Emit the terrain geometry.
     pub fn draw<'a>(&'a self, pass: &mut wgpu::RenderPass<'a>) {
+        // WGPU rejects `Buffer::slice(..)` for zero-sized buffers. Imported
+        // entity assets may legitimately contain positions but no triangles,
+        // so make every caller safe rather than relying on scene filtering.
+        if self.index_count == 0 {
+            return;
+        }
         pass.set_pipeline(&self.pipeline);
         pass.set_bind_group(0, &self.bind_group, &[]);
         pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
@@ -311,6 +326,9 @@ impl NeaTerrainPipeline {
     ) where
         'b: 'p,
     {
+        if index_count == 0 {
+            return;
+        }
         pass.set_pipeline(&self.pipeline);
         pass.set_bind_group(0, &self.bind_group, &[]);
         pass.set_vertex_buffer(0, vertex_buffer.slice(..));

@@ -6,7 +6,9 @@
 //! a 32×32 tile grid. Pure decode + tile math — native-testable with the
 //! real archive PNGs; the browser path feeds the same tiles to WebGPU.
 
-use crate::blockinfo::{texture_tile, BLOCK_COLOR_SIZE};
+use crate::blockinfo::texture_tile;
+#[cfg(test)]
+use crate::blockinfo::BLOCK_COLOR_SIZE;
 
 /// Decoded 512×512 RGBA atlas.
 #[derive(Clone, Debug)]
@@ -17,6 +19,22 @@ pub struct AtlasImage {
 }
 
 impl AtlasImage {
+    /// Construct an image from an already decoded DAO3 model texture.
+    pub fn from_rgba(width: u32, height: u32, rgba: Vec<u8>) -> Result<Self, String> {
+        let expected = width as usize * height as usize * 4;
+        if width == 0 || height == 0 || rgba.len() != expected {
+            return Err(format!(
+                "invalid RGBA image: {width}x{height}, {} bytes",
+                rgba.len()
+            ));
+        }
+        Ok(Self {
+            width,
+            height,
+            rgba,
+        })
+    }
+
     /// Decode a PNG byte buffer (native tests; wasm uses createImageBitmap).
     pub fn from_png(png: &[u8]) -> Result<Self, String> {
         let img = image::load_from_memory(png).map_err(|e| e.to_string())?;

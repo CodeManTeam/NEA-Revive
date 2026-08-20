@@ -170,6 +170,7 @@ impl NeaShadowMap {
         vertex_buffer: &wgpu::Buffer,
         index_buffer: &wgpu::Buffer,
         index_count: u32,
+        clear_depth: bool,
     ) {
         // 空地形 mesh（0 顶点）时跳过阴影，避免空 buffer slice panic
         if index_count == 0 {
@@ -189,8 +190,15 @@ impl NeaShadowMap {
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                     view: &self.view,
                     depth_ops: Some(wgpu::Operations {
+                        // Only the first submitted batch clears the atlas;
+                        // subsequent batches accumulate depth so every terrain
+                        // and entity batch contributes to the shadow map.
                         load: if index == 0 {
-                            wgpu::LoadOp::Clear(1.0)
+                            if clear_depth {
+                                wgpu::LoadOp::Clear(1.0)
+                            } else {
+                                wgpu::LoadOp::Load
+                            }
                         } else {
                             wgpu::LoadOp::Load
                         },
@@ -250,9 +258,9 @@ impl NeaShadowFrame {
 
 pub fn recovered_shadow_frame(
     eye: Vec3,
-    camera_view: Mat4,
-    fov_y: f32,
-    aspect: f32,
+    _camera_view: Mat4,
+    _fov_y: f32,
+    _aspect: f32,
     near: f32,
     far: f32,
     sun_direction: Vec3,
@@ -391,6 +399,7 @@ pub fn recovered_cascade_z(near: f32, far: f32) -> [f32; 5] {
     ]
 }
 
+#[allow(dead_code)]
 fn fit_cascade(
     camera_view: Mat4,
     shadow_view: Mat4,

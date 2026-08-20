@@ -23,6 +23,7 @@ impl AssetOverrides {
         Ok(manifest)
     }
 
+    #[allow(dead_code)]
     pub fn resolve<'a>(&'a self, slot: &str, fallback: &'a str) -> &'a str {
         self.replacements
             .get(slot)

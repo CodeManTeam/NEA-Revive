@@ -610,7 +610,11 @@ impl NeaPlayerPhysics {
         let tick_delta = TICKS_PER_SECOND * dt;
         let damping = self.velocity_damping_per_tick;
         let velocity_scale = (-damping * tick_delta).exp();
-        let acceleration_factor = if damping > 1.0e-6 { (1.0 - velocity_scale) / damping } else { tick_delta };
+        let acceleration_factor = if damping > 1.0e-6 {
+            (1.0 - velocity_scale) / damping
+        } else {
+            tick_delta
+        };
         self.velocity[0] *= velocity_scale;
         self.velocity[1] *= velocity_scale;
         if gravity {
@@ -631,6 +635,7 @@ fn control_integral_ticks(dt: f32) -> f32 {
 
 #[derive(Clone, Copy)]
 struct SweepResult {
+    #[allow(dead_code)]
     amount: f32,
     collided: bool,
 }

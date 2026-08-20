@@ -6,10 +6,7 @@
 //! the browser alike. The byte-level chain itself is E2E-verified; this
 //! module packages it into a reusable state machine.
 
-use crate::player::{
-    ClientInput, INPUT_ACTION0, INPUT_ACTION1, INPUT_CROUCH, INPUT_DOUBLE_JUMP, INPUT_FLY,
-    INPUT_JUMP, INPUT_RUN, INPUT_WALK,
-};
+use crate::player::ClientInput;
 use crate::session::{encode_outbound, Outbound, SessionCtx};
 use crate::ProtocolTable;
 
@@ -69,7 +66,7 @@ impl SessionDriver {
     /// The reliable socket opened — send the jsonStr validation text.
     pub fn on_reliable_open(
         &mut self,
-        table: &ProtocolTable,
+        _table: &ProtocolTable,
         client_json_str: &str,
         server_json_str: &str,
     ) -> Vec<SendFrame> {
@@ -257,6 +254,7 @@ fn encode_outbound_raw(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::player::{INPUT_JUMP, INPUT_RUN};
 
     fn table() -> ProtocolTable {
         let raw = std::fs::read_to_string(concat!(

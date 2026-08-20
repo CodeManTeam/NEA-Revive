@@ -151,6 +151,29 @@ impl AtlasTexture {
         Self::from_texture(device, texture, size, sampling, label)
     }
 
+    /// Upload a standalone model texture. Unlike terrain atlases this image
+    /// uses normalized 0..1 UVs and is never tile-addressed by the block
+    /// shader; keeping it as a regular texture prevents model UVs from
+    /// sampling neighboring terrain tiles.
+    pub fn upload_rgba(
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        width: u32,
+        height: u32,
+        rgba: &[u8],
+        label: &str,
+    ) -> Result<AtlasTexture, String> {
+        let image = AtlasImage::from_rgba(width, height, rgba.to_vec())?;
+        Ok(Self::upload_with_format(
+            device,
+            queue,
+            &image,
+            AtlasSampling::default(),
+            wgpu::TextureFormat::Rgba8UnormSrgb,
+            label,
+        ))
+    }
+
     fn from_texture(
         device: &wgpu::Device,
         texture: wgpu::Texture,

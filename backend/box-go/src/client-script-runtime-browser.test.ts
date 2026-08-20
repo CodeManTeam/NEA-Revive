@@ -199,22 +199,41 @@ try {
   assert.match(gameplayFeedback.text ?? "", /CREATIVE/)
   assert.match(gameplayFeedback.text ?? "", /API方块 x3/)
 
-  const soundFeedback = await page.evaluate(() => {
+  const soundFeedback = await page.evaluate(async () => {
     const created: any[] = []
+    let attempts = 0
+    let errors = 0
+    const originalError = console.error
+    console.error = () => { errors++ }
     ;(window as any).Audio = class {
-      src: string; volume = 1; playbackRate = 1; currentTime = 0; paused = false
+      src: string; volume = 1; playbackRate = 1; currentTime = 0; paused = false; loop = false
       constructor(src: string) { this.src = src; created.push(this) }
       addEventListener() {}
-      play() { this.paused = false; return Promise.resolve() }
+      play() {
+        attempts++
+        if (this.src.endsWith("broken.mp3")) return Promise.reject(new DOMException("decode failed", "NotSupportedError"))
+        if (attempts === 1) return Promise.reject(new DOMException("gesture required", "NotAllowedError"))
+        this.paused = false
+        return Promise.resolve()
+      }
       pause() { this.paused = true }
     }
     ;(window as any).__neaClientRuntimeReceive(JSON.stringify({
       type: "nea-revive:sound",
-      command: { action: "play", soundId: 7, sampleUrl: "http://127.0.0.1/test.mp3", gain: 0.4, pitch: 1.25 },
+      command: { action: "play", soundId: 7, sampleUrl: "http://127.0.0.1/test.mp3", gain: 0.4, pitch: 1.25, loop: true },
     }))
-    return { src: created[0]?.src, volume: created[0]?.volume, rate: created[0]?.playbackRate }
+    await new Promise(resolve => setTimeout(resolve, 0))
+    window.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }))
+    await new Promise(resolve => setTimeout(resolve, 0))
+    ;(window as any).__neaClientRuntimeReceive(JSON.stringify({
+      type: "nea-revive:sound",
+      command: { action: "play", soundId: 8, sampleUrl: "http://127.0.0.1/broken.mp3" },
+    }))
+    await new Promise(resolve => setTimeout(resolve, 0))
+    console.error = originalError
+    return { src: created[0]?.src, volume: created[0]?.volume, rate: created[0]?.playbackRate, loop: created[0]?.loop, attempts, errors }
   })
-  assert.deepEqual(soundFeedback, { src: "http://127.0.0.1/test.mp3", volume: 0.4, rate: 1.25 })
+  assert.deepEqual(soundFeedback, { src: "http://127.0.0.1/test.mp3", volume: 0.4, rate: 1.25, loop: true, attempts: 3, errors: 1 })
 
   const playerUi = await page.evaluate(() => {
     ;(window as any).__neaClientRuntimeReceive(JSON.stringify({
@@ -228,6 +247,39 @@ try {
   assert.match(playerUi.text ?? "", /地图商店/)
   assert.match(playerUi.text ?? "", /160000000000001/)
   assert.equal(playerUi.pointerEvents, "auto")
+
+  const remoteEventIsolation = await page.evaluate(() => {
+    ;(window as any).__neaClientRuntimeInstall(JSON.stringify({
+      "clientIndex.js": `
+        remoteChannel.events.on("client", event => {
+          remoteChannel.sendServerEvent({ type: "observed-client-event", event });
+        });
+      `,
+    }))
+    ;(window as any).__neaClientRuntimeDrain()
+    const internalEvents = [
+      { type: "nea-revive:entity-state", entityId: "1", state: {} },
+      { type: "nea-revive:camera-state", mode: 1, fovY: 70 },
+      { type: "nea-revive:damage-state", state: { hp: 100, maxHp: 100 }, events: {} },
+      { type: "nea-revive:player-gameplay", gamemode: 0, inventory: {}, buffs: [] },
+      { type: "nea-revive:player-ui", action: "profile", userId: "local" },
+      { type: "nea-revive:sound", command: { action: "stop", soundId: 404 } },
+      { type: "nea-revive:chat", valid: true, message: "engine-owned" },
+    ]
+    for (const event of internalEvents) {
+      ;(window as any).__neaClientRuntimeReceive(JSON.stringify(event))
+    }
+    const internalOutbound = JSON.parse((window as any).__neaClientRuntimeDrain())
+    const mapPayload = { type: "map:event", value: "delivered" }
+    ;(window as any).__neaClientRuntimeReceive(JSON.stringify(mapPayload))
+    const mapOutbound = JSON.parse((window as any).__neaClientRuntimeDrain())
+    return { internalOutbound, mapOutbound }
+  })
+  assert.deepEqual(remoteEventIsolation.internalOutbound, [])
+  assert.deepEqual(remoteEventIsolation.mapOutbound, [{
+    type: "observed-client-event",
+    event: { type: "map:event", value: "delivered" },
+  }])
 
   const uiEnhancements = await page.evaluate(() => {
     ;(window as any).__neaClientRuntimeInstall(JSON.stringify({

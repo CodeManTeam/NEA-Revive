@@ -47,4 +47,9 @@ pub use session::{
     RemoteClientEvent, SessionCtx, SessionHandlers, SessionTransport, TerrainChunk, TerrainReset,
 };
 pub use stream::{ReadStream, WriteStream};
-pub use ui::{decode_dialog_open, decode_game_ui_reset, decode_gui_command, encode_runtime_outbound, DialogClose, DialogConfig, DialogOpen, DialogResult, GameUiState, GuiCommand, PictureAsset, UiCommon, UiCoord2, UiElement, UiNode, UiNodeValue, UiScreen};
+pub use ui::{
+    decode_chat_log, decode_dialog_open, decode_game_ui_reset, decode_gui_command,
+    encode_runtime_outbound, ChatLog, DialogClose, DialogConfig, DialogOpen, DialogResult,
+    GameUiState, GuiCommand, PictureAsset, UiCommon, UiCoord2, UiElement, UiNode, UiNodeValue,
+    UiScreen,
+};

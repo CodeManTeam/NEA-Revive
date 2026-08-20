@@ -48,6 +48,39 @@ const RECOVERED_WALK_VELOCITY_PER_TICK: f32 = 0.324;
 const RECOVERED_ROLL_START_PHASE: f32 = 0.84;
 const RECOVERED_ROLL_END_PHASE: f32 = RECOVERED_ROLL_START_PHASE + 1.0;
 
+#[derive(Clone, Debug)]
+struct RuntimeCameraState {
+    mode: String,
+    fov_y_ratio: f32,
+    yaw: f32,
+    pitch: f32,
+    /// Set only after the runtime has supplied an authoritative orientation.
+    /// This keeps local mouse control active during the pre-sync phase.
+    authoritative_orientation: bool,
+    distance: f32,
+    position: [f32; 3],
+    target: [f32; 3],
+    up: [f32; 3],
+    entity_position: Option<[f32; 3]>,
+}
+
+impl Default for RuntimeCameraState {
+    fn default() -> Self {
+        Self {
+            mode: "FOLLOW".into(),
+            fov_y_ratio: 0.25,
+            yaw: 0.0,
+            pitch: 0.0,
+            authoritative_orientation: false,
+            distance: voxweb_protocol::player::FOLLOW_CAMERA_DISTANCE,
+            position: [0.0; 3],
+            target: [0.0; 3],
+            up: [0.0, 1.0, 0.0],
+            entity_position: None,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 struct AvatarRollState {
     phase: f32,
@@ -62,9 +95,67 @@ struct StaticEntityScene {
 
 #[derive(serde::Deserialize)]
 struct StaticEntityMesh {
+    #[serde(default)]
     positions: Vec<f32>,
+    #[serde(default)]
     uvs: Vec<f32>,
+    #[serde(default)]
     indices: Vec<u32>,
+    #[serde(default, rename = "positionsF32")]
+    positions_f32: String,
+    #[serde(default, rename = "uvsF32")]
+    uvs_f32: String,
+    #[serde(default, rename = "indicesU32")]
+    indices_u32: String,
+    #[serde(default)]
+    #[serde(rename = "textureWidth")]
+    texture_width: u32,
+    #[serde(default)]
+    #[serde(rename = "textureHeight")]
+    texture_height: u32,
+    #[serde(default)]
+    #[serde(rename = "textureRgba")]
+    texture_rgba: Vec<u8>,
+    #[serde(default)]
+    #[serde(rename = "meshAssetHash")]
+    mesh_asset_hash: Option<String>,
+    #[serde(default)]
+    #[serde(rename = "texturePng")]
+    texture_png: Vec<u8>,
+    #[serde(default, rename = "texturePngBase64")]
+    texture_png_base64: String,
+    /// CPU-packed geometry recovered from a `.vb` asset.  When present it is
+    /// the authoritative mesh source; legacy glTF arrays remain as fallback.
+    #[serde(skip)]
+    decoded_geometry: Option<(Vec<f32>, Vec<f32>, Vec<u32>)>,
+}
+
+#[derive(serde::Deserialize)]
+struct DecodedMeshFace {
+    #[serde(default)]
+    vertices: Vec<u32>,
+    #[serde(default)]
+    sizes: Vec<u32>,
+    #[serde(default, rename = "uvs")]
+    uvs: Vec<u32>,
+    #[serde(default, rename = "uvFlags")]
+    uv_flags: Vec<u8>,
+}
+
+#[derive(serde::Deserialize)]
+struct DecodedMeshPayload {
+    #[serde(default)]
+    meshes: Vec<Vec<DecodedMeshFace>>,
+    #[serde(default)]
+    texture: Option<DecodedMeshTexture>,
+}
+
+#[derive(serde::Deserialize)]
+struct DecodedMeshTexture {
+    width: u32,
+    height: u32,
+    #[serde(default)]
+    rgba: Vec<u8>,
 }
 
 #[derive(serde::Deserialize)]
@@ -81,20 +172,38 @@ struct StaticEntityInstance {
     mass: f32,
     friction: f32,
     restitution: f32,
-    #[serde(default)]
+    #[serde(default, rename = "enableInteract")]
     enable_interact: bool,
-    #[serde(default)]
+    #[serde(default, rename = "interactHint")]
     interact_hint: String,
-    #[serde(default = "default_interact_radius")]
+    #[serde(default = "default_interact_radius", rename = "interactRadius")]
     interact_radius: f32,
     #[serde(default = "default_entity_visible")]
     visible: bool,
     #[serde(default)]
+    #[serde(rename = "meshOffset")]
     mesh_offset: [f32; 3],
+    #[serde(default, rename = "staticShadow")]
+    static_shadow: bool,
+    #[serde(default = "default_entity_tint")]
+    tint: [f32; 4],
+    #[serde(default)]
+    emissive: f32,
+    #[serde(default)]
+    metalness: f32,
+    #[serde(default)]
+    shininess: f32,
 }
 
-fn default_entity_visible() -> bool { true }
-fn default_interact_radius() -> f32 { 3.0 }
+fn default_entity_visible() -> bool {
+    true
+}
+fn default_interact_radius() -> f32 {
+    3.0
+}
+fn default_entity_tint() -> [f32; 4] {
+    [255.0, 255.0, 255.0, 255.0]
+}
 
 impl Default for AvatarRollState {
     fn default() -> Self {
@@ -187,9 +296,15 @@ fn block_surface_friction(block: u16) -> f32 {
     // Recovered material overrides from the native player surface table.
     // The anonymous catalog intentionally keeps texture data separate from
     // gameplay coefficients, so these semantic blocks need explicit values.
-    if block == 398 { return 0.05; } // ice
-    if block == 145 { return 0.15; } // ice brick
-    if block == 135 { return 0.70; } // sand
+    if block == 398 {
+        return 0.05;
+    } // ice
+    if block == 145 {
+        return 0.15;
+    } // ice brick
+    if block == 135 {
+        return 0.70;
+    } // sand
     recovered_block_catalog()
         .get(block)
         .map_or(1.0, |entry| entry.friction)
@@ -200,16 +315,13 @@ fn block_surface_material(
     overrides: &std::collections::HashMap<u16, (f32, f32)>,
 ) -> (f32, f32) {
     let id = block & voxweb_protocol::geometry::BLOCK_ID_MASK;
-    overrides
-        .get(&id)
-        .copied()
-        .unwrap_or_else(|| {
-            let entry = recovered_block_catalog().get(id);
-            (
-                block_surface_friction(id),
-                entry.map_or(0.0, |value| value.restitution),
-            )
-        })
+    overrides.get(&id).copied().unwrap_or_else(|| {
+        let entry = recovered_block_catalog().get(id);
+        (
+            block_surface_friction(id),
+            entry.map_or(0.0, |value| value.restitution),
+        )
+    })
 }
 
 /// DAO3 barrier (id=650) participates in physics but has no visible surface.
@@ -321,11 +433,11 @@ impl FpsOverlay {
         let h = self.canvas.height() as f64;
         let ctx = &self.ctx;
         ctx.clear_rect(0.0, 0.0, w, h);
-        ctx.set_fill_style(&wasm_bindgen::JsValue::from_str("rgba(0,0,0,0.35)"));
+        ctx.set_fill_style_str("rgba(0,0,0,0.35)");
         ctx.fill_rect(0.0, 0.0, w, h);
         // 60fps 参考线（16.7ms）与 30fps 参考线（33.3ms）
         let max_ms = 100.0f64;
-        ctx.set_stroke_style(&wasm_bindgen::JsValue::from_str("rgba(255,255,255,0.2)"));
+        ctx.set_stroke_style_str("rgba(255,255,255,0.2)");
         ctx.set_line_width(1.0);
         for ref_ms in [16.7f64, 33.3] {
             let y = h * (1.0 - ref_ms / max_ms);
@@ -335,7 +447,7 @@ impl FpsOverlay {
             ctx.stroke();
         }
         // 帧时间折线
-        ctx.set_stroke_style(&wasm_bindgen::JsValue::from_str("rgba(120,220,120,0.9)"));
+        ctx.set_stroke_style_str("rgba(120,220,120,0.9)");
         ctx.set_line_width(1.5);
         ctx.begin_path();
         for (i, &t) in self.frame_times.iter().enumerate() {
@@ -482,6 +594,12 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
     let width = canvas.width().max(1);
     let height = canvas.height().max(1);
 
+    // Input must be live before model/atlas loading starts. Large imported
+    // scenes can spend noticeable time decoding assets, and installing these
+    // listeners near the network loop made the page appear unresponsive.
+    let input = Rc::new(RefCell::new(InputState::default()));
+    install_keyboard(&canvas, &input);
+
     // 3) WebGPU device + surface
     let dc = init_device(&canvas)
         .await
@@ -517,6 +635,16 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
     let mut entity_scene = fetch_static_entity_scene(&format!("{origin}/api/map/entities"))
         .await
         .unwrap_or_default();
+    prefetch_entity_mesh_assets(&origin, &mut entity_scene).await;
+    let map_environment = fetch_map_environment(&format!("{origin}/api/map/environment")).await;
+    let environment = voxweb_render::nea_environment::NeaEnvironment::from_map(&map_environment);
+    let sun_active = environment.sun_active();
+    jslog!(
+        "[nea] map environment: globalLight={:.3} sunActive={} skyFront={:.3}",
+        map_environment.global_light,
+        sun_active,
+        map_environment.sky_front[0]
+    );
     let mut static_collision_bodies = build_static_entity_collision_bodies(&entity_scene);
     let mut entity_scene_dirty = false;
     jslog!(
@@ -659,17 +787,13 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
     let mut avatar_landing_amount = 0.0f32;
     let mut avatar_roll_state = AvatarRollState::default();
     let mut follow_camera_ray_distance = 9.5f32;
+    let mut runtime_camera = RuntimeCameraState::default();
     let eye_ambient_sampler = EyeAmbientSampler::recovered_random();
-    let default_environment = voxweb_render::nea_environment::NeaEnvironment::recovered_default();
     let mut eye_exposure = EyeExposure::new(RECOVERED_INITIAL_EXPOSURE);
     let mut eye_ambient = 1.0f32;
     let mut last_eye_ambient_ms = 0u32;
     let mut exposure_synchronized = false;
     let mut last_exposure_log_ms = 0u32;
-    // keyboard input state (shared with the JS event closures)
-    let input = Rc::new(RefCell::new(InputState::default()));
-    install_keyboard(&canvas, &input);
-
     // 8) driver loop: poll, advance state machine, decode chunk
     let deadline_ms = 45000u32;
     let start_ms = now_ms();
@@ -825,10 +949,9 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     }
                     // decode game-terrain messages for rendering
                     if let Ok((proto, name, parsed)) = table.parse_client_frame(&bytes) {
-                        let parsed_v = match parsed {
-                            voxweb_protocol::ParsedMessage::Value(v) => Some(v),
-                            _ => None,
-                        };
+                        let parsed_v = Some(match parsed {
+                            voxweb_protocol::ParsedMessage::Value(v) => v,
+                        });
                         if proto == "models"
                             && let Some(value) = parsed_v.as_ref()
                             && avatar_catalog.apply_models_message(&name, value)
@@ -845,7 +968,10 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                         state.picture_assets.len(),
                                         state.default_screen_id
                                     );
-                                    historical_ui.replace(state, [canvas.width() as f32, canvas.height() as f32]);
+                                    historical_ui.replace(
+                                        state,
+                                        [canvas.width() as f32, canvas.height() as f32],
+                                    );
                                     if let Err(error) = historical_ui.render_dom(&document) {
                                         jslog!("[nea] historical UI render failed: {error:?}");
                                     }
@@ -861,13 +987,71 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                 let _ = crate::nea_client_runtime::receive_event(&event);
                             }
                         }
-                        if proto == "dialog" && (name == "cancelDialogs" || name == "cancelDialog") {
+                        if proto == "dialog" && (name == "cancelDialogs" || name == "cancelDialog")
+                        {
                             let event = serde_json::json!({"type":"nea-historical-dialog-cancel"});
                             let _ = crate::nea_client_runtime::receive_event(&event);
                         }
+                        if proto == "game-chat" {
+                            if let Some(value) = parsed_v.as_ref() {
+                                match name.as_str() {
+                                    "log" => {
+                                        if let Some(log) = voxweb_protocol::decode_chat_log(value) {
+                                            let event = serde_json::json!({
+                                                "type": "nea-revive:chat",
+                                                "message": log.text,
+                                                "kind": if log.msg_type == 0 { "system" } else { "user" },
+                                                "valid": log.valid,
+                                                "private": log.private,
+                                            });
+                                            let _ =
+                                                crate::nea_client_runtime::receive_event(&event);
+                                            jslog!(
+                                                "[nea] game-chat.log id={} type={} valid={} \"{}\"",
+                                                log.id,
+                                                log.msg_type,
+                                                log.valid,
+                                                log.text
+                                            );
+                                        }
+                                    }
+                                    "globalNotice" => {
+                                        if let Value::Struct(fields) = value
+                                            && let Some(title) = fields.get(0).and_then(|f| match f
+                                            {
+                                                Value::UTF8(s) => Some(s.clone()),
+                                                Value::ASCII(s) => Some(s.clone()),
+                                                _ => None,
+                                            })
+                                            && let Some(detail) =
+                                                fields.get(1).and_then(|f| match f {
+                                                    Value::UTF8(s) => Some(s.clone()),
+                                                    Value::ASCII(s) => Some(s.clone()),
+                                                    _ => None,
+                                                })
+                                        {
+                                            let event = serde_json::json!({
+                                                "type": "nea-revive:chat",
+                                                "message": if detail.is_empty() { title.clone() } else { format!("{title}: {detail}") },
+                                                "kind": "system",
+                                                "valid": true,
+                                                "private": false,
+                                            });
+                                            let _ =
+                                                crate::nea_client_runtime::receive_event(&event);
+                                            jslog!(
+                                                "[nea] game-chat.globalNotice title=\"{title}\" detail=\"{detail}\""
+                                            );
+                                        }
+                                    }
+                                    _ => {}
+                                }
+                            }
+                        }
                         if proto == "gui" {
                             if let Some(value) = parsed_v.as_ref()
-                                && let Some(command) = voxweb_protocol::decode_gui_command(&name, value)
+                                && let Some(command) =
+                                    voxweb_protocol::decode_gui_command(&name, value)
                             {
                                 let event = serde_json::json!({"type":"nea-historical-gui","command":command});
                                 let _ = crate::nea_client_runtime::receive_event(&event);
@@ -921,8 +1105,12 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                             &mut static_collision_bodies,
                                             &mut entity_scene,
                                         );
-                                        damage_overlay.apply_event(&event.event, f64::from(now_ms()));
-                                        if event.event.get("type").and_then(serde_json::Value::as_str)
+                                        damage_overlay
+                                            .apply_event(&event.event, f64::from(now_ms()));
+                                        if event
+                                            .event
+                                            .get("type")
+                                            .and_then(serde_json::Value::as_str)
                                             == Some("nea-revive:world-physics")
                                         {
                                             world_physics = (
@@ -931,13 +1119,27 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                                 json_f32(event.event.get("tickRate")).max(1.0),
                                             );
                                             surface_materials.clear();
-                                            if let Some(materials) = event.event.get("materials").and_then(serde_json::Value::as_object) {
+                                            if let Some(materials) = event
+                                                .event
+                                                .get("materials")
+                                                .and_then(serde_json::Value::as_object)
+                                            {
                                                 for (raw_id, material) in materials {
-                                                    let Some(id) = raw_id.parse::<u16>().ok() else { continue; };
-                                                    let friction = json_f32(material.get("friction"));
-                                                    let restitution = json_f32(material.get("restitution"));
-                                                    if friction.is_finite() && friction >= 0.0 && restitution.is_finite() && restitution >= 0.0 {
-                                                        surface_materials.insert(id, (friction, restitution));
+                                                    let Some(id) = raw_id.parse::<u16>().ok()
+                                                    else {
+                                                        continue;
+                                                    };
+                                                    let friction =
+                                                        json_f32(material.get("friction"));
+                                                    let restitution =
+                                                        json_f32(material.get("restitution"));
+                                                    if friction.is_finite()
+                                                        && friction >= 0.0
+                                                        && restitution.is_finite()
+                                                        && restitution >= 0.0
+                                                    {
+                                                        surface_materials
+                                                            .insert(id, (friction, restitution));
                                                     }
                                                 }
                                             }
@@ -948,6 +1150,17 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                                     world_physics.2,
                                                 );
                                             }
+                                        }
+                                        if event
+                                            .event
+                                            .get("type")
+                                            .and_then(serde_json::Value::as_str)
+                                            == Some("nea-revive:camera-state")
+                                        {
+                                            apply_runtime_camera_state(
+                                                &event.event,
+                                                &mut runtime_camera,
+                                            );
                                         }
                                     }
                                     Err(error) => {
@@ -1039,6 +1252,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                     jslog!("[nea] applied voxelChange runs={}", runs.len());
                                     terrain = Some(RenderTerrain::build_chunks(
                                         &dc.device,
+                                        &dc.queue,
                                         &atlas,
                                         &material_atlas,
                                         &bump_atlas,
@@ -1119,6 +1333,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                         if terrain.is_none() {
                                             terrain = Some(RenderTerrain::build_chunks(
                                                 &dc.device,
+                                                &dc.queue,
                                                 &atlas,
                                                 &material_atlas,
                                                 &bump_atlas,
@@ -1209,6 +1424,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                             );
                                             terrain = Some(RenderTerrain::build_chunks(
                                                 &dc.device,
+                                                &dc.queue,
                                                 &atlas,
                                                 &material_atlas,
                                                 &bump_atlas,
@@ -1262,7 +1478,9 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
         match crate::nea_client_runtime::drain_events() {
             Ok(events) => {
                 for event in events {
-                    if let Ok(Some(frame)) = voxweb_protocol::encode_runtime_outbound(&table, &event) {
+                    if let Ok(Some(frame)) =
+                        voxweb_protocol::encode_runtime_outbound(&table, &event)
+                    {
                         let _ = sockets.send_reliable(&frame);
                         continue;
                     }
@@ -1315,6 +1533,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
         if entity_scene_dirty {
             terrain = Some(RenderTerrain::build_chunks(
                 &dc.device,
+                &dc.queue,
                 &atlas,
                 &material_atlas,
                 &bump_atlas,
@@ -1353,7 +1572,8 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     let dy = entity.position[1] - local_pos[1];
                     let dz = entity.position[2] - local_pos[2];
                     let distance = (dx * dx + dy * dy + dz * dz).sqrt();
-                    (distance <= entity.interact_radius.max(0.0)).then_some((distance, entity.interact_hint.as_str()))
+                    (distance <= entity.interact_radius.max(0.0))
+                        .then_some((distance, entity.interact_hint.as_str()))
                 })
                 .min_by(|a, b| a.0.total_cmp(&b.0))
                 .map(|(_, hint)| if hint.is_empty() { "交互" } else { hint });
@@ -1480,7 +1700,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 last_input_tick = Some(server_tick);
                 let inp = input.borrow();
                 let moving = movement[0] != 0.0 || movement[1] != 0.0;
-                let state = recovered_player_state(
+                let mut state = recovered_player_state(
                     moving,
                     inp.jump,
                     move_mode,
@@ -1488,6 +1708,16 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     physics.grounded,
                     local_vel[1],
                 );
+                // Recovered NetInputEventBits low bits carry the button
+                // edges ACTION0 (left) and ACTION1 (right), sampled here so a
+                // press/release while pointer-locked reaches the server.
+                use voxweb_protocol::player::{INPUT_ACTION0, INPUT_ACTION1};
+                if inp.action0 {
+                    state |= INPUT_ACTION0;
+                }
+                if inp.action1 {
+                    state |= INPUT_ACTION1;
+                }
                 // snapshot driver values BEFORE the mutable borrow so the
                 // log below never touches a borrowed driver
                 let (pid, tick_now) = {
@@ -1568,16 +1798,18 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 .device
                 .create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
             let camera_player_pos = follow_camera_anchor.update(player_pos, frame_delta_seconds);
+            let camera_anchor = runtime_camera.entity_position.or(camera_player_pos);
             let (mvp, eye, first_person) = make_camera(
                 width,
                 height,
-                camera_player_pos,
+                camera_anchor,
                 local_body_half_extents[1],
                 inp_crouching,
                 inp_pitch,
                 inp_yaw,
                 &chunk_cells,
                 &mut follow_camera_ray_distance,
+                &runtime_camera,
             );
             let sampled_remote_players = remote_players.sample(now_ms());
             let other_players: Vec<AvatarInstance> = sampled_remote_players
@@ -1620,7 +1852,13 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 });
             }
             nameplate_overlay.update(&nameplates, mvp, width, height)?;
-            damage_overlay.update(&static_collision_bodies, mvp, width, height, f64::from(now_ms()))?;
+            damage_overlay.update(
+                &static_collision_bodies,
+                mvp,
+                width,
+                height,
+                f64::from(now_ms()),
+            )?;
             let aspect = width as f32 / height.max(1) as f32;
             let projection = glam::Mat4::perspective_rh(
                 voxweb_protocol::player::CAMERA_FOV_Y_RADIANS,
@@ -1629,7 +1867,6 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 2000.0,
             );
             let camera_view = projection.inverse() * glam::Mat4::from_cols_array(&mvp);
-            let environment = voxweb_render::nea_environment::NeaEnvironment::recovered_default();
             let skybox_globals = SkyboxGlobals {
                 inv_view_proj: glam::Mat4::from_cols_array(&mvp)
                     .inverse()
@@ -1638,7 +1875,17 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     environment.sun_direction[0],
                     environment.sun_direction[1],
                     environment.sun_direction[2],
-                    4.0 / 24.0,
+                    if map_environment.sky_front == [0.0; 3]
+                        && map_environment.sky_back == [0.0; 3]
+                        && map_environment.sky_left == [0.0; 3]
+                        && map_environment.sky_right == [0.0; 3]
+                        && map_environment.sky_top == [0.0; 3]
+                        && map_environment.sky_bottom == [0.0; 3]
+                    {
+                        -1.0
+                    } else {
+                        4.0 / 24.0
+                    },
                 ],
                 fog_color: [
                     environment.sky_front[0] / 255.0,
@@ -1652,25 +1899,41 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 0,
                 bytemuck::bytes_of(&skybox_globals),
             );
-            let shadow_frame = voxweb_render::nea_shadow::recovered_shadow_frame(
-                glam::Vec3::from(eye),
-                camera_view,
-                voxweb_protocol::player::CAMERA_FOV_Y_RADIANS,
-                aspect,
-                0.1,
-                2000.0,
-                glam::Vec3::from(environment.sun_direction),
-                t.shadow_map.resolution(),
-            );
-            t.shadow_map.update(&dc.queue, &shadow_frame);
-            t.shadow_map.render_terrain(
-                &mut encoder,
-                &dc.queue,
-                &shadow_frame,
-                &t.terrain_pipelines[0].vertex_buffer,
-                &t.terrain_pipelines[0].index_buffer,
-                t.terrain_pipelines[0].index_count,
-            );
+            // Maps without a usable sun (zero direction or black sun color,
+            // e.g. fully indoor maps like Backroom) skip the directional
+            // shadow pass entirely, matching the DAO3 Player.
+            let shadow_frame = if sun_active {
+                Some(voxweb_render::nea_shadow::recovered_shadow_frame(
+                    glam::Vec3::from(eye),
+                    camera_view,
+                    voxweb_protocol::player::CAMERA_FOV_Y_RADIANS,
+                    aspect,
+                    0.1,
+                    2000.0,
+                    glam::Vec3::from(environment.sun_direction),
+                    t.shadow_map.resolution(),
+                ))
+            } else {
+                None
+            };
+            if let Some(shadow_frame) = shadow_frame.as_ref() {
+                t.shadow_map.update(&dc.queue, shadow_frame);
+                // Complete shadow submission: every terrain batch AND every static
+                // entity batch casts into the same atlas. Previously only
+                // terrain_pipelines[0] was submitted, so large maps and imported
+                // entities lost their cast shadows.
+                for (batch_index, terrain_pipeline) in t.terrain_pipelines.iter().enumerate() {
+                    t.shadow_map.render_terrain(
+                        &mut encoder,
+                        &dc.queue,
+                        shadow_frame,
+                        &terrain_pipeline.vertex_buffer,
+                        &terrain_pipeline.index_buffer,
+                        terrain_pipeline.index_count,
+                        batch_index == 0 && t.entity_pipelines.is_empty(),
+                    );
+                }
+            }
             if let Some(renderer) = avatar_renderer.as_mut() {
                 if physics.grounded && !avatar_was_grounded && local_vel[1] < 0.0 {
                     avatar_landing_amount = 1.0;
@@ -1729,7 +1992,9 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     );
                 }
                 renderer.update_instances(&dc.device, &dc.queue, &avatar_instances);
-                renderer.render_shadows(&mut encoder, &dc.queue, &t.shadow_map, &shadow_frame);
+                if let Some(shadow_frame) = shadow_frame.as_ref() {
+                    renderer.render_shadows(&mut encoder, &dc.queue, &t.shadow_map, shadow_frame);
+                }
             }
             let eye_block = block_voxel_at(
                 &chunk_cells,
@@ -1744,7 +2009,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 });
                 last_eye_ambient_ms = now_ms();
             }
-            let exposure_target = default_environment.target_exposure(eye_ambient);
+            let exposure_target = environment.target_exposure(eye_ambient);
             // During the original initial world sync netSkip is set, which
             // snaps the schema default exposure to the measured target.
             // Without this, the first several seconds render about 4x too
@@ -1767,9 +2032,18 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 now_ms() as f32 / 1000.0,
                 eye_fluid,
                 exposure,
+                &environment,
+                Some(&map_environment),
             );
-            t.alpha_pipeline
-                .set_frame(&dc.queue, &mvp, &eye, eye_fluid, exposure);
+            t.alpha_pipeline.set_frame(
+                &dc.queue,
+                &mvp,
+                &eye,
+                eye_fluid,
+                exposure,
+                &environment,
+                Some(&map_environment),
+            );
             {
                 let mut sky_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                     label: Some("nea.skybox"),
@@ -1824,30 +2098,40 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                         eye_fluid,
                         exposure,
                         inp_debug_view,
+                        &environment,
+                        Some(&map_environment),
                     );
                     terrain_pipeline.draw(&mut pass);
                 }
-                for entity_pipeline in &t.entity_pipelines {
-                    entity_pipeline.set_camera(
-                        &dc.queue,
-                        &mvp,
-                        &eye,
-                        eye_fluid,
-                        exposure,
-                        inp_debug_view,
-                    );
-                    entity_pipeline.draw(&mut pass);
+                if !page_flag("hideEntities") {
+                    for entity_pipeline in &t.entity_pipelines {
+                        entity_pipeline.set_frame(
+                            &dc.queue,
+                            &mvp,
+                            &eye,
+                            eye_fluid,
+                            exposure,
+                            inp_debug_view,
+                            &environment,
+                            Some(&map_environment),
+                        );
+                        entity_pipeline.draw(&mut pass);
+                    }
                 }
-                if let Some(renderer) = avatar_renderer.as_ref() {
-                    renderer.set_environment(
-                        &dc.queue,
-                        &mvp,
-                        &eye,
-                        eye_fluid,
-                        exposure,
-                        inp_debug_view,
-                    );
-                    renderer.draw(&mut pass);
+                if !page_flag("hideAvatar") {
+                    if let Some(renderer) = avatar_renderer.as_ref() {
+                        renderer.set_environment(
+                            &dc.queue,
+                            &mvp,
+                            &eye,
+                            eye_fluid,
+                            exposure,
+                            inp_debug_view,
+                            &environment,
+                            Some(&map_environment),
+                        );
+                        renderer.draw(&mut pass);
+                    }
                 }
                 // F4（Shadow debug）下跳过透明面（流体/玻璃），用于隔离
                 // "图层盖在人物之上"是否来自透明渲染。
@@ -1883,9 +2167,12 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
 
 /// Packed terrain mesh + pipeline for the decoded chunk cells.
 struct RenderTerrain {
+    #[allow(dead_code)]
     mesh: MeshBuffers,
     terrain_pipelines: Vec<NeaTerrainPipeline>,
-    entity_pipelines: Vec<NeaTerrainPipeline>,
+    entity_pipelines: Vec<voxweb_render::nea_entity::NeaEntityPipeline>,
+    #[allow(dead_code)]
+    entity_textures: Vec<voxweb_render::nea_atlas::AtlasTexture>,
     alpha_pipeline: NeaAlphaPipeline,
     fluid_pipeline: NeaFluidPipeline,
     voxel_light: StaticVoxelLight,
@@ -1907,7 +2194,8 @@ fn split_mesh_batches(mesh: MeshBuffers, max_vertex_floats: usize) -> Vec<MeshBu
     for triangle in mesh.indices.chunks_exact(3) {
         let triangle_end = triangle.iter().copied().max().unwrap_or(0) as usize + 1;
         if triangle_end > batch_end && !batch_indices.is_empty() {
-            let vertices = mesh.vertices[start_vertex * FLOATS_PER_VERTEX..batch_end * FLOATS_PER_VERTEX]
+            let vertices = mesh.vertices
+                [start_vertex * FLOATS_PER_VERTEX..batch_end * FLOATS_PER_VERTEX]
                 .to_vec();
             batches.push(MeshBuffers {
                 vertices,
@@ -1922,7 +2210,8 @@ fn split_mesh_batches(mesh: MeshBuffers, max_vertex_floats: usize) -> Vec<MeshBu
     if !batch_indices.is_empty() {
         let end_vertex = mesh.vertices.len() / FLOATS_PER_VERTEX;
         batches.push(MeshBuffers {
-            vertices: mesh.vertices[start_vertex * FLOATS_PER_VERTEX..end_vertex * FLOATS_PER_VERTEX]
+            vertices: mesh.vertices
+                [start_vertex * FLOATS_PER_VERTEX..end_vertex * FLOATS_PER_VERTEX]
                 .to_vec(),
             indices: batch_indices,
         });
@@ -1932,23 +2221,307 @@ fn split_mesh_batches(mesh: MeshBuffers, max_vertex_floats: usize) -> Vec<MeshBu
 
 async fn fetch_static_entity_scene(url: &str) -> Result<StaticEntityScene, JsValue> {
     let bytes = fetch_bytes(url).await?;
-    serde_json::from_slice(&bytes)
-        .map_err(|error| JsValue::from_str(&format!("invalid static entity scene: {error}")))
+    let mut scene: StaticEntityScene = serde_json::from_slice(&bytes)
+        .map_err(|error| JsValue::from_str(&format!("invalid static entity scene: {error}")))?;
+    for mesh in scene.meshes.values_mut() {
+        if !mesh.positions_f32.is_empty() {
+            mesh.positions = decode_base64_f32(&mesh.positions_f32)?;
+            mesh.positions_f32.clear();
+        }
+        if !mesh.uvs_f32.is_empty() {
+            mesh.uvs = decode_base64_f32(&mesh.uvs_f32)?;
+            mesh.uvs_f32.clear();
+        }
+        if !mesh.indices_u32.is_empty() {
+            mesh.indices = decode_base64_u32(&mesh.indices_u32)?;
+            mesh.indices_u32.clear();
+        }
+        if !mesh.texture_png_base64.is_empty() {
+            mesh.texture_png = decode_base64_bytes(&mesh.texture_png_base64)?;
+            mesh.texture_png_base64.clear();
+        }
+    }
+    Ok(scene)
 }
 
-fn build_static_entity_mesh_batches(scene: &StaticEntityScene) -> Vec<MeshBuffers> {
+fn decode_base64_bytes(encoded: &str) -> Result<Vec<u8>, JsValue> {
+    let decoded = web_sys::window()
+        .ok_or_else(|| JsValue::from_str("no window"))?
+        .atob(encoded)?;
+    // `atob` returns a JavaScript binary string: each Unicode scalar stores
+    // one original byte. Rust UTF-8 bytes would expand values >= 0x80.
+    Ok(decoded.chars().map(|value| value as u32 as u8).collect())
+}
+
+fn decode_base64_f32(encoded: &str) -> Result<Vec<f32>, JsValue> {
+    let bytes = decode_base64_bytes(encoded)?;
+    if bytes.len() % 4 != 0 { return Err(JsValue::from_str("packed f32 mesh field is misaligned")); }
+    Ok(bytes.chunks_exact(4).map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]])).collect())
+}
+
+fn decode_base64_u32(encoded: &str) -> Result<Vec<u32>, JsValue> {
+    let bytes = decode_base64_bytes(encoded)?;
+    if bytes.len() % 4 != 0 { return Err(JsValue::from_str("packed u32 mesh field is misaligned")); }
+    Ok(bytes.chunks_exact(4).map(|b| u32::from_le_bytes([b[0], b[1], b[2], b[3]])).collect())
+}
+
+/// Fetch the map's recovered DAO3 environment fields. Any failure (missing
+/// endpoint, null environment, malformed JSON) falls back to the recovered
+/// engine defaults so standalone maps keep the noon look.
+async fn fetch_map_environment(url: &str) -> voxweb_render::nea_environment::MapEnvironment {
+    use voxweb_render::nea_environment::MapEnvironment;
+    let Ok(bytes) = fetch_bytes(url).await else {
+        jslog!("[nea] map environment unavailable; using engine defaults");
+        return default_map_environment();
+    };
+    let Ok(value) = serde_json::from_slice::<serde_json::Value>(&bytes) else {
+        jslog!("[nea] map environment malformed; using engine defaults");
+        return default_map_environment();
+    };
+    if !value.is_object() {
+        return default_map_environment();
+    }
+    let sky = value.get("sky").cloned().unwrap_or_default();
+    let fog = value.get("fog").cloned().unwrap_or_default();
+    MapEnvironment {
+        sun_direction: json_vec3_value(sky.get("sunDirection")).unwrap_or([0.0; 3]),
+        sun_color: json_color_value(sky.get("sunColor")).unwrap_or([0.0; 3]),
+        sky_left: json_color_value(sky.get("skyLeft")).unwrap_or([0.0; 3]),
+        sky_right: json_color_value(sky.get("skyRight")).unwrap_or([0.0; 3]),
+        sky_top: json_color_value(sky.get("skyTop")).unwrap_or([0.0; 3]),
+        sky_bottom: json_color_value(sky.get("skyBottom")).unwrap_or([0.0; 3]),
+        sky_front: json_color_value(sky.get("skyFront")).unwrap_or([0.0; 3]),
+        sky_back: json_color_value(sky.get("skyBack")).unwrap_or([0.0; 3]),
+        global_light: sky
+            .get("globalLight")
+            .and_then(|v| v.as_f64())
+            .map(|v| v as f32)
+            .unwrap_or(-1.0),
+        gamma: sky
+            .get("gamma")
+            .and_then(|v| v.as_f64())
+            .map(|v| v as f32)
+            .unwrap_or(1.3),
+        fog_start_distance: fog
+            .get("fogStartDistance")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.0) as f32,
+        fog_density: fog
+            .get("fogDensity")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.0) as f32,
+        fog_height_falloff: fog
+            .get("fogHeightFalloff")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.0) as f32,
+    }
+}
+
+/// Schema-default map environment matching the recovered DAO3 defaults for
+/// a fresh editor map (phase 4/24 noon values as 0..1 colors).
+fn default_map_environment() -> voxweb_render::nea_environment::MapEnvironment {
+    use voxweb_render::nea_environment::MapEnvironment;
+    MapEnvironment {
+        sun_direction: [0.4975186, 0.8617275, 0.09950372],
+        sun_color: [1.0, 1.0, 1.0],
+        sky_left: [0.74, 0.88, 1.0],
+        sky_right: [0.71, 0.83, 0.95],
+        sky_top: [0.75, 0.89, 1.0],
+        sky_bottom: [0.65, 0.73, 0.8],
+        sky_front: [0.73, 0.86, 0.98],
+        sky_back: [0.73, 0.86, 0.98],
+        global_light: -1.0,
+        gamma: 1.3,
+        fog_start_distance: 0.0,
+        fog_density: 0.0,
+        fog_height_falloff: 0.0,
+    }
+}
+
+fn json_vec3_value(value: Option<&serde_json::Value>) -> Option<[f32; 3]> {
+    let values = value?.as_array()?;
+    (values.len() >= 3).then(|| {
+        [
+            values.first().and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
+            values.get(1).and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
+            values.get(2).and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
+        ]
+    })
+}
+
+fn json_color_value(value: Option<&serde_json::Value>) -> Option<[f32; 3]> {
+    let value = value?;
+    if let Some(values) = value.as_array() {
+        if values.len() < 3 {
+            return None;
+        }
+        return Some([
+            values[0].as_f64()? as f32,
+            values[1].as_f64()? as f32,
+            values[2].as_f64()? as f32,
+        ]);
+    }
+    let object = value.as_object()?;
+    let read = |name: &str| {
+        object
+            .get(name)
+            .and_then(serde_json::Value::as_f64)
+            .map(|v| v as f32)
+    };
+    let mut color = [read("r")?, read("g")?, read("b")?];
+    if color.iter().any(|component| *component > 1.0) {
+        for component in &mut color {
+            *component /= 255.0;
+        }
+    }
+    Some(color)
+}
+
+async fn prefetch_entity_mesh_assets(origin: &str, scene: &mut StaticEntityScene) {
+    for mesh in scene.meshes.values_mut() {
+        if !mesh.texture_png.is_empty() {
+            match AtlasImage::from_png(&mesh.texture_png) {
+                Ok(image) => {
+                    mesh.texture_width = image.width;
+                    mesh.texture_height = image.height;
+                    mesh.texture_rgba = image.rgba;
+                }
+                Err(error) => jslog!("[nea] glTF model texture decode failed: {error}"),
+            }
+        }
+    }
+    let mut seen = std::collections::HashSet::new();
+    let hashes = scene
+        .meshes
+        .values()
+        .filter_map(|mesh| mesh.mesh_asset_hash.clone())
+        .collect::<Vec<_>>();
+    for hash in hashes {
+        if !seen.insert(hash.clone()) {
+            continue;
+        }
+        match fetch_bytes(&format!("{origin}/api/mesh-decoded/{hash}")).await {
+            Ok(bytes) => match serde_json::from_slice::<serde_json::Value>(&bytes) {
+                Ok(value) => {
+                    let format = value
+                        .get("format")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("unknown");
+                    let version = value.get("version").and_then(|v| v.as_u64()).unwrap_or(0);
+                    let texture = value
+                        .get("texture")
+                        .and_then(|v| v.get("width"))
+                        .and_then(|v| v.as_u64())
+                        .unwrap_or(0);
+                    jslog!(
+                        "[nea] decoded mesh ready: {hash} format={format} v{version} texture={texture}px"
+                    );
+                    if let Ok(payload) = serde_json::from_value::<DecodedMeshPayload>(value) {
+                        if let Some(texture) = payload.texture.as_ref() {
+                            if let Some(target) = scene
+                                .meshes
+                                .values_mut()
+                                .find(|entry| entry.mesh_asset_hash.as_deref() == Some(&hash))
+                            {
+                                target.texture_width = texture.width;
+                                target.texture_height = texture.height;
+                                target.texture_rgba = texture.rgba.clone();
+                            }
+                        }
+                        for mesh in payload.meshes {
+                            let faces = mesh
+                                .into_iter()
+                                .map(|face| voxweb_protocol::AvatarFace {
+                                    sizes: face.sizes,
+                                    uv_flags: face.uv_flags,
+                                    uvs: face.uvs,
+                                    vertices: face.vertices,
+                                })
+                                .collect::<Vec<_>>();
+                            if let Ok(model) = voxweb_render::avatar_mesh::build_avatar_part_mesh(
+                                &voxweb_protocol::AvatarPart {
+                                    part_id: 0,
+                                    bind_matrix: [0.0; 16],
+                                    faces,
+                                    texture: voxweb_protocol::AvatarTexture {
+                                        width: 0,
+                                        data: Vec::new(),
+                                        palette: Vec::new(),
+                                    },
+                                },
+                            ) {
+                                jslog!(
+                                    "[nea] decoded mesh quads={} vertices={}",
+                                    model.quad_count,
+                                    model.buffers.vertices.len()
+                                        / voxweb_render::nea_mesh::FLOATS_PER_VERTEX
+                                );
+                                if let Some(target) = scene
+                                    .meshes
+                                    .values_mut()
+                                    .find(|entry| entry.mesh_asset_hash.as_deref() == Some(&hash))
+                                {
+                                    let geometry =
+                                        target.decoded_geometry.get_or_insert_with(|| {
+                                            (Vec::new(), Vec::new(), Vec::new())
+                                        });
+                                    let base = (geometry.0.len() / 3) as u32;
+                                    for vertex in
+                                        model.buffers.vertices.chunks_exact(FLOATS_PER_VERTEX)
+                                    {
+                                        geometry.0.extend_from_slice(&vertex[0..3]);
+                                        geometry.1.extend_from_slice(&vertex[6..8]);
+                                    }
+                                    geometry.2.extend(
+                                        model.buffers.indices.iter().map(|index| index + base),
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+                Err(error) => jslog!("[nea] decoded mesh JSON invalid: {hash}: {error}"),
+            },
+            Err(error) => jslog!("[nea] mesh asset fetch failed: {hash}: {:?}", error),
+        }
+    }
+}
+
+fn build_static_entity_mesh_batches(
+    scene: &StaticEntityScene,
+    mesh_filter: Option<&str>,
+    voxel_light: &StaticVoxelLight,
+) -> Vec<MeshBuffers> {
     const MAX_VERTEX_FLOATS_PER_BATCH: usize = 8 * 1024 * 1024;
-    let tile = voxweb_protocol::geometry::face_uv_rect(1, 512.0);
     let mut batches = Vec::new();
     let mut vertices = Vec::new();
     let mut indices = Vec::new();
     let mut base = 0u32;
     for instance in &scene.entities {
-        if !instance.visible { continue; }
+        if mesh_filter.is_some_and(|mesh| instance.mesh != mesh) {
+            continue;
+        }
+        if !instance.visible {
+            continue;
+        }
         let Some(mesh) = scene.meshes.get(&instance.mesh) else {
             continue;
         };
-        let vertex_count = mesh.positions.len() / 3;
+        // Texture payloads are uploaded by the entity pipeline; touch the
+        // fields here so legacy scenes without textures remain zero-cost.
+        let _has_model_texture = mesh.texture_width > 0
+            && mesh.texture_height > 0
+            && mesh.texture_rgba.len()
+                == (mesh.texture_width as usize * mesh.texture_height as usize * 4);
+        let _mesh_asset_hash = mesh.mesh_asset_hash.as_deref();
+        let (positions, uvs, mesh_indices) = mesh
+            .decoded_geometry
+            .as_ref()
+            .map(|(positions, uvs, indices)| {
+                (positions.as_slice(), uvs.as_slice(), indices.as_slice())
+            })
+            .unwrap_or((&mesh.positions, &mesh.uvs, &mesh.indices));
+        let vertex_count = positions.len() / 3;
         if vertex_count == 0 {
             continue;
         }
@@ -1962,8 +2535,8 @@ fn build_static_entity_mesh_batches(scene: &StaticEntityScene) -> Vec<MeshBuffer
         let translation = glam::Vec3::from_array(instance.position)
             + rotation * glam::Vec3::from_array(instance.mesh_offset);
         let scale = glam::Vec3::from_array(instance.scale);
-        let transformed: Vec<glam::Vec3> = mesh
-            .positions
+        let instance_light = [1.0; 4];
+        let transformed: Vec<glam::Vec3> = positions
             .chunks_exact(3)
             .map(|position| {
                 rotation * (glam::Vec3::new(position[0], position[1], position[2]) * scale)
@@ -1971,7 +2544,7 @@ fn build_static_entity_mesh_batches(scene: &StaticEntityScene) -> Vec<MeshBuffer
             })
             .collect();
         let mut normals = vec![glam::Vec3::ZERO; vertex_count];
-        for triangle in mesh.indices.chunks_exact(3) {
+        for triangle in mesh_indices.chunks_exact(3) {
             let [a, b, c] = [
                 triangle[0] as usize,
                 triangle[1] as usize,
@@ -1999,42 +2572,86 @@ fn build_static_entity_mesh_batches(scene: &StaticEntityScene) -> Vec<MeshBuffer
         for vertex in 0..vertex_count {
             let position = transformed[vertex];
             let normal = normals[vertex].normalize_or_zero();
-            let u = mesh
-                .uvs
-                .get(vertex * 2)
-                .copied()
-                .unwrap_or(0.0)
-                .fract()
-                .abs();
-            let v = mesh
-                .uvs
+            let u = uvs.get(vertex * 2).copied().unwrap_or(0.0).fract().abs();
+            let v = uvs
                 .get(vertex * 2 + 1)
                 .copied()
                 .unwrap_or(0.0)
                 .fract()
                 .abs();
             vertices.extend_from_slice(&[
-                position.x,
-                position.y,
-                position.z,
-                normal.x,
-                normal.y,
-                normal.z,
-                tile.u0 + (tile.u1 - tile.u0) * u,
-                tile.v0 + (tile.v1 - tile.v0) * v,
+                position.x, position.y, position.z, normal.x, normal.y, normal.z, u, v,
             ]);
             for _ in 0..4 {
-                vertices.extend_from_slice(&[1.0, 1.0, 1.0, 1.0]);
+                vertices.extend_from_slice(&instance_light);
             }
             vertices.push(0.0);
         }
-        indices.extend(mesh.indices.iter().map(|index| index + base));
+        indices.extend(mesh_indices.iter().map(|index| index + base));
         base += vertex_count as u32;
     }
-    if !vertices.is_empty() {
+    if !vertices.is_empty() && !indices.is_empty() {
         batches.push(MeshBuffers { vertices, indices });
     }
     batches
+}
+
+fn build_static_entity_instances(
+    scene: &StaticEntityScene,
+    mesh_key: &str,
+    voxel_light: &StaticVoxelLight,
+) -> Option<(
+    Vec<voxweb_render::nea_entity::EntityVertex>,
+    Vec<u32>,
+    Vec<voxweb_render::nea_entity::EntityInstance>,
+)> {
+    let mesh = scene.meshes.get(mesh_key)?;
+    let (positions, uvs, indices) = mesh
+        .decoded_geometry
+        .as_ref()
+        .map(|(positions, uvs, indices)| {
+            (positions.as_slice(), uvs.as_slice(), indices.as_slice())
+        })
+        .unwrap_or((&mesh.positions, &mesh.uvs, &mesh.indices));
+    let vertex_count = positions.len() / 3;
+    if vertex_count == 0 || indices.is_empty() {
+        return None;
+    }
+    let mut normals = vec![glam::Vec3::ZERO; vertex_count];
+    for triangle in indices.chunks_exact(3) {
+        let (a, b, c) = (triangle[0] as usize, triangle[1] as usize, triangle[2] as usize);
+        if a >= vertex_count || b >= vertex_count || c >= vertex_count {
+            continue;
+        }
+        let pa = glam::Vec3::from_slice(&positions[a * 3..a * 3 + 3]);
+        let pb = glam::Vec3::from_slice(&positions[b * 3..b * 3 + 3]);
+        let pc = glam::Vec3::from_slice(&positions[c * 3..c * 3 + 3]);
+        let normal = (pb - pa).cross(pc - pa).normalize_or_zero();
+        normals[a] += normal;
+        normals[b] += normal;
+        normals[c] += normal;
+    }
+    let vertices = (0..vertex_count)
+        .map(|index| voxweb_render::nea_entity::EntityVertex {
+            position: [positions[index * 3], positions[index * 3 + 1], positions[index * 3 + 2]],
+            normal: normals[index].normalize_or_zero().to_array(),
+            uv: [uvs.get(index * 2).copied().unwrap_or(0.0), uvs.get(index * 2 + 1).copied().unwrap_or(0.0)],
+        })
+        .collect::<Vec<_>>();
+    let instances = scene.entities.iter().filter(|instance| instance.visible && instance.mesh == mesh_key)
+        .map(|instance| {
+            let rotation = glam::Quat::from_xyzw(instance.rotation[0], instance.rotation[1], instance.rotation[2], instance.rotation[3]).normalize();
+            let translation = glam::Vec3::from_array(instance.position) + rotation * glam::Vec3::from_array(instance.mesh_offset);
+            let model = glam::Mat4::from_scale_rotation_translation(glam::Vec3::from_array(instance.scale), rotation, translation);
+            let tint_scale = if instance.tint.iter().any(|value| *value > 1.0) { 1.0 / 255.0 } else { 1.0 };
+            voxweb_render::nea_entity::EntityInstance {
+                model: model.to_cols_array_2d(),
+                tint: instance.tint.map(|value| value * tint_scale),
+                light: [1.0; 4],
+                material: [0.0, instance.metalness, instance.shininess, instance.static_shadow as u8 as f32],
+            }
+        }).collect::<Vec<_>>();
+    if instances.is_empty() { None } else { Some((vertices, indices.to_vec(), instances)) }
 }
 
 fn build_static_entity_collision_bodies(
@@ -2085,61 +2702,109 @@ fn apply_entity_state_event(
     let Some(id) = event.get("entityId").and_then(serde_json::Value::as_u64) else {
         return false;
     };
-    let Some(state) = event.get("state") else { return false };
-    let Some(body) = bodies.iter_mut().find(|body| body.id == id as u32) else {
+    let Some(state) = event.get("state") else {
         return false;
     };
+    let id = id as u32;
+    if !bodies.iter().any(|body| body.id == id)
+        && !scene.entities.iter().any(|entity| entity.id == id)
+    {
+        return false;
+    }
     if let Some(position) = json_vec3(state.get("position")) {
-        [body.px, body.py, body.pz] = position;
-        if let Some(entity) = scene.entities.iter_mut().find(|entity| entity.id == id as u32) {
+        if let Some(body) = bodies.iter_mut().find(|body| body.id == id) {
+            [body.px, body.py, body.pz] = position;
+        }
+        if let Some(entity) = scene.entities.iter_mut().find(|entity| entity.id == id) {
             entity.position = position;
         }
     }
     if let Some(velocity) = json_vec3(state.get("velocity")) {
-        [body.vx, body.vy, body.vz] = velocity;
+        if let Some(body) = bodies.iter_mut().find(|body| body.id == id) {
+            [body.vx, body.vy, body.vz] = velocity;
+        }
     }
-    if let Some(orientation) = state.get("orientation").and_then(serde_json::Value::as_array) {
+    if let Some(orientation) = state
+        .get("orientation")
+        .and_then(serde_json::Value::as_array)
+    {
         if orientation.len() >= 4 {
-            body.qw = json_f32(orientation.first());
-            body.qx = json_f32(orientation.get(1));
-            body.qy = json_f32(orientation.get(2));
-            body.qz = json_f32(orientation.get(3));
-            if let Some(entity) = scene.entities.iter_mut().find(|entity| entity.id == id as u32) {
-                entity.rotation = [body.qx, body.qy, body.qz, body.qw];
+            let rotation = [
+                json_f32(orientation.get(1)),
+                json_f32(orientation.get(2)),
+                json_f32(orientation.get(3)),
+                json_f32(orientation.first()),
+            ];
+            if let Some(body) = bodies.iter_mut().find(|body| body.id == id) {
+                [body.qx, body.qy, body.qz, body.qw] = rotation;
+            }
+            if let Some(entity) = scene.entities.iter_mut().find(|entity| entity.id == id) {
+                entity.rotation = rotation;
             }
         }
     }
     if let Some(value) = state.get("mass").and_then(serde_json::Value::as_f64) {
-        body.mass = value.max(0.001) as f32;
+        if let Some(body) = bodies.iter_mut().find(|body| body.id == id) {
+            body.mass = value.max(0.001) as f32;
+        }
     }
     if let Some(value) = state.get("friction").and_then(serde_json::Value::as_f64) {
-        body.friction = value.max(0.0) as f32;
+        if let Some(body) = bodies.iter_mut().find(|body| body.id == id) {
+            body.friction = value.max(0.0) as f32;
+        }
     }
     if let Some(value) = state.get("restitution").and_then(serde_json::Value::as_f64) {
-        body.restitution = value.max(0.0) as f32;
+        if let Some(body) = bodies.iter_mut().find(|body| body.id == id) {
+            body.restitution = value.max(0.0) as f32;
+        }
     }
-    if state.get("collides").and_then(serde_json::Value::as_bool) == Some(false) {
-        body.flags &= !2;
-    } else if state.get("collides").and_then(serde_json::Value::as_bool) == Some(true) {
-        body.flags |= 2;
+    if let Some(body) = bodies.iter_mut().find(|body| body.id == id) {
+        if state.get("collides").and_then(serde_json::Value::as_bool) == Some(false) {
+            body.flags &= !2;
+        } else if state.get("collides").and_then(serde_json::Value::as_bool) == Some(true) {
+            body.flags |= 2;
+        }
+        if state.get("fixed").and_then(serde_json::Value::as_bool) == Some(true) {
+            body.flags &= !64;
+        } else if state.get("fixed").and_then(serde_json::Value::as_bool) == Some(false) {
+            body.flags |= 64;
+        }
     }
-    if state.get("fixed").and_then(serde_json::Value::as_bool) == Some(true) {
-        body.flags &= !64;
-    } else if state.get("fixed").and_then(serde_json::Value::as_bool) == Some(false) {
-        body.flags |= 64;
+    if let Some(entity) = scene.entities.iter_mut().find(|entity| entity.id == id) {
+        if let Some(value) = state
+            .get("enableInteract")
+            .and_then(serde_json::Value::as_bool)
+        {
+            entity.enable_interact = value;
+        }
+        if let Some(value) = state
+            .get("interactHint")
+            .and_then(serde_json::Value::as_str)
+        {
+            entity.interact_hint = value.to_owned();
+        }
+        if let Some(value) = state
+            .get("interactRadius")
+            .and_then(serde_json::Value::as_f64)
+        {
+            entity.interact_radius = value.max(0.0) as f32;
+        }
     }
-    if let Some(invisible) = state.pointer("/model/invisible").and_then(serde_json::Value::as_bool) {
-        if let Some(entity) = scene.entities.iter_mut().find(|entity| entity.id == id as u32) {
+    if let Some(invisible) = state
+        .pointer("/model/invisible")
+        .and_then(serde_json::Value::as_bool)
+    {
+        if let Some(entity) = scene.entities.iter_mut().find(|entity| entity.id == id) {
             entity.visible = !invisible;
         }
     }
     if let Some(scale) = json_vec3(state.pointer("/model/scale")) {
-        if let Some(entity) = scene.entities.iter_mut().find(|entity| entity.id == id as u32) {
+        if let Some(entity) = scene.entities.iter_mut().find(|entity| entity.id == id) {
             entity.scale = scale;
         }
     }
     if let Some(offset) = json_vec3(state.pointer("/model/offset")) {
-        if let Some(entity) = scene.entities.iter_mut().find(|entity| entity.id == id as u32) {
+        if let Some(entity) = scene.entities.iter_mut().find(|entity| entity.id == id) {
             entity.mesh_offset = offset;
         }
     }
@@ -2148,7 +2813,13 @@ fn apply_entity_state_event(
 
 fn json_vec3(value: Option<&serde_json::Value>) -> Option<[f32; 3]> {
     let values = value?.as_array()?;
-    (values.len() >= 3).then(|| [json_f32(values.first()), json_f32(values.get(1)), json_f32(values.get(2))])
+    (values.len() >= 3).then(|| {
+        [
+            json_f32(values.first()),
+            json_f32(values.get(1)),
+            json_f32(values.get(2)),
+        ]
+    })
 }
 
 fn json_f32(value: Option<&serde_json::Value>) -> f32 {
@@ -2161,6 +2832,7 @@ impl RenderTerrain {
     /// (cx*32, cy*32+y, cz*32).
     fn build_chunks(
         device: &wgpu::Device,
+        queue: &wgpu::Queue,
         atlas: &AtlasTexture,
         material_atlas: &AtlasTexture,
         bump_atlas: &AtlasTexture,
@@ -2431,24 +3103,47 @@ impl RenderTerrain {
                 )
             })
             .collect::<Vec<_>>();
-        let entity_meshes = build_static_entity_mesh_batches(entity_scene);
-        let entity_pipelines = entity_meshes
+        let entity_keys = entity_scene.meshes.keys().cloned().collect::<Vec<_>>();
+        let entity_textures = entity_keys
             .iter()
-            .enumerate()
-            .map(|(index, entity_mesh)| {
-                NeaTerrainPipeline::new(
+            .map(|key| {
+                let mesh = &entity_scene.meshes[key];
+                let valid = mesh.texture_width > 0
+                    && mesh.texture_height > 0
+                    && mesh.texture_rgba.len()
+                        == mesh.texture_width as usize * mesh.texture_height as usize * 4;
+                let (width, height, rgba): (u32, u32, &[u8]) = if valid {
+                    (mesh.texture_width, mesh.texture_height, &mesh.texture_rgba)
+                } else {
+                    (1, 1, &[255, 255, 255, 255])
+                };
+                voxweb_render::nea_atlas::AtlasTexture::upload_rgba(
                     device,
-                    atlas,
-                    material_atlas,
-                    bump_atlas,
-                    &shadow_map,
-                    entity_mesh,
-                    surface_format,
-                    Some(wgpu::TextureFormat::Depth32Float),
-                    &format!("nea.entities.{index}"),
+                    queue,
+                    width,
+                    height,
+                    rgba,
+                    &format!("nea.entity-model.{key}"),
                 )
+                .expect("valid entity texture")
             })
             .collect::<Vec<_>>();
+        let mut entity_pipelines = Vec::new();
+        for (mesh_index, key) in entity_keys.iter().enumerate() {
+            let Some((vertices, indices, instances)) =
+                build_static_entity_instances(entity_scene, key, &voxel_light)
+            else { continue };
+            entity_pipelines.push(voxweb_render::nea_entity::NeaEntityPipeline::new(
+                device,
+                &entity_textures[mesh_index],
+                &vertices,
+                &indices,
+                &instances,
+                surface_format,
+                wgpu::TextureFormat::Depth32Float,
+                &format!("nea.entities.{mesh_index}"),
+            ));
+        }
         let fluid_mesh = MeshBuffers {
             vertices: fluid_verts,
             indices: fluid_idx,
@@ -2489,6 +3184,7 @@ impl RenderTerrain {
             mesh,
             terrain_pipelines,
             entity_pipelines,
+            entity_textures,
             alpha_pipeline,
             fluid_pipeline,
             voxel_light,
@@ -2771,41 +3467,117 @@ fn make_camera(
     yaw: f32,
     chunks: &[(u32, u32, u32, Vec<u16>)],
     current_ray_distance: &mut f32,
+    camera: &RuntimeCameraState,
 ) -> ([f32; 16], [f32; 3], bool) {
     let aspect = width as f32 / height.max(1) as f32;
-    let proj = glam::Mat4::perspective_rh(
-        voxweb_protocol::player::CAMERA_FOV_Y_RADIANS,
-        aspect,
-        0.1,
-        2000.0,
-    );
-    let (eye, target, first_person) = match player {
-        Some(body) => {
+    // DAO3 cameraFovY is expressed as a fraction of PI. Backroom's 7/18 is
+    // therefore 70 degrees, not 0.388 radians.
+    let fov_y = (camera.fov_y_ratio * std::f32::consts::PI).clamp(0.1, 2.8);
+    let proj = glam::Mat4::perspective_rh(fov_y, aspect, 0.1, 2000.0);
+    let (camera_pitch, camera_yaw) = if camera.authoritative_orientation {
+        (camera.pitch, camera.yaw)
+    } else {
+        (pitch, yaw)
+    };
+    let (eye, target, up, first_person) = match (camera.mode.as_str(), player) {
+        ("FIXED", _) => (
+            glam::Vec3::from(camera.position),
+            glam::Vec3::from(camera.target),
+            glam::Vec3::from(camera.up).normalize_or_zero(),
+            true,
+        ),
+        ("RELATIVE", Some(anchor)) => (
+            glam::Vec3::from(anchor) + glam::Vec3::from(camera.position),
+            glam::Vec3::from(anchor) + glam::Vec3::from(camera.target),
+            glam::Vec3::from(camera.up).normalize_or_zero(),
+            false,
+        ),
+        ("FPS", Some(body)) => {
+            let (eye, target) = voxweb_protocol::player::fps_camera(
+                body,
+                body_half_height,
+                crouching,
+                camera_pitch,
+                camera_yaw,
+            );
+            (
+                glam::Vec3::from(eye),
+                glam::Vec3::from(target),
+                glam::Vec3::Y,
+                true,
+            )
+        }
+        (_, Some(body)) => {
             let pose = crate::nea_follow_camera::follow_camera_pose(
                 body,
                 body_half_height,
                 crouching,
-                pitch,
-                yaw,
+                camera_pitch,
+                camera_yaw,
                 *current_ray_distance,
+                camera.distance,
                 &|x, y, z| solid_voxel_at(chunks, x, y, z),
             );
             *current_ray_distance = pose.ray_distance;
             (
                 glam::Vec3::from(pose.eye),
                 glam::Vec3::from(pose.target),
+                glam::Vec3::Y,
                 pose.first_person,
             )
         }
         // pre-player fallback: the spawn island
-        None => (
+        (_, None) => (
             glam::Vec3::new(144.0, 75.0, 70.0),
             glam::Vec3::new(144.0, 20.0, 144.0),
+            glam::Vec3::Y,
             false,
         ),
     };
-    let view = glam::Mat4::look_at_rh(eye, target, glam::Vec3::Y);
+    let up = if up.length_squared() < 1.0e-6 {
+        glam::Vec3::Y
+    } else {
+        up
+    };
+    let view = glam::Mat4::look_at_rh(eye, target, up);
     ((proj * view).to_cols_array(), eye.to_array(), first_person)
+}
+
+fn apply_runtime_camera_state(value: &serde_json::Value, camera: &mut RuntimeCameraState) {
+    if let Some(mode) = value.get("mode").and_then(serde_json::Value::as_str) {
+        camera.mode = mode.to_ascii_uppercase();
+    }
+    if let Some(fov) = value.get("fovY").and_then(serde_json::Value::as_f64) {
+        if fov.is_finite() && fov > 0.0 {
+            camera.fov_y_ratio = fov as f32;
+        }
+    }
+    let mut orientation_seen = camera.authoritative_orientation;
+    for (key, output) in [
+        ("yaw", &mut camera.yaw),
+        ("pitch", &mut camera.pitch),
+        ("distance", &mut camera.distance),
+    ] {
+        if let Some(number) = value.get(key).and_then(serde_json::Value::as_f64)
+            && number.is_finite()
+        {
+            *output = number as f32;
+            if (key == "yaw" || key == "pitch") && number.abs() > f64::EPSILON {
+                orientation_seen = true;
+            }
+        }
+    }
+    camera.authoritative_orientation |= orientation_seen;
+    if let Some(position) = json_vec3(value.get("position")) {
+        camera.position = position;
+    }
+    if let Some(target) = json_vec3(value.get("target")) {
+        camera.target = target;
+    }
+    if let Some(up) = json_vec3(value.get("up")) {
+        camera.up = up;
+    }
+    camera.entity_position = json_vec3(value.get("entityPosition"));
 }
 
 fn avatar_instance_from_body(
@@ -2888,6 +3660,10 @@ struct InputState {
     /// Debug view 模式：F1=Albedo F2=Direct F3=Ambient/Sky F4=Shadow F5=Fog F6=Final
     debug_view: f32,
     interact_edge: bool,
+    /// ACTION0 / ACTION1 button pressed state (left / right mouse button),
+    /// transmitted in the recovered NetInputEventBits low bits (1 / 2).
+    action0: bool,
+    action1: bool,
 }
 
 impl Default for InputState {
@@ -2911,6 +3687,8 @@ impl Default for InputState {
             look_axis: [0.0, 0.0],
             debug_view: 0.0,
             interact_edge: false,
+            action0: false,
+            action1: false,
         }
     }
 }
@@ -2995,6 +3773,7 @@ impl InputState {
         [-fz, fx]
     }
     /// m76459:11047 — composed movement vector from held keys.
+    #[allow(dead_code)]
     fn movement_vector(&self) -> [f32; 2] {
         self.movement_vector_with_state(0)
     }
@@ -3034,6 +3813,7 @@ impl InputState {
         [mx, mz]
     }
     /// Wire angle: movement direction when keys held, else camera turn.
+    #[allow(dead_code)]
     fn angle(&self) -> u8 {
         let me = self.movement_vector();
         voxweb_protocol::player::wire_angle(
@@ -3187,22 +3967,63 @@ fn install_keyboard(canvas: &HtmlCanvasElement, input: &Rc<RefCell<InputState>>)
                 s.apply_mouse_delta(dx as f32, dy as f32, width);
             }
         });
-    let r0 = canvas.add_event_listener_with_callback("click", on_click.as_ref().unchecked_ref());
+    // ACTION0 / ACTION1 button edges: left button (0) -> ACTION0, right
+    // button (2) -> ACTION1. Held state is sampled by the input tick so a
+    // press/release during pointer lock is reported to the server.
+    let action_down_state = Rc::clone(input);
+    let action_up_state = Rc::clone(input);
+    let on_action_down =
+        Closure::<dyn FnMut(web_sys::MouseEvent)>::new(move |ev: web_sys::MouseEvent| {
+            let mut s = match action_down_state.try_borrow_mut() {
+                Ok(s) => s,
+                Err(_) => return,
+            };
+            match ev.button() {
+                0 => s.action0 = true,
+                2 => s.action1 = true,
+                _ => {}
+            }
+            ev.prevent_default();
+        });
+    let on_action_up =
+        Closure::<dyn FnMut(web_sys::MouseEvent)>::new(move |ev: web_sys::MouseEvent| {
+            let mut s = match action_up_state.try_borrow_mut() {
+                Ok(s) => s,
+                Err(_) => return,
+            };
+            match ev.button() {
+                0 => s.action0 = false,
+                2 => s.action1 = false,
+                _ => {}
+            }
+            ev.prevent_default();
+        });
+    // Register on window so the loading overlay does not swallow the user's
+    // initial activation click. The handler always locks the game canvas.
+    let r0 = window.add_event_listener_with_callback("click", on_click.as_ref().unchecked_ref());
     let r1 = window.add_event_listener_with_callback("keydown", on_down.as_ref().unchecked_ref());
     let r2 = window.add_event_listener_with_callback("keyup", on_up.as_ref().unchecked_ref());
     let r3 =
         window.add_event_listener_with_callback("mousemove", on_mouse.as_ref().unchecked_ref());
+    let r4 = window
+        .add_event_listener_with_callback("mousedown", on_action_down.as_ref().unchecked_ref());
+    let r5 =
+        window.add_event_listener_with_callback("mouseup", on_action_up.as_ref().unchecked_ref());
     jslog!(
-        "[nea] listener reg: click={} keydown={} keyup={} mousemove={}",
+        "[nea] listener reg: click={} keydown={} keyup={} mousemove={} mousedown={} mouseup={}",
         r0.is_ok(),
         r1.is_ok(),
         r2.is_ok(),
-        r3.is_ok()
+        r3.is_ok(),
+        r4.is_ok(),
+        r5.is_ok()
     );
     on_click.forget();
     on_down.forget();
     on_up.forget();
     on_mouse.forget();
+    on_action_down.forget();
+    on_action_up.forget();
     jslog!("[nea] keyboard + mouse listeners installed");
 }
 
@@ -3243,13 +4064,29 @@ fn page_content_id() -> String {
         .unwrap_or_else(|| "100110008".to_string())
 }
 
+/// Diagnostic render switches for screenshot A/B comparisons. They are
+/// intentionally generic and URL-driven so map data remains untouched.
+fn page_flag(name: &str) -> bool {
+    web_sys::window()
+        .and_then(|window| window.location().search().ok())
+        .map(|search| {
+            search.trim_start_matches('?').split('&').any(|pair| {
+                let mut parts = pair.splitn(2, '=');
+                let key = parts.next().unwrap_or_default();
+                let value = parts.next().unwrap_or("true");
+                key == name && matches!(value, "1" | "true" | "yes")
+            })
+        })
+        .unwrap_or(false)
+}
+
 async fn create_session(url: &str, content_id: &str) -> Result<(String, String, usize), JsValue> {
-    let mut opts = RequestInit::new();
-    opts.method("POST");
+    let opts = RequestInit::new();
+    opts.set_method("POST");
     let body = format!(
         r#"{{"mode":"play","contentId":"{content_id}","fingerPrint":"voxweb-smoke","serverId":""}}"#
     );
-    opts.body(Some(&JsValue::from_str(&body)));
+    opts.set_body(&JsValue::from_str(&body));
     let request = Request::new_with_str_and_init(url, &opts)?;
     request.headers().set("Content-Type", "application/json")?;
     let window = web_sys::window().ok_or_else(|| JsValue::from_str("no window"))?;
@@ -3499,15 +4336,63 @@ fn yield_animation_frame() -> js_sys::Promise {
 #[cfg(test)]
 mod tests {
     use super::{
-        AvatarRollState, InputState, block_is_solid, fluid_volume_fraction, make_camera,
-        network_tick_is_newer, normalize_player_collision_half_extents, recovered_avatar_yaw,
-        recovered_fluid_height, recovered_fluid_info, recovered_player_state,
-        recovered_rotated_face_rects, recovered_voxel_face_visible, recovered_walk_phase_delta,
-        write_recovered_texture_rotation,
+        AvatarRollState, InputState, RuntimeCameraState, StaticEntityScene,
+        apply_entity_state_event, apply_runtime_camera_state, block_is_solid,
+        fluid_volume_fraction, make_camera, network_tick_is_newer,
+        normalize_player_collision_half_extents, recovered_avatar_yaw, recovered_fluid_height,
+        recovered_fluid_info, recovered_player_state, recovered_rotated_face_rects,
+        recovered_voxel_face_visible, recovered_walk_phase_delta, write_recovered_texture_rotation,
     };
     use voxweb_physics::NeaPlayerPhysics;
     use voxweb_protocol::player::MoveMode;
     use voxweb_render::nea_mesh::{FLOATS_PER_VERTEX, MeshBuffers};
+
+    #[test]
+    fn entity_state_updates_interaction_without_a_collision_body() {
+        let mut scene: StaticEntityScene = serde_json::from_value(serde_json::json!({
+            "meshes": {},
+            "entities": [{
+                "id": 41,
+                "mesh": "keypad",
+                "position": [0.0, 0.0, 0.0],
+                "scale": [1.0, 1.0, 1.0],
+                "rotation": [0.0, 0.0, 0.0, 1.0],
+                "collision": false,
+                "fixed": true,
+                "halfExtents": [0.5, 0.5, 0.5],
+                "mass": 1.0,
+                "friction": 0.0,
+                "restitution": 0.0,
+                "enableInteract": true,
+                "interactHint": "Initial hint",
+                "interactRadius": 2.0
+            }]
+        }))
+        .expect("static entity fixture");
+        let mut bodies = Vec::new();
+        assert!(scene.entities[0].enable_interact);
+        assert_eq!(scene.entities[0].interact_hint, "Initial hint");
+        assert_eq!(scene.entities[0].interact_radius, 2.0);
+
+        assert!(apply_entity_state_event(
+            &serde_json::json!({
+                "type": "nea-revive:entity-state",
+                "entityId": 41,
+                "state": {
+                    "enableInteract": false,
+                    "interactHint": "Use keypad",
+                    "interactRadius": 4.5
+                }
+            }),
+            &mut bodies,
+            &mut scene,
+        ));
+
+        let entity = &scene.entities[0];
+        assert!(!entity.enable_interact);
+        assert_eq!(entity.interact_hint, "Use keypad");
+        assert_eq!(entity.interact_radius, 4.5);
+    }
 
     #[test]
     fn network_ticks_are_monotonic_across_duplicates_and_wraparound() {
@@ -3706,6 +4591,69 @@ mod tests {
     }
 
     #[test]
+    fn runtime_camera_defaults_preserve_local_orientation_until_scripted() {
+        let mut camera = RuntimeCameraState::default();
+        apply_runtime_camera_state(
+            &serde_json::json!({ "mode": "FPS", "yaw": 0.0, "pitch": 0.0 }),
+            &mut camera,
+        );
+        assert!(!camera.authoritative_orientation);
+
+        apply_runtime_camera_state(
+            &serde_json::json!({ "yaw": 1.25, "pitch": -0.2 }),
+            &mut camera,
+        );
+        assert!(camera.authoritative_orientation);
+        assert_eq!(camera.yaw, 1.25);
+        assert_eq!(camera.pitch, -0.2);
+
+        apply_runtime_camera_state(
+            &serde_json::json!({ "yaw": 0.0, "pitch": 0.0 }),
+            &mut camera,
+        );
+        assert!(camera.authoritative_orientation);
+        assert_eq!(camera.yaw, 0.0);
+        assert_eq!(camera.pitch, 0.0);
+    }
+
+    #[test]
+    fn authoritative_fps_orientation_overrides_local_mouse_orientation() {
+        let mut distance = 9.5;
+        let mut local_camera = RuntimeCameraState::default();
+        local_camera.mode = "FPS".into();
+        let (local_mvp, _, _) = make_camera(
+            1920,
+            1080,
+            Some([1.0, 2.0, 3.0]),
+            1.1,
+            false,
+            0.0,
+            0.5,
+            &[],
+            &mut distance,
+            &local_camera,
+        );
+
+        apply_runtime_camera_state(
+            &serde_json::json!({ "mode": "FPS", "yaw": 1.0, "pitch": 0.25 }),
+            &mut local_camera,
+        );
+        let (authoritative_mvp, _, _) = make_camera(
+            1920,
+            1080,
+            Some([1.0, 2.0, 3.0]),
+            1.1,
+            false,
+            0.0,
+            0.5,
+            &[],
+            &mut distance,
+            &local_camera,
+        );
+        assert_ne!(local_mvp, authoritative_mvp);
+    }
+
+    #[test]
     fn movement_double_tap_uses_preserved_200_ms_window() {
         let mut input = InputState::default();
         input.press_movement_at(0, 1_000);
@@ -3757,6 +4705,22 @@ mod tests {
     }
 
     #[test]
+    fn action_buttons_or_recovered_input_bits() {
+        // ACTION0 (left mouse) -> bit 1, ACTION1 (right mouse) -> bit 2 in
+        // the NetInputEventBits domain, OR-ed onto the player state that the
+        // input tick transmits.
+        use voxweb_protocol::player::{INPUT_ACTION0, INPUT_ACTION1};
+        let mut state = recovered_player_state(false, false, MoveMode::Walk, false, true, 0.0);
+        state |= INPUT_ACTION0;
+        assert_ne!(state & INPUT_ACTION0, 0);
+        assert_eq!(state & INPUT_ACTION1, 0);
+        state |= INPUT_ACTION1;
+        assert_ne!(state & INPUT_ACTION1, 0);
+        // The base walk-state bits are untouched by the action bits.
+        assert_eq!(state & (INPUT_ACTION0 | INPUT_ACTION1), 3);
+    }
+
+    #[test]
     fn jump_double_tap_requests_flight_at_the_preserved_boundary() {
         let mut input = InputState::default();
         input.press_jump_at(1_000);
@@ -3789,6 +4753,7 @@ mod tests {
     #[test]
     fn third_person_camera_uses_preserved_follow_defaults() {
         let mut distance = 9.5;
+        let camera = RuntimeCameraState::default();
         let (_, eye, first_person) = make_camera(
             1920,
             1080,
@@ -3799,6 +4764,7 @@ mod tests {
             0.0,
             &[],
             &mut distance,
+            &camera,
         );
         assert!((eye[0] - 9.5).abs() < 1.0e-5);
         assert!((eye[1] - 3.6).abs() < 1.0e-5);

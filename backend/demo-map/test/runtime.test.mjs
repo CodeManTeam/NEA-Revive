@@ -1089,12 +1089,14 @@ test("GameWorld.createEntity emits synchronously and projects captured runtime e
     position: [1, 2, 3], velocity: [0, 1, 0], name: "Runtime Projectile", tags: ["runtime-projectile"],
     mesh: "captured-runtime-mesh", bounds: [1, 1, 1], nameplate: null, collides: false, fixed: true, gravity: false, mass: 2,
     friction: 0.25, restitution: 0.5, meshScale: [2, 3, 4], meshOrientation: [0, 0, 0, 1],
-    meshInvisible: true, meshMetalness: 0.7, meshEmissive: 0.2, meshShininess: 0.9, enableInteract: true,
+    meshInvisible: true, meshMetalness: 0.7, meshEmissive: 0.2, meshShininess: 0.9,
+    enableInteract: true, interactHint: "Use", interactRadius: 3,
   }]);
   assert.deepEqual(JSON.parse(JSON.stringify(states)), [{ entityId: 7002, state: {
     position: [10, 11, 12], velocity: [3, 2, 1], orientation: [0, 0, 0, 1],
     collides: false, fixed: true, gravity: false, mass: 2, friction: 0.25, restitution: 0.5,
     nameplate: null,
+    enableInteract: true, interactHint: "Use", interactRadius: 3,
     model: {
       invisible: true, color: [255, 255, 255, 255], scale: [2, 3, 4], offset: [0, 0, 0],
       emissive: 0.2, shininess: 0.9, metalness: 0.7,

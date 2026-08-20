@@ -22,6 +22,8 @@ test("projects a validated entity then writes its backend state", async () => {
   assert.equal(entity._backendEntityId, 41);
   assert.deepEqual(created, [runtimeEntityProjectionPayload(entity)]);
   assert.deepEqual(states, [{ entityId: 41, state: runtimeEntityStatePayload(entity) }]);
+  assertInteractionState(created[0]);
+  assertInteractionState(states[0].state);
   assert.deepEqual(states[0].state.particles, {
     rate: 12,
     rateSpread: 3,
@@ -100,6 +102,8 @@ function createEntity() {
     meshEmissive: 0.2,
     meshShininess: 0.3,
     enableInteract: true,
+    interactHint: "Use keypad",
+    interactRadius: 4.5,
     meshColor: { r: 1, g: 0.5, b: 0, a: 1 },
     meshOffset: vector([0, 0, 0]),
     particleRate: 12,
@@ -114,6 +118,18 @@ function createEntity() {
     particleVelocitySpread: vector([0.2, 0.3, 0.4]),
     particleDamping: 0.25,
   };
+}
+
+function assertInteractionState(payload) {
+  assert.deepEqual({
+    enableInteract: payload.enableInteract,
+    interactHint: payload.interactHint,
+    interactRadius: payload.interactRadius,
+  }, {
+    enableInteract: true,
+    interactHint: "Use keypad",
+    interactRadius: 4.5,
+  });
 }
 
 async function flushAsyncWork() {

@@ -2,7 +2,7 @@ const { readFileSync, readdirSync } = require("node:fs");
 const { join, resolve } = require("node:path");
 const vm = require("node:vm");
 
-const chunksRoot = resolve(__dirname, "../../../local-player/archive/project/bedwars/client-runtime/assets/_next/static/chunks");
+const chunksRoot = resolve(__dirname, "../../local-player/archive/project/bedwars/client-runtime/assets/_next/static/chunks");
 const factories = Object.create(null);
 const registrations = [];
 registrations.push = entry => {

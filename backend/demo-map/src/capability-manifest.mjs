@@ -4,6 +4,7 @@ import { normalizeCapabilityAssets, normalizeCapabilityEntities, normalizeCapabi
 import { refinePlayerLifecycleRequirement } from "./lifecycle-event-refinement.mjs";
 import { isEvidenceBackedRecoveredCanonical } from "./recovered-canonical-evidence.mjs";
 import { normalizeWorldSpawn } from "./world-spawn.mjs";
+import { buildProjectAssetResolver } from "./project-asset-resolver.mjs";
 
 const ROOT_OWNERS = Object.freeze({
   server: Object.freeze({ world: "GameWorld", voxels: "GameVoxels", storage: "GameStorage", gui: "GameGUI", http: "GameHttpAPI", remoteChannel: "remoteChannel", GameBounds3: "GameBounds3", GameQuaternion: "GameQuaternion", GameCameraMode: "GameCameraMode", GameRGBColor: "GameRGBColor", GameRGBAColor: "GameRGBAColor" }),
@@ -1016,25 +1017,27 @@ function analyzeModules(modulesBySide) {
 }
 
 function analyzeResources(serverModules, clientModules, assets, entities) {
-  const available = new Map(assets.map(asset => {
-    if (typeof asset === "string") return [asset, { name: asset }];
-    const name = asset.name ?? asset.path ?? asset.id;
-    return name ? [name, asset] : null;
-  }).filter(Boolean));
+  const normalizedAssets = assets.map(asset => typeof asset === "string" ? { name: asset } : asset);
+  const available = buildProjectAssetResolver(normalizedAssets);
   const availableByContentAddress = new Map(assets.flatMap(asset => typeof asset === "object" && typeof asset.contentAddress === "string" ? [[asset.contentAddress, asset]] : []));
   const result = new Map();
-  const add = (kind, reference, source) => {
+  const add = (kind, reference, source, supportsProjectAssetHttp = false) => {
     const explicitProjectReference = reference.startsWith("asset:");
     const assetName = explicitProjectReference ? reference.slice(6) : reference;
     const contentAddress = kind === "audio" ? audioContentAddress(reference) : null;
-    const asset = available.get(assetName) ?? (contentAddress ? availableByContentAddress.get(contentAddress) : null);
+    const resolution = available.resolve(assetName);
+    const asset = resolution?.asset ?? (contentAddress ? availableByContentAddress.get(contentAddress) : null);
     let state;
     let availability;
     let runtimeSupport;
     let reason;
     if (asset) {
       availability = "packaged";
-      if (kind === "audio" && asset.runtimeBinding === "player-block-audio") {
+      if (kind === "audio" && resolution && supportsProjectAssetHttp) {
+        state = "ready";
+        runtimeSupport = "project-asset-http";
+        reason = null;
+      } else if (kind === "audio" && asset.runtimeBinding === "player-block-audio") {
         state = "ready";
         runtimeSupport = "player-block-audio";
         reason = null;
@@ -1088,7 +1091,7 @@ function analyzeResources(serverModules, clientModules, assets, entities) {
   for (const module of serverModules) {
     const matches = codeMatcher(module.source);
     for (const match of matches(/\bmesh\s*:\s*(["'])(.*?)\1/g)) add("mesh", match[2], module.name);
-    for (const reference of collectStaticServerSoundReferences(module.source)) add("audio", reference, module.name);
+    for (const reference of collectStaticServerSoundReferences(module.source)) add("audio", reference, module.name, true);
   }
   for (const entity of entities) if (typeof entity.mesh === "string" && entity.mesh.length > 0) add("mesh", entity.mesh, `entity:${entity.id ?? entity.name ?? "unknown"}`);
   return [...result.values()].sort((left, right) => left.kind.localeCompare(right.kind) || left.reference.localeCompare(right.reference));

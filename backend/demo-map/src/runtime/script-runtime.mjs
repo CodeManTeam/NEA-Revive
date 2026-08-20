@@ -208,10 +208,11 @@ export class ScriptRuntime {
     this.#chatFifo = new HistoricalChatFifo(options.chatMessagesPerTick ?? null);
     this.writePlayerState = options.writePlayerState ?? (() => {});
     this.writeDamageState = options.writeDamageState ?? (() => {});
+    this.writeEntityState = options.writeEntityState ?? (() => {});
     this.#entityBackendBridge = new EntityBackendBridge({
       validatedMeshNames: options.validatedMeshNames,
       createEntity: options.createEntity ?? (() => null),
-      writeEntityState: options.writeEntityState ?? (() => {}),
+      writeEntityState: this.writeEntityState,
       destroyEntity: options.destroyEntity ?? (() => {}),
       reportError: (source, error) => this.#reportError(source, error),
     });
@@ -510,6 +511,10 @@ export class ScriptRuntime {
   removePlayer(id) {
     const player = this.#players.get(id);
     if (!player) return false;
+    if (player._musicSoundId !== null) {
+      this._sendSoundCommand({ action: "stop", soundId: player._musicSoundId, targetPlayerId: id });
+      player._musicSoundId = null;
+    }
     this.#players.delete(id);
     player._destroyed = true;
     const event = createGameEntityEvent(this.currentTick, player);
@@ -525,6 +530,23 @@ export class ScriptRuntime {
     if (!signal || !player) return false;
     signal.emit(Object.freeze({ tick: this.currentTick, entity: player, player, ...structuredClone(details) }), error => this.#reportError(type, error));
     player._signals?.[type]?.emit(Object.freeze({ tick: this.currentTick, entity: player, player, ...structuredClone(details) }), error => this.#reportError(type, error));
+    return true;
+  }
+
+  dispatchPlayerPurchaseSuccess({ userId, productId, orderId } = {}) {
+    const normalizedUserId = Number(userId);
+    const normalizedProductId = Number(productId);
+    const normalizedOrderId = String(orderId ?? "").trim();
+    if (!Number.isSafeInteger(normalizedUserId) || normalizedUserId < 0) return false;
+    if (!Number.isSafeInteger(normalizedProductId) || normalizedProductId < 0) return false;
+    if (!normalizedOrderId) return false;
+    const event = Object.freeze({
+      tick: this.currentTick,
+      userId: normalizedUserId,
+      productId: normalizedProductId,
+      orderId: normalizedOrderId,
+    });
+    this.#signals.playerPurchaseSuccess.emit(event, error => this.#reportError("playerPurchaseSuccess", error));
     return true;
   }
 
@@ -672,6 +694,17 @@ export class ScriptRuntime {
         materials: this.#worldMaterials,
       }),
     });
+  }
+
+  entityInteractionStates() {
+    return Object.freeze([...this.#entities.values()]
+      .filter(entity => Number.isSafeInteger(entity._backendEntityId) && entity._backendEntityId > 0)
+      .map(entity => Object.freeze({
+        entityId: entity._backendEntityId,
+        enableInteract: Boolean(entity.enableInteract),
+        interactHint: String(entity.interactHint),
+        interactRadius: Math.max(0, Number(entity.interactRadius)),
+      })));
   }
 
   #createGlobals() {
@@ -1137,7 +1170,7 @@ export class ScriptRuntime {
     this.#require("server.world.entities");
     const soundId = this._nextSoundId = (this._nextSoundId ?? 0) + 1;
     const command = { action: "play", soundId, ...spec };
-    const send = next => Promise.resolve(this.sendSoundCommand(structuredClone(next))).catch(error => this.#reportError("sound-send", error));
+    const send = next => this._sendSoundCommand(next);
     send(command);
     return new Sound(
       currentTime => send(typeof currentTime === "number" ? { action: "setCurrentTimeAndResume", soundId, currentTime } : { action: "resume", soundId }),
@@ -1145,6 +1178,32 @@ export class ScriptRuntime {
       () => send({ action: "pause", soundId }),
       () => send({ action: "stop", soundId }),
     );
+  }
+
+  _sendSoundCommand(command) {
+    return Promise.resolve(this.sendSoundCommand(structuredClone(command))).catch(error => this.#reportError("sound-send", error));
+  }
+
+  _updatePlayerMusic(player) {
+    const targetPlayerId = this.#playerIds.get(player);
+    if (!targetPlayerId) return;
+    if (player._musicSoundId !== null) {
+      this._sendSoundCommand({ action: "stop", soundId: player._musicSoundId, targetPlayerId });
+    } else {
+      player._musicSoundId = this._nextSoundId = (this._nextSoundId ?? 0) + 1;
+    }
+    if (!player.music.sample) return;
+    this._sendSoundCommand({
+      action: "play",
+      soundId: player._musicSoundId,
+      sample: player.music.sample,
+      gain: player.music.gain,
+      pitch: player.music.pitch,
+      radius: 0,
+      position: { type: "global" },
+      targetPlayerId,
+      loop: true,
+    });
   }
 
   #queueChat(sessionId, message) {
@@ -1408,6 +1467,15 @@ export class ScriptRuntime {
     this.#entityBackendBridge.queueStateWrite(entity);
   }
 
+  _entityInteractionChanged(entity) {
+    if (!Number.isSafeInteger(entity?._backendEntityId) || entity._backendEntityId < 1) return;
+    Promise.resolve(this.writeEntityState(entity._backendEntityId, {
+      enableInteract: Boolean(entity.enableInteract),
+      interactHint: String(entity.interactHint),
+      interactRadius: Math.max(0, Number(entity.interactRadius)),
+    })).catch(error => this.#reportError("entity-state-write", error));
+  }
+
   _particleFieldChanged(entity) {
     if (entity?.isPlayer) {
       this._syncPlayerGameplay(entity, { action: "particles", particles: particleSnapshot(entity) });
@@ -1569,9 +1637,9 @@ export function createRuntimeEntity(input, runtime = null) {
     _nameRadius: requireFiniteRange(input.nameRadius ?? 16, "entity nameRadius", 0, 4096),
     _nameColor: requireRgbColor(input.nameColor ?? [1, 1, 1], "entity nameColor"),
     ...createEntitySoundSlots(),
-    enableInteract: Boolean(input.enableInteract ?? false),
-    interactRadius: Number(input.interactRadius ?? 3),
-    interactHint: String(input.interactHint ?? ""),
+    _enableInteract: Boolean(input.enableInteract ?? false),
+    _interactRadius: Number(input.interactRadius ?? 3),
+    _interactHint: String(input.interactHint ?? ""),
     interactColor: requireRgbColor(input.interactColor ?? [1, 1, 1], "entity interactColor"),
     _tags: tags,
     _signals: { click: new EventSignal(), interact: new EventSignal(), destroy: new EventSignal(), voxelContact: new EventSignal(), voxelSeparate: new EventSignal(), fluidEnter: new EventSignal(), fluidLeave: new EventSignal(), takeDamage: new EventSignal(), die: new EventSignal(), contact: new EventSignal(), contactSeparate: new EventSignal() },
@@ -1618,6 +1686,12 @@ export function createRuntimeEntity(input, runtime = null) {
     set friction(value) { this._friction = Number(value); this._runtime?._entityPhysicsChanged(this); },
     get restitution() { return this._restitution; },
     set restitution(value) { this._restitution = Number(value); this._runtime?._entityPhysicsChanged(this); },
+    get enableInteract() { return this._enableInteract; },
+    set enableInteract(value) { this._enableInteract = Boolean(value); this._runtime?._entityInteractionChanged(this); },
+    get interactRadius() { return this._interactRadius; },
+    set interactRadius(value) { this._interactRadius = Math.max(0, Number(value)); this._runtime?._entityInteractionChanged(this); },
+    get interactHint() { return this._interactHint; },
+    set interactHint(value) { this._interactHint = String(value); this._runtime?._entityInteractionChanged(this); },
     get meshInvisible() { return this._meshInvisible; },
     set meshInvisible(value) { this._meshInvisible = Boolean(value); this._runtime?._entityPhysicsChanged(this); },
     get meshScale() { return this._meshScale; },
@@ -1740,7 +1814,9 @@ function createRuntimePlayer(runtime, input) {
   const userId = String(input.userId ?? input.id);
   const boxId = String(input.boxId ?? userId).slice(0, 15);
   const userKey = String(input.userKey ?? stablePlayerUserKey(userId));
-  const player = {
+  let player;
+  const soundSlots = createPlayerSoundSlots(runtime, () => player);
+  player = {
     _runtime: runtime,
     _id: String(input.id),
     _name: String(input.name),
@@ -1757,6 +1833,7 @@ function createRuntimePlayer(runtime, input) {
     _backendPlayerId: null,
     _lastBackendTick: 0,
     _writeBarrierTick: 0,
+    _musicSoundId: null,
     _tags: new Set(),
     _signals: { click: new EventSignal(), destroy: new EventSignal(), voxelContact: new EventSignal(), voxelSeparate: new EventSignal(), fluidEnter: new EventSignal(), fluidLeave: new EventSignal(), press: new EventSignal(), release: new EventSignal(), keyDown: new EventSignal(), keyUp: new EventSignal(), respawn: new EventSignal(), takeDamage: new EventSignal(), die: new EventSignal() },
     _wearables: [],
@@ -1815,7 +1892,7 @@ function createRuntimePlayer(runtime, input) {
     invisible: false,
     showName: true,
     showIndicator: false,
-    ...createPlayerSoundSlots(),
+    ...soundSlots,
     walkButton: false,
     crouchButton: false,
     jumpButton: false,
@@ -1981,6 +2058,21 @@ function createRuntimePlayer(runtime, input) {
         buffs: [...this._buffs],
         cameraMode: this.cameraMode,
         cameraFovY: this.cameraFovY,
+        cameraYaw: this.cameraYaw,
+        cameraPitch: this.cameraPitch,
+        cameraDistance: this.cameraDistance,
+        cameraPosition: Vector3.from(this.cameraPosition).toArray(),
+        cameraTarget: Vector3.from(this.cameraTarget).toArray(),
+        cameraUp: Vector3.from(this.cameraUp).toArray(),
+        cameraEntityId: this.cameraEntity?.id ?? null,
+        cameraEntityPosition: this.cameraEntity?.position
+          ? Vector3.from(this.cameraEntity.position).toArray()
+          : null,
+        cameraFreezedAxis: this.cameraFreezedAxis,
+        freezedForwardDirection: this.freezedForwardDirection
+          ? Vector3.from(this.freezedForwardDirection).toArray()
+          : null,
+        enable3DCursor: this.enable3DCursor,
         invisible: this.invisible,
         showName: this.showName,
         showIndicator: this.showIndicator,
@@ -2020,20 +2112,26 @@ function createEntitySoundSlots() {
   }]));
 }
 
-function createPlayerSoundSlots() {
+function createPlayerSoundSlots(runtime, resolvePlayer) {
   const slots = [
     "action0", "action1", "chat", "crouch", "die", "doubleJump", "endFly",
     "enterWater", "hurt", "interact", "jump", "land", "leaveWater", "music",
     "spawn", "startFly", "step", "swim",
   ];
-  return Object.fromEntries(slots.map(name => [name, {
-    sample: "",
-    gain: 1,
-    gainRange: 0,
-    pitch: 1,
-    pitchRange: 0,
-    radius: 32,
-  }]));
+  return Object.fromEntries(slots.map(name => {
+    const effect = new GameSoundEffect();
+    if (name !== "music") return [name, effect];
+    return [name, new Proxy(effect, {
+      set(target, property, value) {
+        const previous = target[property];
+        target[property] = value;
+        if ((property === "sample" || property === "gain" || property === "pitch") && !Object.is(previous, value)) {
+          runtime._updatePlayerMusic(resolvePlayer());
+        }
+        return true;
+      },
+    })];
+  }));
 }
 
 function stablePlayerUserKey(value) {

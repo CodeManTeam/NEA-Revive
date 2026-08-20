@@ -86,6 +86,7 @@ pub fn water_bump() -> AtlasImage {
     }
 }
 
+#[allow(dead_code)]
 pub fn anonymize_avatar_palette(name: &str, palette: &mut [u32]) {
     let base = match name {
         "head" | "neck" => [202u8, 168, 137],

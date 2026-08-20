@@ -1,7 +1,7 @@
 //! Preserved NEA FOLLOW-camera obstruction and distance recovery.
 
 use glam::Vec3;
-use voxweb_protocol::player::{FOLLOW_CAMERA_DISTANCE, PLAYER_HEIGHT, camera_axis, fps_camera};
+use voxweb_protocol::player::{PLAYER_HEIGHT, camera_axis, fps_camera};
 
 const CAMERA_COLLISION_MARGIN: f32 = 0.05;
 const CAMERA_EYE_OFFSET: f32 = 1.0;
@@ -48,13 +48,14 @@ pub fn follow_camera_pose(
     pitch: f32,
     yaw: f32,
     current_ray_distance: f32,
+    camera_distance: f32,
     solid: &impl Fn(i32, i32, i32) -> bool,
 ) -> FollowCameraPose {
     let body = Vec3::from(body);
     let axis = Vec3::from(camera_axis(pitch, yaw));
     let scale = half_height / PLAYER_HEIGHT;
     let target = camera_target(body, half_height, solid);
-    let maximum = scale * FOLLOW_CAMERA_DISTANCE + CAMERA_EYE_OFFSET;
+    let maximum = scale * camera_distance.max(0.0) + CAMERA_EYE_OFFSET;
     let desired = obstructed_distance(target, axis, maximum, solid);
     let ray_distance = recover_distance(current_ray_distance, desired);
     if ray_distance < 3.0 * scale {
@@ -200,7 +201,16 @@ mod tests {
 
     #[test]
     fn unobstructed_follow_camera_uses_preserved_distance() {
-        let pose = follow_camera_pose([1.0, 2.0, 3.0], 1.1, false, 0.0, 0.0, 9.5, &|_, _, _| false);
+        let pose = follow_camera_pose(
+            [1.0, 2.0, 3.0],
+            1.1,
+            false,
+            0.0,
+            0.0,
+            9.5,
+            voxweb_protocol::player::FOLLOW_CAMERA_DISTANCE,
+            &|_, _, _| false,
+        );
         assert!(!pose.first_person);
         assert_eq!(pose.target, [1.0, 3.6, 3.0]);
         assert_eq!(pose.eye, [9.5, 3.6, 3.0]);
@@ -209,7 +219,16 @@ mod tests {
     #[test]
     fn wall_shortens_camera_and_close_wall_switches_to_fps() {
         let wall = |x: i32, _y: i32, _z: i32| x >= 3;
-        let pose = follow_camera_pose([1.0, 2.0, 3.0], 1.1, false, 0.0, 0.0, 9.5, &wall);
+        let pose = follow_camera_pose(
+            [1.0, 2.0, 3.0],
+            1.1,
+            false,
+            0.0,
+            0.0,
+            9.5,
+            voxweb_protocol::player::FOLLOW_CAMERA_DISTANCE,
+            &wall,
+        );
         assert!(pose.first_person);
         assert!(pose.ray_distance <= 2.0);
     }

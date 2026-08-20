@@ -10,14 +10,20 @@ import { randomUUID } from "node:crypto"
 import { pathToFileURL } from "node:url"
 import { MuServer } from "mudb"
 import { MuWebSocketServer } from "mudb/socket/web/server"
-import { box3Protocols, gameClock, gameNet, gameChat, gameTerrain, remoteChannel, compareTerrainBoxes } from "../protocol"
+import { box3Protocols, gameClock, gameNet, gameChat, gameTerrain, entityInteract, remoteChannel, dialog, compareTerrainBoxes } from "../protocol"
 import { ScriptRuntime } from "../../demo-map/src/runtime/script-runtime.mjs"
 import { importMapProject } from "../../demo-map/src/import-project.mjs"
+import { buildProjectAssetResolver, isSafeLogicalAssetName } from "../../demo-map/src/project-asset-resolver.mjs"
 import { loadPreservedBlockCatalog } from "../../local-player/src/block-info.mjs"
 import { encodeNetPublicPacket, LOCAL_AVATAR_SKIN_PART_IDS } from "./netstate"
 import { encodeEmptyAvatarPart, EMPTY_PARTS } from "./empty-avatar"
 import { readFileSync, existsSync, createReadStream } from "node:fs"
 import { join, resolve } from "node:path"
+import { gzipSync } from "node:zlib"
+
+let decodeMeshAssetTool: ((bytes: Uint8Array) => any) | undefined
+let decodeMeshTextureTool: ((texture: any) => any) | undefined
+let staticEntitySceneGzip: Buffer | undefined
 
 export interface RuntimeServerOptions {
   host?: string
@@ -41,7 +47,33 @@ export interface RuntimeServerHandle {
   close(): Promise<void>
 }
 
+interface ResolvedProjectAsset {
+  name: string
+  path: string
+}
+
+function buildRuntimeProjectAssetResolver(
+  buildRoot: string,
+  assets: ReadonlyArray<{ name?: unknown; path?: unknown }>,
+): { get(name: string): ResolvedProjectAsset | undefined } {
+  const root = resolve(buildRoot)
+  const declared: ResolvedProjectAsset[] = []
+  for (const entry of assets) {
+    if (typeof entry.name !== "string" || typeof entry.path !== "string") continue
+    if (!isSafeLogicalAssetName(entry.name) || !isSafeLogicalAssetName(entry.path)) continue
+    const path = resolve(root, entry.path)
+    if (!path.startsWith(`${root}\\`) && !path.startsWith(`${root}/`)) continue
+    declared.push({ name: entry.name, path })
+  }
+  return buildProjectAssetResolver(declared) as { get(name: string): ResolvedProjectAsset | undefined }
+}
+
 export async function startRuntimeServer(options: RuntimeServerOptions): Promise<RuntimeServerHandle> {
+  if (!decodeMeshAssetTool) {
+    const tool = await import("../tools/decode-engine-model.mjs") as any
+    decodeMeshAssetTool = tool.decodeMeshAsset
+    decodeMeshTextureTool = tool.decodeMeshTexture
+  }
   const host = options.host ?? "127.0.0.1"
   const requestedPort = options.port ?? 8080
   const path = options.path ?? "/ws"
@@ -58,6 +90,8 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   let gameClockProtocolRef: any = null
   let modelsProtocolRef: any = null
   let remoteChannelProtocolRef: any = null
+  let dialogProtocolRef: any = null
+  let dialogRpcId = 1
   let remoteEventTick = 1
   const maxPendingClientEvents = 32
   const pendingVoxelChanges: Array<{ x: number, y: number, z: number, voxel: number }> = []
@@ -71,6 +105,35 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   function gameClockClients(): Record<string, any> { return gameClockProtocolRef?.clients ?? {} }
   function modelsClients(): Record<string, any> { return modelsProtocolRef?.clients ?? {} }
   function remoteChannelClients(): Record<string, any> { return remoteChannelProtocolRef?.clients ?? {} }
+  function dialogClients(): Record<string, any> { return dialogProtocolRef?.clients ?? {} }
+  const pendingDialogs = new Map<string, { rpcId: number, resolve: (result: unknown) => void, reject: (error: unknown) => void }[]>() // playerId -> pending dialog promises
+
+  // Convert a script-facing dialog config into the mudb dialog.open payload.
+  // The client-direction union is { text, input, select }; each arm nests the
+  // shared dialogCommon fields plus its own config.
+  function dialogConfigToProtocol(config: any): any {
+    const common = {
+      lookEyeEntity: 0, lookTargetEntity: 0, lookEyeEnabled: false,
+      lookTargetEnabled: false, lookUpEnabled: false,
+      content: String(config?.content ?? ""),
+      contentBackgroundColor: { a: 0, b: 0, g: 0, r: 0 },
+      contentTextColor: { a: 1, b: 1, g: 1, r: 1 },
+      lookEyeOffset: { x: 0, y: 0, z: 0 },
+      lookTargetOffset: { x: 0, y: 0, z: 0 },
+      lookUp: { x: 0, y: 0, z: 0 },
+      title: String(config?.title ?? ""),
+      titleBackgroundColor: { a: 0, b: 0, g: 0, r: 0 },
+      titleTextColor: { a: 1, b: 1, g: 1, r: 1 },
+    }
+    const type = String(config?.type ?? "text")
+    if (type === "input") {
+      return { type: "input", data: { common, confirmText: String(config?.confirmText ?? "确定"), placeholder: String(config?.placeholder ?? "") } }
+    }
+    if (type === "select") {
+      return { type: "select", data: { common, options: Array.isArray(config?.options) ? config.options.map(String) : [] } }
+    }
+    return { type: "text", data: { hasArrow: Boolean(config?.hasArrow), common } }
+  }
 
   function deliverClientEvent(playerId: string, event: unknown): boolean {
     const sessionId = playerSessions.get(playerId)
@@ -103,6 +166,9 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   const blockCatalog = await loadPreservedBlockCatalog(options.assetRoot, options.worldManifest ?? "world-bedwars.json")
   const buildRoot = options.buildRoot ?? `${options.sourceRoot}-runtime-build`
   const importedProject = await importMapProject(options.sourceRoot, buildRoot)
+  const assetIndex = JSON.parse(readFileSync(resolve(buildRoot, "assets", "index.json"), "utf8"))
+  if (!Array.isArray(assetIndex?.assets)) throw new Error("Imported project asset index is missing or invalid")
+  const projectAssets = buildRuntimeProjectAssetResolver(buildRoot, assetIndex.assets)
   const spawn = options.spawn ?? importedProject.manifest.world.spawn
   let staticEntitySceneJson: string | null = null
   const clientScriptModules = Object.fromEntries(
@@ -211,6 +277,10 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
       const sampleUrl = sample
         ? `http://${host}:${requestedPort}/assets/${sample.split("/").map(encodeURIComponent).join("/")}`
         : undefined
+      if (typeof command?.targetPlayerId === "string") {
+        deliverClientEvent(command.targetPlayerId, { type: "nea-revive:sound", command: { ...command, sampleUrl } })
+        return true
+      }
       for (const playerId of playerSessions.keys()) {
         deliverClientEvent(playerId, { type: "nea-revive:sound", command: { ...command, sampleUrl } })
       }
@@ -218,6 +288,36 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
     },
     onVoxelChange: (change: { x: number, y: number, z: number, voxel: number }) => {
       handleVoxelChange(change)
+    },
+    showDialog: async (playerId: string, config: any) => {
+      const sessionId = playerSessions.get(playerId)
+      const client = sessionId === undefined ? undefined : dialogClients()[sessionId]
+      if (!client) return null
+      const rpcId = dialogRpcId++
+      return new Promise<unknown>((resolve, reject) => {
+        const pending = pendingDialogs.get(playerId) ?? []
+        pending.push({ rpcId, resolve, reject })
+        pendingDialogs.set(playerId, pending)
+        try {
+          client.message.open({
+            rpcId,
+            config: dialogConfigToProtocol(config),
+          })
+        } catch (error) {
+          const index = pendingDialogs.get(playerId) ?? []
+          index.pop()
+          pendingDialogs.set(playerId, index)
+          reject(error)
+        }
+      })
+    },
+    cancelDialogs: (playerId: string) => {
+      const sessionId = playerSessions.get(playerId)
+      const client = sessionId === undefined ? undefined : dialogClients()[sessionId]
+      client?.message.cancelDialogs()
+      const pending = pendingDialogs.get(playerId) ?? []
+      pendingDialogs.delete(playerId)
+      for (const p of pending) p.reject(new Error("dialog cancelled"))
     },
   })
   await runtime.start()
@@ -242,6 +342,22 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         airFriction: snap.worldPhysics?.airFriction,
         tickRate: snap.worldPhysics?.tickRate,
         materials: snap.worldPhysics?.materials,
+      })
+      deliverClientEvent(playerId, {
+        type: "nea-revive:camera-state",
+        mode: player.cameraMode,
+        fovY: player.cameraFovY,
+        yaw: player.cameraYaw,
+        pitch: player.cameraPitch,
+        distance: player.cameraDistance,
+        position: player.cameraPosition,
+        target: player.cameraTarget,
+        up: player.cameraUp,
+        entityId: player.cameraEntityId,
+        entityPosition: player.cameraEntityPosition,
+        freezedAxis: player.cameraFreezedAxis,
+        freezedForwardDirection: player.freezedForwardDirection,
+        enable3DCursor: player.enable3DCursor,
       })
       // DAO3 玩家 flags：默认禁飞（252 = 254 & ~ALLOW_FLIGHT(2)），
       // canFly→ALLOW_FLIGHT(2)，spectator→SPECTATOR(1)。
@@ -353,33 +469,54 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
     }
     if (url.pathname === "/api/map/entities") {
       try {
-        staticEntitySceneJson ??= JSON.stringify(buildStaticEntityScene(options.sourceRoot, importedProject.entities))
-        response.writeHead(200, { "content-type": "application/json; charset=utf-8", "cache-control": "no-cache" })
-        response.end(staticEntitySceneJson)
+        staticEntitySceneJson ??= JSON.stringify(buildStaticEntityScene(options.sourceRoot, importedProject.entities, options.assetRoot))
+        const acceptsGzip = String(request.headers["accept-encoding"] ?? "").includes("gzip")
+        if (acceptsGzip) {
+          staticEntitySceneGzip ??= gzipSync(staticEntitySceneJson, { level: 6 })
+          response.writeHead(200, { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=300", "content-encoding": "gzip", "vary": "Accept-Encoding", "content-length": staticEntitySceneGzip.length })
+          response.end(staticEntitySceneGzip)
+        } else {
+          response.writeHead(200, { "content-type": "application/json; charset=utf-8", "cache-control": "public, max-age=300", "content-length": Buffer.byteLength(staticEntitySceneJson) })
+          response.end(staticEntitySceneJson)
+        }
       } catch (error) {
         response.writeHead(500, { "content-type": "text/plain; charset=utf-8" })
         response.end(String(error))
       }
       return
     }
+    if (url.pathname === "/api/map/environment") {
+      // Serve the map's recovered DAO3 environment fields so the client can
+      // drive sky/sun/globalLight/fog natively instead of engine defaults.
+      const environment = importedProject.environment
+      response.writeHead(200, { "content-type": "application/json; charset=utf-8", "cache-control": "no-cache" })
+      response.end(JSON.stringify(environment === null ? null : (environment.fields ?? null)))
+      return
+    }
     if (request.method === "GET" && url.pathname.startsWith("/assets/")) {
-      const assetsRoot = resolve(options.sourceRoot, "assets")
-      const relative = decodeURIComponent(url.pathname.slice("/assets/".length))
-      const assetPath = resolve(assetsRoot, relative)
-      if (assetPath !== assetsRoot && !assetPath.startsWith(`${assetsRoot}\\`) && !assetPath.startsWith(`${assetsRoot}/`)) {
-        response.writeHead(403)
-        response.end()
+      let logicalName: string
+      try {
+        logicalName = decodeURIComponent(url.pathname.slice("/assets/".length))
+      } catch {
+        response.writeHead(400)
+        response.end("invalid asset path")
         return
       }
-      if (!existsSync(assetPath)) {
+      if (!isSafeLogicalAssetName(logicalName)) {
+        response.writeHead(403)
+        response.end("invalid asset path")
+        return
+      }
+      const asset = projectAssets.get(logicalName)
+      if (!asset || !existsSync(asset.path)) {
         response.writeHead(404)
         response.end()
         return
       }
-      const extension = assetPath.toLowerCase().split(".").pop()
+      const extension = asset.name.toLowerCase().split(".").pop()
       const contentType = extension === "mp3" ? "audio/mpeg" : extension === "ogg" ? "audio/ogg" : extension === "wav" ? "audio/wav" : "application/octet-stream"
       response.writeHead(200, { "content-type": contentType, "access-control-allow-origin": "*", "cache-control": "public,max-age=3600" })
-      response.end(readFileSync(assetPath))
+      createReadStream(asset.path).pipe(response)
       return
     }
     // gameUI pictureAssets are content-addressed archive entries. Historical
@@ -398,6 +535,65 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
       const contentType = extension === "png" ? "image/png" : extension === "jpg" || extension === "jpeg" ? "image/jpeg" : "application/octet-stream"
       response.writeHead(200, { "content-type": contentType, "access-control-allow-origin": "*", "cache-control": "public,max-age=3600" })
       createReadStream(assetPath).pipe(response)
+      return
+    }
+    // Mesh assets use the same content-addressed store as pictures, but a
+    // dedicated route makes the renderer intent explicit and avoids clients
+    // having to special-case the historical engine path.
+    if (request.method === "GET" && url.pathname.startsWith("/api/mesh/")) {
+      const hash = url.pathname.slice("/api/mesh/".length)
+      if (!/^[A-Za-z0-9_-]{43}$/.test(hash)) {
+        response.writeHead(400); response.end("invalid mesh hash"); return
+      }
+      const meshPath = resolve(options.assetRoot, "engine", "m", hash)
+      if (!existsSync(meshPath)) {
+        response.writeHead(404); response.end("mesh asset not found"); return
+      }
+      response.writeHead(200, {
+        "content-type": "application/octet-stream",
+        "access-control-allow-origin": "*",
+        "cache-control": "public,max-age=3600",
+      })
+      createReadStream(meshPath).pipe(response)
+      return
+    }
+    if (request.method === "GET" && url.pathname.startsWith("/api/mesh-decoded/")) {
+      const hash = url.pathname.slice("/api/mesh-decoded/".length)
+      if (!/^[A-Za-z0-9_-]{43}$/.test(hash)) {
+        response.writeHead(400); response.end("invalid mesh hash"); return
+      }
+      const meshPath = resolve(options.assetRoot, "engine", "m", hash)
+      if (!existsSync(meshPath) || !decodeMeshAssetTool) {
+        response.writeHead(404); response.end("mesh asset not found"); return
+      }
+      try {
+        let binaryPath = meshPath
+        let source = readFileSync(meshPath)
+        if (source[0] === 0x7b) {
+          const metadata = JSON.parse(source.toString("utf8"))
+          if (typeof metadata.dataHash === "string") {
+            binaryPath = resolve(options.assetRoot, "engine", "m", metadata.dataHash)
+            source = readFileSync(binaryPath)
+          }
+        }
+        const decoded = decodeMeshAssetTool(new Uint8Array(source))
+        const texture = decoded.value?.texture && decodeMeshTextureTool
+          ? decodeMeshTextureTool(decoded.value.texture)
+          : undefined
+        const payload = {
+          format: decoded.format,
+          version: decoded.version,
+          bounds: decoded.value?.bounds ?? null,
+          nodes: decoded.value?.nodes ?? [],
+          meshes: decoded.value?.meshes ?? [],
+          texture: texture ? { width: texture.width, height: texture.height, rgba: Array.from(texture.rgba) } : null,
+        }
+        response.writeHead(200, { "content-type": "application/json", "access-control-allow-origin": "*", "cache-control": "public,max-age=3600" })
+        response.end(JSON.stringify(payload))
+      } catch (error) {
+        response.writeHead(422, { "content-type": "text/plain" })
+        response.end(`mesh decode failed: ${String(error)}`)
+      }
       return
     }
     // avatar 模型资源：/avatar/m/{hash} → archive/avatar/m/{hash}
@@ -565,6 +761,7 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
     if (schema === gameClock) gameClockProtocolRef = protocol
     if (schema.name === "models") modelsProtocolRef = protocol
     if (schema === remoteChannel) remoteChannelProtocolRef = protocol
+    if (schema === dialog) dialogProtocolRef = protocol
     const handlers: Record<string, (client: any, data: unknown, unreliable: boolean) => void> = {}
 
     for (const messageName of Object.keys(schema.server)) {
@@ -577,6 +774,18 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
       }
     }
 
+    if (schema === entityInteract) {
+      handlers.interact = (client, data) => {
+        const playerId = sessions.get(client.sessionId)
+        if (!playerId) return
+        const packet = data as { id?: unknown; tick?: unknown }
+        const entityId = Number(packet?.id)
+        const tick = Number(packet?.tick)
+        if (!Number.isSafeInteger(entityId) || entityId < 0 || !Number.isFinite(tick)) return
+        runtime.dispatchInteract(playerId, entityId, tick)
+      }
+    }
+
     if (schema === gameNet) {
       handlers.join = (client) => {
         const playerId = `p-${randomUUID().slice(0, 8)}`
@@ -584,6 +793,17 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         playerSessions.set(playerId, client.sessionId)
         flushPendingClientEvents(playerId)
         runtime.addPlayer({ id: playerId, name: sessionNames.get(client.sessionId) ?? "Player", position: spawn })
+        for (const entity of runtime.entityInteractionStates()) {
+          deliverClientEvent(playerId, {
+            type: "nea-revive:entity-state",
+            entityId: entity.entityId,
+            state: {
+              enableInteract: entity.enableInteract,
+              interactHint: entity.interactHint,
+              interactRadius: entity.interactRadius,
+            },
+          })
+        }
         // The game-net join can race the RemoteChannel protocol's client
         // registration across the three websocket transports.
         setTimeout(() => flushPendingClientEvents(playerId), 0)
@@ -664,6 +884,47 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         if (!playerId) return
         const detail = (data as { detail?: string }).detail ?? ""
         runtime.dispatchChat(playerId, detail)
+      }
+    }
+
+    if (schema === dialog) {
+      handlers.close = (client, data) => {
+        const playerId = sessions.get(client.sessionId)
+        log(`[dialog] close from ${client.sessionId} -> player ${playerId}: ${JSON.stringify(data)}`)
+        if (!playerId) return
+        const pending = pendingDialogs.get(playerId) ?? []
+        const rpcId = Number((data as any)?.rpcId ?? 0)
+        const index = pending.findIndex(entry => entry.rpcId === rpcId)
+        const next = index >= 0 ? pending.splice(index, 1)[0] : undefined
+        if (next) {
+          const result = (data as any)?.result ?? {}
+          let value: unknown = result.type === "close" ? null : (result.data ?? result.value)
+          if (result.type === "select") value = result
+          next.resolve(value)
+          if (pending.length === 0) pendingDialogs.delete(playerId)
+          else pendingDialogs.set(playerId, pending)
+        } else {
+          pendingDialogs.delete(playerId)
+        }
+      }
+      handlers.cancelDialog = (client, data) => {
+        const playerId = sessions.get(client.sessionId)
+        if (!playerId) return
+        const pending = pendingDialogs.get(playerId) ?? []
+        const rpcId = Number(data ?? 0)
+        const index = pending.findIndex(entry => entry.rpcId === rpcId)
+        if (index < 0) return
+        const [cancelled] = pending.splice(index, 1)
+        cancelled.reject(new Error("dialog cancelled"))
+        if (pending.length === 0) pendingDialogs.delete(playerId)
+        else pendingDialogs.set(playerId, pending)
+      }
+      handlers.cancelDialogs = (client, _data) => {
+        const playerId = sessions.get(client.sessionId)
+        if (!playerId) return
+        const pending = pendingDialogs.get(playerId) ?? []
+        pendingDialogs.delete(playerId)
+        for (const p of pending) p.reject(new Error("dialog cancelled"))
       }
     }
 
@@ -787,8 +1048,8 @@ function encodeAnonymousPlayerSecret(playerId: number): Uint8Array {
   return Uint8Array.from(bytes)
 }
 
-function buildStaticEntityScene(sourceRoot: string, entities: readonly any[]) {
-  const meshes: Record<string, { positions: number[]; uvs: number[]; indices: number[] }> = {}
+function buildStaticEntityScene(sourceRoot: string, entities: readonly any[], assetRoot: string) {
+  const meshes: Record<string, { positionsF32: string; uvsF32: string; indicesU32: string; texturePngBase64?: string; meshAssetHash?: string; renderBoxOffset?: number[] }> = {}
   const instances: Array<{
     id: number
     mesh: string
@@ -804,6 +1065,13 @@ function buildStaticEntityScene(sourceRoot: string, entities: readonly any[]) {
     enableInteract: boolean
     interactHint: string
     interactRadius: number
+    meshOffset: number[]
+    visible: boolean
+    staticShadow: boolean
+    tint: number[]
+    emissive: number
+    metalness: number
+    shininess: number
   }> = []
   const skipped: Array<{ mesh: string; reason: string }> = []
   for (const [sourceIndex, entity] of entities.entries()) {
@@ -811,25 +1079,48 @@ function buildStaticEntityScene(sourceRoot: string, entities: readonly any[]) {
     if (!mesh.endsWith(".vb")) continue
     const gltfName = mesh.slice(0, -3) + ".gltf"
     if (!meshes[mesh]) {
+      const meshAssetHash = resolveMeshAssetHash(sourceRoot, assetRoot, mesh, entity.source?.meshId ?? entity.meshId)
       const gltfPath = resolve(sourceRoot, "assets", gltfName)
       if (!existsSync(gltfPath)) {
         if (!skipped.some(entry => entry.mesh === mesh)) skipped.push({ mesh, reason: "missing glTF fallback" })
         continue
       }
       try {
-        meshes[mesh] = readEmbeddedGltfMesh(gltfPath)
+      const metadata = meshAssetHash ? readMeshMetadata(assetRoot, meshAssetHash) : null
+      const decoded = readEmbeddedGltfMesh(gltfPath)
+      meshes[mesh] = {
+        positionsF32: encodeFloat32Base64(decoded.positions),
+        uvsF32: encodeFloat32Base64(decoded.uvs),
+        indicesU32: encodeUint32Base64(decoded.indices),
+        ...(decoded.texturePng ? { texturePngBase64: Buffer.from(decoded.texturePng).toString("base64") } : {}),
+        ...(meshAssetHash ? { meshAssetHash } : {}),
+        ...(metadata?.renderBoxOffset ? { renderBoxOffset: metadata.renderBoxOffset } : {}),
+      }
       } catch (error) {
         if (!skipped.some(entry => entry.mesh === mesh)) skipped.push({ mesh, reason: String(error) })
         continue
       }
     }
+    const entityScale = (entity.source?.scale ?? [1 / 64, 1 / 64, 1 / 64]).map(Number)
+    const sourceMeshOffset = (entity.source?.meshOffset ?? [0, 0, 0]).map(Number)
+    const renderBoxOffset = meshes[mesh]?.renderBoxOffset ?? [0, 0, 0]
+    const bounds = (entity.source?.bounds ?? [0, 0, 0]).map(Number)
+    // DAO3 anchors a static model at its bounds center, then applies the
+    // renderBoxOffset in model-space. The glTF fallback vertices are exported
+    // from the bounds corner, so reproduce that center-to-anchor translation
+    // before converting the offset to world units.
+    const meshOffset = [0, 1, 2].map(axis =>
+      ((sourceMeshOffset[axis] ?? 0)
+        - (bounds[axis] ?? 0) * 0.5
+        + (renderBoxOffset[axis] ?? 0)) * (entityScale[axis] ?? 1),
+    )
     instances.push({
       id: sourceIndex + 0x10000,
       mesh,
       position: entity.position.map(Number),
-      scale: (entity.source?.scale ?? [1 / 64, 1 / 64, 1 / 64]).map(Number),
+      scale: entityScale,
       rotation: (entity.source?.orientation ?? [0, 0, 0, 1]).map(Number),
-      meshOffset: (entity.source?.meshOffset ?? [0, 0, 0]).map(Number),
+      meshOffset,
       collision: Boolean(entity.source?.collision ?? true),
       fixed: Boolean(entity.source?.fixed ?? false),
       halfExtents: (entity.source?.bounds ?? [1, 1, 1]).map((size: unknown, axis: number) =>
@@ -842,9 +1133,96 @@ function buildStaticEntityScene(sourceRoot: string, entities: readonly any[]) {
       interactHint: String(entity.source?.interactHint ?? ""),
       interactRadius: Math.max(0, Number(entity.source?.interactRadius ?? 3)),
       visible: entity.source?.meshInvisible !== true,
+      // These are preserved entity render fields from the DAO3 seed schema.
+      // Do not discard them in the transport adapter: the renderer needs
+      // staticShadow/tint/material values to reproduce the original pass.
+      staticShadow: Boolean(entity.source?.staticShadow ?? false),
+      tint: (entity.source?.tint ?? [255, 255, 255, 255]).map(Number),
+      emissive: Math.max(0, Number(entity.source?.emissive ?? 0)),
+      metalness: Math.max(0, Number(entity.source?.metalness ?? 0)),
+      shininess: Math.max(0, Number(entity.source?.shininess ?? 0)),
     })
   }
   return { meshes, entities: instances, skipped }
+}
+
+function encodeFloat32Base64(values: readonly number[]): string {
+  const bytes = Buffer.allocUnsafe(values.length * 4)
+  for (let index = 0; index < values.length; index++) bytes.writeFloatLE(Number(values[index]), index * 4)
+  return bytes.toString("base64")
+}
+
+function encodeUint32Base64(values: readonly number[]): string {
+  const bytes = Buffer.allocUnsafe(values.length * 4)
+  for (let index = 0; index < values.length; index++) bytes.writeUInt32LE(Number(values[index]) >>> 0, index * 4)
+  return bytes.toString("base64")
+}
+
+function addVec3(a: number[], b: number[]) {
+  return [0, 1, 2].map((axis) => Number(a[axis] ?? 0) + Number(b[axis] ?? 0))
+}
+
+function readMeshMetadata(assetRoot: string, requestKey: string) {
+  try {
+    const path = resolve(assetRoot, "engine", "m", requestKey)
+    const value = JSON.parse(readFileSync(path, "utf8"))
+    return Array.isArray(value.renderBoxOffset)
+      ? { renderBoxOffset: value.renderBoxOffset.map(Number) }
+      : null
+  } catch {
+    return null
+  }
+}
+
+function resolveMeshAssetHash(sourceRoot: string, assetRoot: string, mesh: string, meshId: unknown) {
+  const usable = (requestKey: string) => {
+    const path = resolve(assetRoot, "engine", "m", requestKey)
+    if (!existsSync(path)) return false
+    try {
+      const bytes = readFileSync(path)
+      const metadata = bytes[0] === 0x7b ? JSON.parse(bytes.toString("utf8")) : null
+      const dataHash = typeof metadata?.dataHash === "string" ? metadata.dataHash : requestKey
+      const binaryPath = resolve(assetRoot, "engine", "m", dataHash)
+      if (!existsSync(binaryPath) || !decodeMeshAssetTool) return false
+      decodeMeshAssetTool(new Uint8Array(readFileSync(binaryPath)))
+      return true
+    } catch {
+      return false
+    }
+  }
+  const bootstrapPath = resolve(sourceRoot, "assets", "bootstrap", "mesh-bootstrap.json")
+  if (existsSync(bootstrapPath)) {
+    try {
+      const bootstrap = JSON.parse(readFileSync(bootstrapPath, "utf8"))
+      const binding = bootstrap.entities?.find((entry: any) => Number(entry.meshId) === Number(meshId) || entry.mesh === mesh)
+      for (const requestKey of binding?.candidates ?? []) {
+        if (usable(requestKey)) return requestKey
+      }
+    } catch {}
+  }
+  const key = mesh.replace(/\.vb$/i, "")
+  const metadataPath = resolve(assetRoot, "engine", "m", key)
+  if (!existsSync(metadataPath)) {
+    const catalogPath = resolve(sourceRoot, "assets", "models", "catalog.json")
+    if (!existsSync(catalogPath)) return undefined
+    try {
+      const catalog = JSON.parse(readFileSync(catalogPath, "utf8"))
+      const entries = (Array.isArray(catalog) ? catalog : catalog.models ?? []).filter((item: any) =>
+        Number(item.modelId) === Number(meshId) || String(item.local?.vb ?? "").endsWith(mesh),
+      )
+      for (const entry of entries) {
+        const hash = entry?.modelFileHash
+        if (typeof hash === "string" && usable(hash)) return hash
+      }
+    } catch {}
+    return undefined
+  }
+  try {
+    const value = JSON.parse(readFileSync(metadataPath, "utf8"))
+    return typeof value?.dataHash === "string" ? value.dataHash : undefined
+  } catch {
+    return undefined
+  }
 }
 
 function readEmbeddedGltfMesh(path: string) {
@@ -889,7 +1267,17 @@ function readEmbeddedGltfMesh(path: string) {
   const identity = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
   for (const root of roots) visit(Number(root), identity)
   if (positions.length === 0) throw new Error(`glTF has no mesh primitive: ${path}`)
-  return { positions, uvs, indices }
+  let texturePng: number[] | undefined
+  const baseTextureIndex = gltf.materials?.[0]?.pbrMetallicRoughness?.baseColorTexture?.index
+  const imageIndex = baseTextureIndex === undefined ? undefined : gltf.textures?.[baseTextureIndex]?.source
+  const image = imageIndex === undefined ? undefined : gltf.images?.[imageIndex]
+  const view = image?.bufferView === undefined ? undefined : gltf.bufferViews?.[image.bufferView]
+  if (view && image?.mimeType === "image/png") {
+    const start = Number(view.byteOffset ?? 0)
+    const end = start + Number(view.byteLength ?? 0)
+    texturePng = Array.from(bytes.subarray(start, end))
+  }
+  return { positions, uvs, indices, ...(texturePng ? { texturePng } : {}) }
 }
 
 function nodeMatrix(node: any): number[] {
