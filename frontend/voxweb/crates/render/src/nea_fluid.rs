@@ -43,7 +43,10 @@ fn pow5(x: f32) -> f32 {
 }
 
 fn directional_sky(direction: vec3f) -> vec3f {
-  let denominator = abs(direction.x) + abs(direction.y) + abs(direction.z);
+  // A zero-length direction is possible for a fragment at the camera
+  // position. Keep this path finite instead of propagating a NaN through
+  // the water reflection.
+  let denominator = max(abs(direction.x) + abs(direction.y) + abs(direction.z), 0.000001);
   return 0.125 / denominator * (
     max(direction.x, 0.0) * globals.sky_left.rgb +
     max(-direction.x, 0.0) * globals.sky_right.rgb +
@@ -110,14 +113,27 @@ fn fs_main(in: VsOut) {
   let data = water_height(in.face_normal, face_u, face_v, in.world_pos);
   let fragment_normal = data.rgb;
   let height = data.a;
-  let view_direction = normalize(in.world_pos - globals.eye_exposure.xyz);
-  let reflection_direction = reflect(view_direction, fragment_normal);
+  // `incident_direction` points from the eye toward the surface, which is
+  // what `reflect` expects. Fresnel, however, uses the opposite (surface to
+  // eye) view direction. Using the incident direction there made horizontal
+  // water use the grazing-angle response even when viewed head-on.
+  let eye_to_surface = in.world_pos - globals.eye_exposure.xyz;
+  let incident_direction = normalize(select(
+    vec3f(0.0, -1.0, 0.0),
+    eye_to_surface,
+    dot(eye_to_surface, eye_to_surface) > 0.000001,
+  ));
+  let view_direction = -incident_direction;
+  let reflection_direction = reflect(incident_direction, fragment_normal);
   let reflection_color = directional_sky(reflection_direction);
   let optical_depth = 18.0 - 4.0 * height;
   let specular = (68.0 / (3.14159265 * 8.0)) *
     pow(clamp(dot(reflection_direction, globals.light_direction_gamma.xyz), 0.0, 1.0), 60.0);
   let extinction = clamp(1.0 - exp(-0.1 * optical_depth * in.fog.a), 0.0, 1.0);
-  let fresnel = 1.0 - 0.65 * pow5(1.0 - max(0.0, dot(fragment_normal, view_direction)));
+  let view_cosine = max(0.0, dot(fragment_normal, view_direction));
+  // Schlick approximation with a 0.35 normal-incidence reflectance. It must
+  // increase toward 1.0 at grazing angles rather than the other way around.
+  let fresnel = 0.35 + 0.65 * pow5(1.0 - view_cosine);
   let color =
     specular * globals.light_color_global.rgb +
     fresnel * reflection_color +
@@ -347,6 +363,9 @@ mod tests {
         assert!(NEA_FLUID_WGSL.contains("-0.09034713652888932"));
         assert!(NEA_FLUID_WGSL.contains("optical_depth = 18.0 - 4.0 * height"));
         assert!(NEA_FLUID_WGSL.contains("68.0 / (3.14159265 * 8.0)"));
-        assert!(NEA_FLUID_WGSL.contains("0.65 * pow5"));
+        assert!(NEA_FLUID_WGSL.contains("0.35 + 0.65 * pow5"));
+        assert!(NEA_FLUID_WGSL.contains("let view_direction = -incident_direction"));
+        assert!(NEA_FLUID_WGSL
+            .contains("max(abs(direction.x) + abs(direction.y) + abs(direction.z), 0.000001)"));
     }
 }
