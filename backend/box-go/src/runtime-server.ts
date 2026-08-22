@@ -182,6 +182,11 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   const projectAssets = buildRuntimeProjectAssetResolver(buildRoot, assetIndex.assets)
   const spawn = options.spawn ?? importedProject.manifest.world.spawn
   let staticEntitySceneJson: string | null = null
+  // Decoding the recovered .vb assets is CPU-heavy and the browser requests
+  // the same mesh hashes for every session. Keep serialized responses in a
+  // bounded process-local cache so later players do not repeat that work.
+  const decodedMeshResponses = new Map<string, Buffer>()
+  const decodedMeshCacheLimit = 256
   let staticEntityDiagnostics: { nativeBindings: number; nativeFailures: number; skipped: Array<{ mesh: string; reason: string }> } = {
     nativeBindings: 0,
     nativeFailures: 0,
@@ -624,6 +629,17 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         response.writeHead(404); response.end("mesh asset not found"); return
       }
       try {
+        const cached = decodedMeshResponses.get(hash)
+        if (cached) {
+          response.writeHead(200, {
+            "content-type": "application/json",
+            "access-control-allow-origin": "*",
+            "cache-control": "public,max-age=3600",
+            "content-length": cached.length,
+          })
+          response.end(cached)
+          return
+        }
         let binaryPath = meshPath
         let source = readFileSync(meshPath)
         if (source[0] === 0x7b) {
@@ -645,8 +661,19 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
           meshes: decoded.value?.meshes ?? [],
           texture: texture ? { width: texture.width, height: texture.height, rgba: Array.from(texture.rgba) } : null,
         }
-        response.writeHead(200, { "content-type": "application/json", "access-control-allow-origin": "*", "cache-control": "public,max-age=3600" })
-        response.end(JSON.stringify(payload))
+        const body = Buffer.from(JSON.stringify(payload))
+        decodedMeshResponses.set(hash, body)
+        if (decodedMeshResponses.size > decodedMeshCacheLimit) {
+          const oldest = decodedMeshResponses.keys().next().value
+          if (oldest) decodedMeshResponses.delete(oldest)
+        }
+        response.writeHead(200, {
+          "content-type": "application/json",
+          "access-control-allow-origin": "*",
+          "cache-control": "public,max-age=3600",
+          "content-length": body.length,
+        })
+        response.end(body)
       } catch (error) {
         response.writeHead(422, { "content-type": "text/plain" })
         response.end(`mesh decode failed: ${String(error)}`)
