@@ -110,6 +110,7 @@ export class RuntimeGameZone {
   _has(entity) { return this.#active.has(entity); }
   _clear() { this.#active.clear(); this.#enter.clear(); this.#leave.clear(); }
   _matchesSelector(entity) { this._syncSelector(); return this.#selectorTest.test(entity); }
+  _isPlayerSelector() { this._syncSelector(); return this.#selectorSource === "player"; }
   _syncSelector() {
     if (this.selector === this.#selectorSource) return;
     this.#selectorTest = new ParsedGameSelector(this.selector);
@@ -137,11 +138,14 @@ export class GameZoneSystem {
     zone._clear();
   }
 
-  poll(tick, entities) {
+  poll(tick, entities, players = entities) {
     this.#tick = tick;
     for (const zone of this.#zones) {
       for (const entity of zone.entities()) if (!matches(zone, entity)) zone._leave(tick, entity);
-      for (const entity of entities) if (!zone._has(entity) && matches(zone, entity)) zone._enter(tick, entity);
+      // Player-only zones are common in recovered maps. Avoid rescanning every
+      // static prop (often hundreds of entities) on every simulation tick.
+      const candidates = zone._isPlayerSelector() ? players : entities;
+      for (const entity of candidates) if (!zone._has(entity) && matches(zone, entity)) zone._enter(tick, entity);
     }
   }
 }

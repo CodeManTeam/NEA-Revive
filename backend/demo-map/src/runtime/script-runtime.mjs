@@ -478,7 +478,11 @@ export class ScriptRuntime {
         }
       }
     }
-    this.zones.poll(this.currentTick, this.#allQueryableEntities());
+    this.zones.poll(
+      this.currentTick,
+      this.#allQueryableEntities(),
+      [...this.#players.values()],
+    );
     this.#signals.tick.emit(
       createGameTickEvent(this.currentTick, prevTick, timing.elapsedTimeMS, timing.skip),
       error => this.#reportError("tick", error),
@@ -1045,7 +1049,12 @@ export class ScriptRuntime {
 
   #query(selector) {
     this.#require("server.world.entities");
-    return this.#allQueryableEntities().filter(entity => this.#matchesSelector(entity, selector));
+    // Keep the hot player query off the static-entity path. Large imported
+    // maps can contain hundreds of props but usually only a handful of players.
+    const candidates = selector === "player"
+      ? [...this.#players.values()]
+      : this.#allQueryableEntities();
+    return candidates.filter(entity => this.#matchesSelector(entity, selector));
   }
 
   #dispatchFluidEvent(signalName, entity, contact) {
