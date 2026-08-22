@@ -2966,7 +2966,10 @@ fn build_static_entity_collision_bodies(
         .filter(|entity| entity.collision)
         .map(|entity| voxweb_protocol::netstate::RigidBody {
             id: entity.id,
-            flags: if entity.fixed { 2 } else { 2 | 64 },
+            // The physics solver uses bit 16 for fixed bodies. Bit 2 only
+            // enables collision; omitting FIXED lets player impulses move a
+            // model floor as if it were a dynamic rigid body.
+            flags: 2 | if entity.fixed { 16 } else { 64 },
             group: 0,
             mass: entity.mass,
             friction: entity.friction,
@@ -4987,6 +4990,7 @@ mod tests {
         let mut bodies = build_static_entity_collision_bodies(&scene);
         assert_eq!(scene.entities.len(), 1);
         assert_eq!(bodies.len(), 1);
+        assert_eq!(bodies[0].flags & 18, 18);
         assert!(apply_entity_state_event(
             &serde_json::json!({"type": "nea-revive:entity-destroyed", "entityId": 41}),
             &mut bodies,
