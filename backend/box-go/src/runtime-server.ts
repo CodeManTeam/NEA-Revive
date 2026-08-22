@@ -226,6 +226,16 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
       const targetSession = _sessionId === undefined ? undefined : (playerSessions.get(_sessionId) ?? _sessionId)
       if (targetSession !== undefined) {
         sendChatLog(targetSession, text)
+        // Some clients establish the entity-interact/remote-channel sockets
+        // before game-chat. Mirror targeted system feedback through the
+        // already-live remote channel so directMessage is never invisible.
+        deliverClientEvent(String(_sessionId), {
+          type: "nea-revive:chat",
+          message: text,
+          kind: "system",
+          valid: true,
+          private: true,
+        })
       } else {
         for (const sessionId of Object.keys(gameChatClients())) sendChatLog(sessionId, text)
       }
@@ -237,6 +247,13 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         const targetSession = delivery.sessionId === undefined ? undefined : (playerSessions.get(delivery.sessionId) ?? delivery.sessionId)
         if (targetSession !== undefined) {
           sendChatLog(targetSession, text)
+          deliverClientEvent(String(delivery.sessionId), {
+            type: "nea-revive:chat",
+            message: text,
+            kind: "system",
+            valid: true,
+            private: true,
+          })
         } else {
           for (const sessionId of Object.keys(gameChatClients())) sendChatLog(sessionId, text)
         }
