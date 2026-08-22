@@ -169,44 +169,55 @@ pub fn decode_dialog_open(value: &Value) -> Option<DialogOpen> {
     let Value::Struct(parts) = data.as_ref() else {
         return None;
     };
-    let content = parts.iter().find_map(value_string).unwrap_or_default();
-    let title = parts
-        .iter()
-        .skip(1)
-        .find_map(value_string)
-        .unwrap_or_default();
+    // MuDB sorts union arms alphabetically and struct fields by wire type/name.
+    // The dialog common payload is therefore nested in each arm rather than
+    // appearing as a flat list of strings.
     let config = match *type_index {
-        0 => DialogConfig::Text {
-            has_arrow: parts.iter().any(|v| matches!(v, Value::Bool(true))),
-            content,
-            title,
-        },
-        1 => DialogConfig::Input {
-            content,
-            title,
-            confirm_text: parts
-                .iter()
-                .rev()
-                .find_map(value_string)
-                .unwrap_or_else(|| "确定".into()),
-            placeholder: parts
-                .iter()
-                .rev()
-                .nth(1)
-                .and_then(value_string)
-                .unwrap_or_default(),
-        },
-        _ => DialogConfig::Select {
-            content,
-            title,
-            options: parts
-                .iter()
-                .find_map(|v| match v {
-                    Value::Array(items) => Some(items.iter().filter_map(value_string).collect()),
-                    _ => None,
-                })
-                .unwrap_or_default(),
-        },
+        // Union keys are sorted: input, select, text.
+        0 => {
+            let (content, title) = parts
+                .first()
+                .map(dialog_common_text)
+                .unwrap_or_default();
+            DialogConfig::Input {
+                content,
+                title,
+                confirm_text: parts
+                    .get(1)
+                    .and_then(value_string)
+                    .unwrap_or_else(|| "确定".into()),
+                placeholder: parts.get(2).and_then(value_string).unwrap_or_default(),
+            }
+        }
+        1 => {
+            let (content, title) = parts
+                .first()
+                .map(dialog_common_text)
+                .unwrap_or_default();
+            DialogConfig::Select {
+                content,
+                title,
+                options: parts
+                    .get(1)
+                    .and_then(|value| match value {
+                        Value::Array(items) => Some(items.iter().filter_map(value_string).collect()),
+                        _ => None,
+                    })
+                    .unwrap_or_default(),
+            }
+        }
+        2 => {
+            let (content, title) = parts
+                .get(1)
+                .map(dialog_common_text)
+                .unwrap_or_default();
+            DialogConfig::Text {
+                has_arrow: matches!(parts.first(), Some(Value::Bool(true))),
+                content,
+                title,
+            }
+        }
+        _ => return None,
     };
     Some(DialogOpen { rpc_id, config })
 }
@@ -313,7 +324,7 @@ pub fn encode_runtime_outbound(
             .unwrap_or("close");
         let union = match tag {
             "text" => Value::Union {
-                type_index: 1,
+                type_index: 3,
                 data: Box::new(Value::UTF8(
                     result
                         .get("value")
@@ -323,7 +334,7 @@ pub fn encode_runtime_outbound(
                 )),
             },
             "input" => Value::Union {
-                type_index: 2,
+                type_index: 1,
                 data: Box::new(Value::UTF8(
                     result
                         .get("value")
@@ -333,7 +344,7 @@ pub fn encode_runtime_outbound(
                 )),
             },
             "select" => Value::Union {
-                type_index: 3,
+                type_index: 2,
                 data: Box::new(Value::Struct(vec![
                     Value::Varint(
                         result
@@ -415,6 +426,18 @@ fn value_string(value: &Value) -> Option<String> {
         _ => None,
     }
 }
+
+fn dialog_common_text(value: &Value) -> (String, String) {
+    let Value::Struct(fields) = value else {
+        return (String::new(), String::new());
+    };
+    // dialogCommon wire order: content is field 5 and title is field 11.
+    (
+        fields.get(5).and_then(value_string).unwrap_or_default(),
+        fields.get(11).and_then(value_string).unwrap_or_default(),
+    )
+}
+
 fn decode_ui_node(value: &Value) -> Option<UiNode> {
     let Value::Struct(fields) = value else {
         return None;
@@ -660,6 +683,82 @@ fn value_struct_vec2_1(v: &Value) -> Option<[f32; 2]> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn make_dialog_common(content: &str, title: &str) -> Value {
+        Value::Struct(vec![
+            Value::Varint(0),
+            Value::Varint(0),
+            Value::Bool(false),
+            Value::Bool(false),
+            Value::Bool(false),
+            Value::UTF8(content.into()),
+            Value::Struct(vec![]),
+            Value::Struct(vec![]),
+            Value::Struct(vec![]),
+            Value::Struct(vec![]),
+            Value::Struct(vec![]),
+            Value::UTF8(title.into()),
+            Value::Struct(vec![]),
+            Value::Struct(vec![]),
+        ])
+    }
+
+    #[test]
+    fn decode_dialog_open_maps_sorted_union_arms() {
+        let input = decode_dialog_open(&Value::Struct(vec![
+            Value::Varint(7),
+            Value::Union {
+                type_index: 0,
+                data: Box::new(Value::Struct(vec![
+                    make_dialog_common("content", "title"),
+                    Value::UTF8("confirm".into()),
+                    Value::UTF8("placeholder".into()),
+                ])),
+            },
+        ]))
+        .unwrap();
+        assert_eq!(input.config, DialogConfig::Input {
+            content: "content".into(),
+            title: "title".into(),
+            confirm_text: "confirm".into(),
+            placeholder: "placeholder".into(),
+        });
+
+        let select = decode_dialog_open(&Value::Struct(vec![
+            Value::Varint(8),
+            Value::Union {
+                type_index: 1,
+                data: Box::new(Value::Struct(vec![
+                    make_dialog_common("content", "title"),
+                    Value::Array(vec![Value::UTF8("option-a".into()), Value::UTF8("option-b".into())]),
+                ])),
+            },
+        ]))
+        .unwrap();
+        assert_eq!(select.config, DialogConfig::Select {
+            content: "content".into(),
+            title: "title".into(),
+            options: vec!["option-a".into(), "option-b".into()],
+        });
+
+        let text = decode_dialog_open(&Value::Struct(vec![
+            Value::Varint(9),
+            Value::Union {
+                type_index: 2,
+                data: Box::new(Value::Struct(vec![
+                    Value::Bool(true),
+                    make_dialog_common("content", "title"),
+                ])),
+            },
+        ]))
+        .unwrap();
+        assert_eq!(text.config, DialogConfig::Text {
+            has_arrow: true,
+            content: "content".into(),
+            title: "title".into(),
+        });
+    }
+
     #[test]
     fn ui_state_json_roundtrip() {
         let state = GameUiState::default();
