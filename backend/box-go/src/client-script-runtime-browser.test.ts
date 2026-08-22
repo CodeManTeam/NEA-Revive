@@ -233,6 +233,24 @@ try {
   assert.ok(selectDialog.buttons.some(text => text === "M.E.G.头盔"))
   assert.ok(selectDialog.buttons.some(text => text === "关闭"))
 
+  const emptySelectDialog = await page.evaluate(() => {
+    ;(window as any).__neaClientRuntimeReceive(JSON.stringify({
+      type: "nea-historical-dialog-open",
+      dialog: {
+        rpcId: 42,
+        config: { Select: { title: "Select", content: "No choices", options: ["关闭"] } },
+      },
+    }))
+    const panel = document.querySelector("#nea-historical-dialog")?.firstElementChild as HTMLElement | null
+    const body = panel?.children[2] as HTMLElement | undefined
+    return {
+      childCount: body?.children.length ?? 0,
+      hasEmptySlot: [...(body?.children ?? [])].some(element => element.textContent === ""),
+    }
+  })
+  assert.equal(emptySelectDialog.childCount, 2)
+  assert.equal(emptySelectDialog.hasEmptySlot, true)
+
   const soundFeedback = await page.evaluate(async () => {
     const created: any[] = []
     let attempts = 0

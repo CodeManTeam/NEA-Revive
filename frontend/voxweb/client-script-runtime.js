@@ -298,9 +298,23 @@
       ok.parent = dialogPanel._bodyHost;
       input.focus();
     } else if (kind === "select") {
-      (config.options || []).forEach((value, index) => {
+      const options = Array.isArray(config.options) ? config.options : [];
+      const isDismissOption = value => ["关闭", "取消", "close", "cancel"].includes(String(value).trim().toLowerCase());
+      const hasSelectableOption = options.some(value => !isDismissOption(value));
+      let row = 0;
+      // Preserve an explicit empty slot when a select dialog has no usable
+      // choices. The slot is visual-only; the dismiss option remains usable.
+      if (!hasSelectableOption) {
+        const empty = createUiButton("", () => {});
+        empty.position.offset.copy({ x: 0, y: row * 42 });
+        empty.pointerEventBehavior = 1;
+        empty.element.style.pointerEvents = "none";
+        row++;
+      }
+      options.forEach((value, index) => {
         const button = createUiButton(String(value), () => closeHistoricalDialog({ type: "select", index, value }));
-        button.position.offset.copy({ x: 0, y: index * 42 });
+        button.position.offset.copy({ x: 0, y: row * 42 });
+        row++;
         button.parent = dialogPanel._bodyHost;
       });
     } else {
