@@ -1690,16 +1690,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
             physics.set_surface_restitution(surface_restitution);
             physics_bodies.clear();
             physics_bodies.extend_from_slice(&collision_bodies);
-            // Static model AABBs are only relevant near the player. Feeding all
-            // imported props (Backroom has hundreds) into the contact solver
-            // both wastes frame time and lets overlapping distant boxes amplify
-            // vertical impulses at the player's feet.
-            physics_bodies.extend(
-                static_collision_bodies
-                    .iter()
-                    .filter(|body| nearby_collision_body(*body, physics.position))
-                    .cloned(),
-            );
+            physics_bodies.extend(static_collision_bodies.iter().cloned());
             physics.step_with_bodies(
                 movement,
                 move_mode,
@@ -3007,17 +2998,6 @@ fn build_static_entity_collision_bodies(
             az: 0.0,
         })
         .collect()
-}
-
-fn nearby_collision_body(body: &voxweb_protocol::netstate::RigidBody, position: [f32; 3]) -> bool {
-    const HORIZONTAL_MARGIN: f32 = 4.0;
-    const VERTICAL_MARGIN: f32 = 3.0;
-    position[0] + HORIZONTAL_MARGIN >= body.px - body.hsx
-        && position[0] - HORIZONTAL_MARGIN <= body.px + body.hsx
-        && position[2] + HORIZONTAL_MARGIN >= body.pz - body.hsz
-        && position[2] - HORIZONTAL_MARGIN <= body.pz + body.hsz
-        && position[1] + VERTICAL_MARGIN >= body.py - body.hsy
-        && position[1] - VERTICAL_MARGIN <= body.py + body.hsy
 }
 
 fn apply_entity_state_event(
