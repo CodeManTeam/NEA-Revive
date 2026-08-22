@@ -86,6 +86,7 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   }
   const host = options.host ?? "127.0.0.1"
   const requestedPort = options.port ?? 8080
+  const publicOrigin = (process.env.NEA_PUBLIC_ORIGIN ?? `http://${host}:${requestedPort}`).replace(/\/+$/, "")
   const path = options.path ?? "/ws"
   const log = options.quiet ? () => undefined : console.log
   const logger = options.quiet ? { log() {}, error() {}, exception() {} } : undefined
@@ -312,7 +313,7 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
     sendSoundCommand: async (command: any) => {
       const sample = typeof command?.sample === "string" ? command.sample.replace(/^\/+/, "") : ""
       const sampleUrl = sample
-        ? `http://${host}:${requestedPort}/assets/${sample.split("/").map(encodeURIComponent).join("/")}`
+        ? `${publicOrigin}/assets/${sample.split("/").map(encodeURIComponent).join("/")}`
         : undefined
       if (typeof command?.targetPlayerId === "string") {
         deliverClientEvent(command.targetPlayerId, { type: "nea-revive:sound", command: { ...command, sampleUrl } })
