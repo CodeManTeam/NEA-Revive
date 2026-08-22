@@ -808,6 +808,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
     // cadence cannot make avatars snap between authoritative samples.
     let mut remote_players = crate::remote_players::RemotePlayers::default();
     let mut collision_bodies: Vec<voxweb_protocol::netstate::RigidBody> = Vec::new();
+    let mut physics_bodies: Vec<voxweb_protocol::netstate::RigidBody> = Vec::new();
     let mut last_input_tick: Option<u32> = None;
     let mut prediction_history = PredictionHistory::new();
     // Local body state used by the recovered dirty-tick prediction replay.
@@ -829,6 +830,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
     let mut eye_exposure = EyeExposure::new(RECOVERED_INITIAL_EXPOSURE);
     let mut eye_ambient = 1.0f32;
     let mut last_eye_ambient_ms = 0u32;
+    let mut last_interaction_scan_ms = 0u32;
     let mut exposure_synchronized = false;
     let mut last_exposure_log_ms = 0u32;
     let mut last_render_diag_ms = 0u32;
@@ -1595,18 +1597,21 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 .map_or(0, |player| player.input_direction_state);
             let movement = inp.movement_vector_with_state(input_direction_state);
             let move_mode = inp.move_mode();
-            let interaction_hint = entity_scene
-                .entities
-                .iter()
-                .filter(|entity| entity.enable_interact)
-                .filter_map(|entity| {
-                    let distance = interaction_distance(entity, local_pos);
-                    (distance <= entity.interact_radius.max(0.0))
-                        .then_some((distance, entity.interact_hint.as_str()))
-                })
-                .min_by(|a, b| a.0.total_cmp(&b.0))
-                .map(|(_, hint)| if hint.is_empty() { "交互" } else { hint });
-            interaction_overlay.set(interaction_hint);
+            if now_ms().saturating_sub(last_interaction_scan_ms) >= 100 {
+                let interaction_hint = entity_scene
+                    .entities
+                    .iter()
+                    .filter(|entity| entity.enable_interact)
+                    .filter_map(|entity| {
+                        let distance = interaction_distance(entity, local_pos);
+                        (distance <= entity.interact_radius.max(0.0))
+                            .then_some((distance, entity.interact_hint.as_str()))
+                    })
+                    .min_by(|a, b| a.0.total_cmp(&b.0))
+                    .map(|(_, hint)| if hint.is_empty() { "交互" } else { hint });
+                interaction_overlay.set(interaction_hint);
+                last_interaction_scan_ms = now_ms();
+            }
             let interact_edge = std::mem::take(&mut inp.interact_edge);
             if interact_edge {
                 let nearest = entity_scene
@@ -1683,7 +1688,8 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 block_surface_material(support_block, &surface_materials);
             physics.set_surface_friction(surface_friction);
             physics.set_surface_restitution(surface_restitution);
-            let mut physics_bodies = collision_bodies.clone();
+            physics_bodies.clear();
+            physics_bodies.extend_from_slice(&collision_bodies);
             physics_bodies.extend(static_collision_bodies.iter().cloned());
             physics.step_with_bodies(
                 movement,
