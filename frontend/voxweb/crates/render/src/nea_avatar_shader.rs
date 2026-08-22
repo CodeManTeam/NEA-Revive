@@ -165,7 +165,10 @@ fn sample_shadows(world_pos: vec3f, face_normal: vec3f, frag_coord: vec4f) -> f3
   }
   let direct = (normal_light * shadow * (1.0 - globals.light_color_global.w) +
     globals.light_color_global.w) * globals.light_color_global.rgb;
-  let irradiance = 100.0 * input.ambient.rgb + input.ambient.a * directional_sky(normal);
+  // Avatar ambient samples are already normalized to 0..1. Multiplying them
+  // by 100 saturated every albedo to white, removing the outfit colors.
+  let irradiance = max(input.ambient.rgb, vec3f(0.18)) +
+    input.ambient.a * directional_sky(normal);
   // The preserved opaque pass clips on a separate per-vertex alpha value.
   // Texture alpha is PBR data, so it must not control fragment coverage.
   // Emissive remains disabled until model.pbrMod is carried by this pipeline.

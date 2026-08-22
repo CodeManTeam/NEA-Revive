@@ -164,6 +164,40 @@
   gameplayHudText.textXAlignment = "Left";
   gameplayHudText.textYAlignment = "Top";
   gameplayHudText.parent = gameplayHud;
+  const engineNotice = createUiNode("box");
+  engineNotice.name = "nea-engine-notice";
+  engineNotice.element.id = "nea-engine-notice";
+  engineNotice.position.ratio.copy({ x: 0.5, y: 1 });
+  engineNotice.anchor.copy({ x: 0.5, y: 1 });
+  engineNotice.position.offset.copy({ x: 0, y: -46 });
+  engineNotice.size.offset.copy({ x: 560, y: 0 });
+  engineNotice.autoResize = "Y";
+  engineNotice.backgroundColor.copy({ r: 8, g: 12, b: 16 });
+  engineNotice.backgroundOpacity = 0.86;
+  engineNotice.borderRadius = 4;
+  engineNotice.visible = false;
+  engineNotice.zIndex = 32;
+  engineNotice.pointerEventBehavior = 0;
+  engineNotice.parent = engineHost;
+  const engineNoticeText = createUiNode("text");
+  engineNoticeText.name = "nea-engine-notice-text";
+  engineNoticeText.textFontSize = 14;
+  engineNoticeText.textLineHeight = 1.35;
+  engineNoticeText.textColor.copy({ r: 255, g: 255, b: 255 });
+  engineNoticeText.position.offset.copy({ x: 16, y: 9 });
+  engineNoticeText.size.offset.copy({ x: 528, y: 0 });
+  engineNoticeText.autoResize = "Y";
+  engineNoticeText.textXAlignment = "Center";
+  engineNoticeText.textYAlignment = "Center";
+  engineNoticeText.parent = engineNotice;
+  function showEngineNotice(message) {
+    const text = String(message ?? "").trim();
+    if (!text) return;
+    engineNoticeText.textContent = text;
+    engineNotice.visible = true;
+    clearTimeout(engineNotice._hideTimer);
+    engineNotice._hideTimer = setTimeout(() => { engineNotice.visible = false; }, 3200);
+  }
   const dialogLayer = createUiNode("box");
   dialogLayer.name = "nea-historical-dialog";
   dialogLayer.element.id = "nea-historical-dialog";
@@ -186,6 +220,10 @@
     if (dialogPanel) dialogPanel.visible = false;
   }
   function openHistoricalDialog(dialog) {
+    // A modal needs normal pointer input. Exiting here also prevents the
+    // canvas click handler from trying to reacquire pointer lock while the
+    // browser is processing the unlock caused by focusing the dialog.
+    if (document.pointerLockElement) document.exitPointerLock();
     activeDialog = dialog;
     dialogLayer.visible = true;
     if (!dialogPanel) {
@@ -231,25 +269,36 @@
       dialogPanel._bodyHost = { element: dialogPanel._body.element };
     }
     dialogPanel.visible = true;
-    dialogPanel._title.textContent = dialog.config?.title || "";
-    dialogPanel._content.textContent = dialog.config?.content || "";
+    // serde_json serializes the Rust enum as { Input: {...} } while older
+    // runtime callers may send a flat { type: "input", ... } object.
+    const rawConfig = dialog.config && typeof dialog.config === "object" ? dialog.config : {};
+    const candidateKind = Object.keys(rawConfig)[0];
+    const taggedVariant = String(candidateKind || "");
+    const isTagged = ["text", "input", "select"].includes(taggedVariant.toLowerCase());
+    const taggedKind = isTagged ? candidateKind : "";
+    const taggedConfig = isTagged && rawConfig[taggedKind] && typeof rawConfig[taggedKind] === "object"
+      ? rawConfig[taggedKind]
+      : rawConfig;
+    const kind = String(taggedKind || taggedConfig.type || "text").toLowerCase();
+    const config = taggedConfig;
+    dialogPanel._title.textContent = config.title || "";
+    dialogPanel._content.textContent = config.content || "";
     dialogPanel._body.element.replaceChildren();
-    const kind = Object.keys(dialog.config || {})[0];
     if (kind === "input") {
       const input = createUiNode("input");
       input.name = "nea-dialog-input";
-      input.placeholder = dialog.config.placeholder || "";
+      input.placeholder = config.placeholder || "";
       input.position.offset.copy({ x: 0, y: 0 });
       input.size.offset.copy({ x: 512, y: 34 });
       input.zIndex = 1;
       input.pointerEventBehavior = 3;
       input.parent = dialogPanel._bodyHost;
-      const ok = createUiButton("确定", () => closeHistoricalDialog({ type: "input", value: input.textContent }));
+      const ok = createUiButton(config.confirm_text || config.confirmText || "确定", () => closeHistoricalDialog({ type: "input", value: input.element.value || "" }));
       ok.position.offset.copy({ x: 0, y: 42 });
       ok.parent = dialogPanel._bodyHost;
       input.focus();
     } else if (kind === "select") {
-      (dialog.config.options || []).forEach((value, index) => {
+      (config.options || []).forEach((value, index) => {
         const button = createUiButton(String(value), () => closeHistoricalDialog({ type: "select", index, value }));
         button.position.offset.copy({ x: 0, y: index * 42 });
         button.parent = dialogPanel._bodyHost;
@@ -297,7 +346,22 @@
 
   const input = {
     pointerLockEvents,
-    lockPointer: () => document.getElementById("game")?.requestPointerLock(),
+    lockPointer: () => {
+      const target = document.getElementById("game");
+      if (!target || document.pointerLockElement === target) return Promise.resolve(false);
+      try {
+        // Chromium returns a promise here and rejects it when a lock request
+        // races the previous unlock. Consume that expected rejection so it
+        // does not surface as "Uncaught (in promise) SecurityError".
+        return Promise.resolve(target.requestPointerLock()).catch(error => {
+          if (error?.name !== "SecurityError") console.debug("[nea] pointer lock request failed", error);
+          return false;
+        });
+      } catch (error) {
+        if (error?.name !== "SecurityError") console.debug("[nea] pointer lock request failed", error);
+        return Promise.resolve(false);
+      }
+    },
     unlockPointer: () => document.exitPointerLock(),
   };
   document.addEventListener("pointerlockchange", () => {
@@ -344,9 +408,11 @@
       else if (event?.type === "nea-revive:sound") applySoundCommand(event.command);
       else if (event?.type === "nea-revive:player-ui") applyPlayerUi(event);
       else if (event?.type === "nea-revive:chat") {
-        // 引擎不自带聊天 UI：仅保留解码，不渲染。后续由外层页面接管。
         if (event.valid === false) return;
-        // intentionally not rendered
+        // Keep the historical chat stream out of the engine UI, but surface
+        // private/system notices as a transient gameplay message so local
+        // maps do not lose directMessage feedback entirely.
+        showEngineNotice(event.message);
       }
       else remoteEvents.emit("client", event);
     },

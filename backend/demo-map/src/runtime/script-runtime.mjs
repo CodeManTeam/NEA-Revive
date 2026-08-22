@@ -621,7 +621,7 @@ export class ScriptRuntime {
     const player = this.#players.get(playerId);
     if (!player || !Number.isSafeInteger(backendEntityId) || backendEntityId < 0 || !Number.isFinite(tick)) return false;
     const targetEntity = this.#allQueryableEntities().find(entity => entity._backendEntityId === backendEntityId);
-    if (!targetEntity) return false;
+    if (!targetEntity || targetEntity.destroyed) return false;
     const event = createGameInteractEvent(tick, player, targetEntity);
     targetEntity._signals.interact.emit(event, error => this.#reportError("entityInteract", error));
     this.#signals.interact.emit(event, error => this.#reportError("interact", error));
@@ -1853,6 +1853,8 @@ function createRuntimePlayer(runtime, input) {
     movementBounds: new GameBounds3(new Vector3(-50, -50, -50), new Vector3(178, 178, 178)),
     color: new GameRGBColor(1, 1, 1),
     skin: Object.fromEntries(Object.values(GameBodyPart).map(part => [part, undefined])),
+    // Recovered Player schema exposes one mutable boolean per body part.
+    skinInvisible: Object.fromEntries(Object.values(GameBodyPart).map(part => [part, false])),
     _skinIds: Object.fromEntries(Object.values(GameBodyPart).map(part => [part, undefined])),
     cameraYaw: 0,
     cameraPitch: 0,
@@ -2053,6 +2055,11 @@ function createRuntimePlayer(runtime, input) {
         avatar: this.avatar,
         url: this.url.toString(),
         canFly: this.canFly,
+        // Keep input permissions in snapshots so the net-state bridge does
+        // not interpret omitted values as disabled jump/crouch controls.
+        enableJump: this.enableJump,
+        enableDoubleJump: this.enableDoubleJump,
+        enableCrouch: this.enableCrouch,
         gamemode: this._gameMode,
         inventory: Object.fromEntries(this._inventory),
         buffs: [...this._buffs],

@@ -199,6 +199,40 @@ try {
   assert.match(gameplayFeedback.text ?? "", /CREATIVE/)
   assert.match(gameplayFeedback.text ?? "", /API方块 x3/)
 
+  const directMessageFeedback = await page.evaluate(() => {
+    ;(window as any).__neaClientRuntimeReceive(JSON.stringify({
+      type: "nea-revive:chat",
+      valid: true,
+      kind: "system",
+      message: "已为您穿上防护服",
+    }))
+    const notice = document.querySelector("#nea-engine-notice") as HTMLElement
+    return { display: notice.style.display, text: notice.textContent }
+  })
+  assert.equal(directMessageFeedback.display, "block")
+  assert.match(directMessageFeedback.text ?? "", /已为您穿上防护服/)
+
+  const selectDialog = await page.evaluate(() => {
+    ;(window as any).__neaClientRuntimeReceive(JSON.stringify({
+      type: "nea-historical-dialog-open",
+      dialog: {
+        rpcId: 41,
+        config: { Select: { title: "穿戴", content: "请选择皮肤(商店中购买的)", options: ["M.E.G.头盔", "关闭"] } },
+      },
+    }))
+    const root = document.querySelector("#nea-historical-dialog") as HTMLElement
+    return {
+      text: root.textContent,
+      inputs: root.querySelectorAll("input").length,
+      buttons: [...root.querySelectorAll("div")].filter(element => getComputedStyle(element).pointerEvents === "auto").map(element => element.textContent),
+    }
+  })
+  assert.equal(selectDialog.inputs, 0)
+  assert.match(selectDialog.text ?? "", /穿戴/)
+  assert.match(selectDialog.text ?? "", /请选择皮肤\(商店中购买的\)/)
+  assert.ok(selectDialog.buttons.some(text => text === "M.E.G.头盔"))
+  assert.ok(selectDialog.buttons.some(text => text === "关闭"))
+
   const soundFeedback = await page.evaluate(async () => {
     const created: any[] = []
     let attempts = 0

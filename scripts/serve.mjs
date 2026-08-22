@@ -73,6 +73,13 @@ const mime = {
 const frontend = createServer(async (req, res) => {
   try {
     const urlPath = (req.url ?? "/").split("?")[0]
+    // Browsers probe this optional asset automatically. Treat it as an empty
+    // response so the game console is not polluted by an irrelevant 404.
+    if (urlPath === "/favicon.ico") {
+      res.writeHead(204, { "cache-control": "no-store" })
+      res.end()
+      return
+    }
     // 资源覆盖 manifest：slot → /asset-overrides/files/<name>
     if (urlPath === "/asset-overrides/manifest.json") {
       const manifest = JSON.parse(await readFile(join(assetOverrideRoot, "manifest.json"), "utf8"))

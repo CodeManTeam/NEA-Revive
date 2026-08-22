@@ -2999,7 +2999,19 @@ fn apply_entity_state_event(
     bodies: &mut Vec<voxweb_protocol::netstate::RigidBody>,
     scene: &mut StaticEntityScene,
 ) -> bool {
-    if event.get("type").and_then(serde_json::Value::as_str) != Some("nea-revive:entity-state") {
+    let event_type = event.get("type").and_then(serde_json::Value::as_str);
+    if event_type == Some("nea-revive:entity-destroyed") {
+        let Some(id) = event.get("entityId").and_then(serde_json::Value::as_u64) else {
+            return false;
+        };
+        let id = id as u32;
+        let before_entities = scene.entities.len();
+        let before_bodies = bodies.len();
+        scene.entities.retain(|entity| entity.id != id);
+        bodies.retain(|body| body.id != id);
+        return scene.entities.len() != before_entities || bodies.len() != before_bodies;
+    }
+    if event_type != Some("nea-revive:entity-state") {
         return false;
     }
     let Some(id) = event.get("entityId").and_then(serde_json::Value::as_u64) else {
@@ -4893,6 +4905,7 @@ mod tests {
     use super::{
         AvatarRollState, InputState, RuntimeCameraState, StaticEntityScene,
         apply_entity_state_event, apply_runtime_camera_state, block_is_solid,
+        build_static_entity_collision_bodies,
         fluid_volume_fraction, make_camera, network_tick_is_newer,
         normalize_player_collision_half_extents, recovered_avatar_yaw, recovered_fluid_height,
         recovered_fluid_info, recovered_player_state, recovered_rotated_face_rects,
@@ -4947,6 +4960,40 @@ mod tests {
         assert!(!entity.enable_interact);
         assert_eq!(entity.interact_hint, "Use keypad");
         assert_eq!(entity.interact_radius, 4.5);
+    }
+
+    #[test]
+    fn entity_destroy_event_removes_scene_entity_and_collision_body() {
+        let mut scene: StaticEntityScene = serde_json::from_value(serde_json::json!({
+            "meshes": {},
+            "entities": [{
+                "id": 41,
+                "mesh": "water",
+                "position": [0.0, 0.0, 0.0],
+                "scale": [1.0, 1.0, 1.0],
+                "rotation": [0.0, 0.0, 0.0, 1.0],
+                "collision": true,
+                "fixed": true,
+                "halfExtents": [0.5, 0.5, 0.5],
+                "mass": 1.0,
+                "friction": 0.0,
+                "restitution": 0.0,
+                "enableInteract": true,
+                "interactHint": "Water",
+                "interactRadius": 2.0
+            }]
+        }))
+        .expect("static entity fixture");
+        let mut bodies = build_static_entity_collision_bodies(&scene);
+        assert_eq!(scene.entities.len(), 1);
+        assert_eq!(bodies.len(), 1);
+        assert!(apply_entity_state_event(
+            &serde_json::json!({"type": "nea-revive:entity-destroyed", "entityId": 41}),
+            &mut bodies,
+            &mut scene,
+        ));
+        assert!(scene.entities.is_empty());
+        assert!(bodies.is_empty());
     }
 
     #[test]

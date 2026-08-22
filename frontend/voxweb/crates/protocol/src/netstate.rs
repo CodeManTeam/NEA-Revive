@@ -759,6 +759,28 @@ mod tests {
     }
 
     #[test]
+    fn decode_runtime_player_flags_from_server_wire_frame() {
+        // Produced by backend/box-go/src/netstate.ts with Backroom's
+        // flags=188 (jump enabled, double jump disabled) and jumpPower=0.6.
+        // This guards the actual wire/schema path used by the client physics
+        // loop, rather than only testing Value field order.
+        let hex = "0c0e1a0004010000000a000000201101ffff03b702b802b902ba02bb02bc023abd02be023dbf02c002c102c20242c302c402c502015410010000000a000000400e180093078002800c800ebc010100";
+        let bytes: Vec<u8> = (0..hex.len())
+            .step_by(2)
+            .map(|i| u8::from_str_radix(&hex[i..i + 2], 16).unwrap())
+            .collect();
+        let mut base = NetStateBase::default();
+        let frame = decode_net_public_frame(&bytes, &mut base).unwrap();
+        let player = frame
+            .runtime_players
+            .iter()
+            .find(|player| player.id == 1)
+            .expect("runtime player id=1");
+        assert_eq!(player.flags, 188);
+        assert!((player.jump_power - 0.6).abs() < 0.01);
+    }
+
+    #[test]
     fn rigid_body_patch_position_only() {
         // mask: px bit (1) set -> one relative delta follows
         // px bit = 1; delta encoded for +256 (so px = 0 + 256/256 = 1.0)

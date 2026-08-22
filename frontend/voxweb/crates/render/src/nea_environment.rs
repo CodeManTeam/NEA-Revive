@@ -26,11 +26,15 @@ pub struct NeaEnvironment {
     pub global_light: f32,
     pub gamma: f32,
     pub exposure: f32,
+    pub sun_up: bool,
 }
 
 /// Recovered DAO3 map environment fields (`environment.json`) in raw form.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct MapEnvironment {
+    pub sky_type: u8,
+    pub sun_phase: f32,
+    pub sun_frequency: f32,
     pub sun_direction: [f32; 3],
     pub sun_color: [f32; 3],
     pub sky_left: [f32; 3],
@@ -45,12 +49,6 @@ pub struct MapEnvironment {
     pub fog_density: f32,
     pub fog_height_falloff: f32,
 }
-
-/// DAO3 map colors are 0..1; the preserved Player shading uses HDR
-/// magnitudes for the noon default (sun ~448, sky ~280). Scale map colors
-/// onto the same range so a full-value map sun matches the recovered noon.
-const MAP_SUN_SCALE: f32 = 448.52;
-const MAP_SKY_SCALE: f32 = 280.0;
 
 impl NeaEnvironment {
     /// The default phase is fixed because the preserved schema defaults
@@ -69,6 +67,7 @@ impl NeaEnvironment {
             global_light: DEFAULT_GLOBAL_LIGHT,
             gamma: DEFAULT_GAMMA,
             exposure: 1.0,
+            sun_up: true,
         };
         Self {
             exposure: environment.target_exposure(1.0),
@@ -80,15 +79,52 @@ impl NeaEnvironment {
     /// fields. `global_light` defaults to the recovered schema default 0.3
     /// when the map omits it (null / negative sentinel).
     pub fn from_map(map: &MapEnvironment) -> Self {
+        Self::from_map_at_time(map, 0.0)
+    }
+
+    /// Reproduce module 18622's environment update. `tick_time` is in the
+    /// same normalized clock units used by the original `sunFrequency`.
+    pub fn from_map_at_time(map: &MapEnvironment, tick_time: f32) -> Self {
+        let (
+            sun_direction,
+            sun_color,
+            sky_left,
+            sky_right,
+            sky_top,
+            sky_bottom,
+            sky_front,
+            sky_back,
+            sun_up,
+        ) = if map.sky_type == 0 {
+            natural_sky(map.sun_phase, map.sun_frequency, tick_time)
+        } else {
+            let direction = normalize_or_down(map.sun_direction);
+            let time_of_day = (2.0
+                + direction[1].clamp(-1.0, 1.0).asin() / (2.0 * std::f32::consts::PI))
+                .rem_euclid(1.0);
+            let sun_up = time_of_day < crate::nea_natural_sky::SUN_TIME[0]
+                || time_of_day > crate::nea_natural_sky::SUN_TIME[1];
+            (
+                direction,
+                map.sun_color,
+                map.sky_left,
+                map.sky_right,
+                map.sky_top,
+                map.sky_bottom,
+                map.sky_front,
+                map.sky_back,
+                sun_up,
+            )
+        };
         let environment = Self {
-            sun_direction: map.sun_direction,
-            sun_color: map.sun_color.map(|c| c * MAP_SUN_SCALE),
-            sky_left: map.sky_left.map(|c| c * MAP_SKY_SCALE),
-            sky_right: map.sky_right.map(|c| c * MAP_SKY_SCALE),
-            sky_top: map.sky_top.map(|c| c * MAP_SKY_SCALE),
-            sky_bottom: map.sky_bottom.map(|c| c * MAP_SKY_SCALE),
-            sky_front: map.sky_front.map(|c| c * MAP_SKY_SCALE),
-            sky_back: map.sky_back.map(|c| c * MAP_SKY_SCALE),
+            sun_direction,
+            sun_color,
+            sky_left,
+            sky_right,
+            sky_top,
+            sky_bottom,
+            sky_front,
+            sky_back,
             global_light: if map.global_light < 0.0 {
                 DEFAULT_GLOBAL_LIGHT
             } else {
@@ -100,6 +136,7 @@ impl NeaEnvironment {
                 DEFAULT_GAMMA
             },
             exposure: 1.0,
+            sun_up,
         };
         Self {
             exposure: environment.target_exposure(1.0),
@@ -119,7 +156,7 @@ impl NeaEnvironment {
     pub fn apply_to_globals(&self, values: &mut [f32; GLOBALS_FLOATS]) {
         values[GLOBALS_LIGHT_GAMMA_OFFSET..GLOBALS_LIGHT_GAMMA_OFFSET + 3]
             .copy_from_slice(&self.sun_direction);
-        values[GLOBALS_LIGHT_GAMMA_OFFSET + 3] = DEFAULT_GAMMA;
+        values[GLOBALS_LIGHT_GAMMA_OFFSET + 3] = self.gamma;
         set_rgb(values, GLOBALS_LIGHT_COLOR_OFFSET, self.sun_color);
         values[GLOBALS_LIGHT_COLOR_OFFSET + 3] = self.global_light;
         set_rgb(values, GLOBALS_SKY_LEFT_OFFSET, self.sky_left);
@@ -152,6 +189,12 @@ impl NeaEnvironment {
             .fold(0.0_f32, f32::max);
         let direct = ambient * self.sun_color.iter().copied().fold(0.0_f32, f32::max);
         let indirect = (1.0 - ambient) * sky;
+        let (direct, indirect) = if self.sun_up {
+            (direct, indirect)
+        } else {
+            // Original module 51531 doubles both terms when sunUp is false.
+            (direct * 2.0, indirect * 2.0)
+        };
         // Preserved Player expression:
         //   (globalLight ? indirect * globalLight : 1)
         // A zero globalLight is not a zero contribution. Indoor maps use the
@@ -166,6 +209,78 @@ impl NeaEnvironment {
             + (1.0 - ambient) * (EMISSIVE_SCALE / 20.0) * indirect_exposure;
         1.0 / denominator.max(f32::MIN_POSITIVE)
     }
+}
+
+fn normalize_or_down(value: [f32; 3]) -> [f32; 3] {
+    let length = (value[0] * value[0] + value[1] * value[1] + value[2] * value[2]).sqrt();
+    if length > 1.0e-6 {
+        [value[0] / length, value[1] / length, value[2] / length]
+    } else {
+        [0.0, -1.0, 0.0]
+    }
+}
+
+fn natural_sky(
+    phase: f32,
+    frequency: f32,
+    tick_time: f32,
+) -> (
+    [f32; 3],
+    [f32; 3],
+    [f32; 3],
+    [f32; 3],
+    [f32; 3],
+    [f32; 3],
+    [f32; 3],
+    [f32; 3],
+    bool,
+) {
+    let p = (tick_time * frequency + phase).rem_euclid(1.0);
+    let angle = p * 2.0 * std::f32::consts::PI;
+    let mut direction = [angle.cos(), angle.sin(), 0.0];
+    let sun_up = p < crate::nea_natural_sky::SUN_TIME[0] || p > crate::nea_natural_sky::SUN_TIME[1];
+    if !sun_up {
+        direction = [-direction[0], -direction[1], -direction[2]];
+    }
+    direction[1] = direction[1].max(0.15);
+    direction[2] += 0.1;
+    direction = normalize_or_down(direction);
+    let sun_color = interpolate(&crate::nea_natural_sky::SUN_COLORS, p);
+    let sky_left = blend_sky(p, 0, sun_color);
+    let sky_right = blend_sky(p, 1, sun_color);
+    let sky_top = blend_sky(p, 2, sun_color);
+    let sky_bottom = blend_sky(p, 3, sun_color);
+    let sky_front = blend_sky(p, 4, sun_color);
+    (
+        direction, sun_color, sky_left, sky_right, sky_top, sky_bottom, sky_front, sky_front,
+        sun_up,
+    )
+}
+
+fn interpolate(table: &[[f32; 3]; 64], p: f32) -> [f32; 3] {
+    let scaled = p * table.len() as f32;
+    let index = scaled.floor() as usize % table.len();
+    let next = (index + 1) % table.len();
+    let t = scaled.fract();
+    [
+        table[index][0] + (table[next][0] - table[index][0]) * t,
+        table[index][1] + (table[next][1] - table[index][1]) * t,
+        table[index][2] + (table[next][2] - table[index][2]) * t,
+    ]
+}
+
+fn blend_sky(p: f32, direction: usize, sun_color: [f32; 3]) -> [f32; 3] {
+    let scaled = p * crate::nea_natural_sky::LIGHTMAP.len() as f32;
+    let index = scaled.floor() as usize % crate::nea_natural_sky::LIGHTMAP.len();
+    let next = (index + 1) % crate::nea_natural_sky::LIGHTMAP.len();
+    let t = scaled.fract();
+    let a = crate::nea_natural_sky::LIGHTMAP[index][direction];
+    let b = crate::nea_natural_sky::LIGHTMAP[next][direction];
+    [
+        (a[0] + (b[0] - a[0]) * t) * 0.5 + sun_color[0] * 0.5,
+        (a[1] + (b[1] - a[1]) * t) * 0.5 + sun_color[1] * 0.5,
+        (a[2] + (b[2] - a[2]) * t) * 0.5 + sun_color[2] * 0.5,
+    ]
 }
 
 pub fn recovered_default_globals(atlas_size: f32, tile_size: f32) -> [f32; GLOBALS_FLOATS] {
@@ -289,23 +404,22 @@ mod tests {
     }
 
     #[test]
-    fn backroom_dark_map_disables_sun_and_shadows() {
-        // Verbatim recovered Backroom fields: globalLight 0, black sky/sun,
-        // zero sun direction — the map must shade dark with no sun shadows.
+    fn backroom_natural_map_derives_external_sun() {
+        // Backroom stores zero raw sky/sun colors because skyType=0 is the
+        // Natural mode; module 18622 derives the actual light from phase.
         let map = MapEnvironment {
+            sun_phase: 0.75,
             global_light: 0.0,
             ..Default::default()
         };
         let environment = NeaEnvironment::from_map(&map);
-        assert!(!environment.sun_active());
+        assert!(environment.sun_active());
+        assert!(!environment.sun_up);
+        assert!(environment.sun_color[0] > 4.0);
+        assert!(environment.sky_front[0] > 2.0);
         assert!(environment.target_exposure(1.0).is_finite());
-        let sealed_room_exposure = environment.target_exposure(0.0);
-        assert!((sealed_room_exposure - (1.0 / 8.125)).abs() < 1.0e-6);
         let globals = environment_globals(512.0, 16.0, &environment, Some(&map));
-        assert_eq!(
-            &globals[GLOBALS_LIGHT_COLOR_OFFSET..GLOBALS_LIGHT_COLOR_OFFSET + 4],
-            &[0.0, 0.0, 0.0, 0.0]
-        );
+        assert!(globals[GLOBALS_LIGHT_COLOR_OFFSET] > 4.0);
         assert_eq!(
             &globals[GLOBALS_FOG_OFFSET..GLOBALS_FOG_OFFSET + 4],
             &[0.0, -128.0, 0.0, 0.0]
@@ -315,6 +429,7 @@ mod tests {
     #[test]
     fn lit_map_keeps_sun_active_and_maps_colors() {
         let map = MapEnvironment {
+            sky_type: 1,
             sun_direction: [0.5, 0.86, 0.1],
             sun_color: [1.0, 1.0, 1.0],
             sky_front: [0.5, 0.5, 0.5],
@@ -326,8 +441,8 @@ mod tests {
         let environment = NeaEnvironment::from_map(&map);
         assert!(environment.sun_active());
         let globals = environment_globals(512.0, 16.0, &environment, Some(&map));
-        assert!((globals[GLOBALS_LIGHT_COLOR_OFFSET] - MAP_SUN_SCALE).abs() < 1.0e-3);
-        assert!((globals[GLOBALS_SKY_FRONT_OFFSET] - 0.5 * MAP_SKY_SCALE).abs() < 1.0e-3);
+        assert!((globals[GLOBALS_LIGHT_COLOR_OFFSET] - 1.0).abs() < 1.0e-3);
+        assert!((globals[GLOBALS_SKY_FRONT_OFFSET] - 0.5).abs() < 1.0e-3);
         assert!((globals[GLOBALS_FOG_OFFSET] - 64.0).abs() < 1.0e-4);
         assert!((globals[GLOBALS_FOG_OFFSET + 3] - 0.01).abs() < 1.0e-4);
     }

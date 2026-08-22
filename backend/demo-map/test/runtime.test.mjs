@@ -1200,6 +1200,11 @@ test("game-net input honors recovered GamePlayer permission flags", async () => 
   player.enableJump = false;
   player.enableDoubleJump = false;
   player.enableCrouch = false;
+  assert.deepEqual(
+    (({ enableJump, enableDoubleJump, enableCrouch }) => ({ enableJump, enableDoubleJump, enableCrouch }))(runtime.snapshot().players[0]),
+    { enableJump: false, enableDoubleJump: false, enableCrouch: false },
+    "runtime snapshots preserve input permissions for the net-state bridge",
+  );
   assert.equal(runtime.dispatchInputEvents(player.id, { events: [{
     tick: 30, buttonState: 95, prevButtonState: 0, position: [0, 0, 0],
     rayTime: 1, rayOrigin: [0, 0, 0], rayDirection: [1, 0, 0],

@@ -24,6 +24,7 @@ mod nea_eye_ambient;
 mod nea_follow_camera;
 mod nea_interaction;
 mod nea_loading;
+mod nea_map;
 mod nea_nameplates;
 mod nea_prediction;
 mod nea_smoke;
@@ -2581,9 +2582,10 @@ fn render_game_frame(
         );
         surface_texture.present();
 
-        // 进入 InGame 后请求指针锁（必须在用户手势后；首次的"开始游戏"按钮点击算手势）
+        // Pointer lock can only be reacquired from a user gesture. The canvas
+        // click handler performs that request; never issue it from the render
+        // loop after ESC/dialog/pause transitions.
         if a.request_pointer_lock_next {
-            a.canvas.request_pointer_lock();
             a.request_pointer_lock_next = false;
         }
     }

@@ -52,6 +52,16 @@ interface ResolvedProjectAsset {
   path: string
 }
 
+function playerFlags(player: any): number {
+  let flags = 252 | (player?.canFly ? 2 : 0) | (player?.spectator ? 1 : 0)
+  // Missing fields retain the recovered defaults. Explicit false values are
+  // the only state that removes an input permission.
+  if (player?.enableJump === false) flags &= ~32
+  if (player?.enableCrouch === false) flags &= ~128
+  if (player?.enableDoubleJump === false) flags &= ~64
+  return flags
+}
+
 function buildRuntimeProjectAssetResolver(
   buildRoot: string,
   assets: ReadonlyArray<{ name?: unknown; path?: unknown }>,
@@ -171,6 +181,11 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   const projectAssets = buildRuntimeProjectAssetResolver(buildRoot, assetIndex.assets)
   const spawn = options.spawn ?? importedProject.manifest.world.spawn
   let staticEntitySceneJson: string | null = null
+  let staticEntityDiagnostics: { nativeBindings: number; nativeFailures: number; skipped: Array<{ mesh: string; reason: string }> } = {
+    nativeBindings: 0,
+    nativeFailures: 0,
+    skipped: [],
+  }
   const clientScriptModules = Object.fromEntries(
     importedProject.clientModules.map((module: { name: string; bytes: Uint8Array }) => [
       module.name,
@@ -267,6 +282,11 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         deliverClientEvent(playerId, { type: "nea-revive:entity-state", entityId, state })
       }
     },
+    destroyEntity: async (entityId: number) => {
+      for (const playerId of playerSessions.keys()) {
+        deliverClientEvent(playerId, { type: "nea-revive:entity-destroyed", entityId })
+      }
+    },
     writeDamageState: async (target: any, state: unknown, events: unknown) => {
       const event = { type: "nea-revive:damage-state", target, state, events }
       if (target?.playerId !== undefined) deliverClientEvent(String(target.playerId), event)
@@ -359,9 +379,10 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         freezedForwardDirection: player.freezedForwardDirection,
         enable3DCursor: player.enable3DCursor,
       })
-      // DAO3 玩家 flags：默认禁飞（252 = 254 & ~ALLOW_FLIGHT(2)），
-      // canFly→ALLOW_FLIGHT(2)，spectator→SPECTATOR(1)。
-      const flags = 252 | (player.canFly ? 2 : 0) | (player.spectator ? 1 : 0)
+      // DAO3 player flags are authoritative input permissions. Keep the
+      // recovered defaults, then clear permissions explicitly disabled by
+      // the server script (notably enableDoubleJump=false in Backroom).
+      const flags = playerFlags(player)
       try {
         const packet = encodeNetPublicPacket({
           tick,
@@ -466,12 +487,25 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
     }
     if (url.pathname === "/api/status") {
       response.writeHead(200, { "content-type": "application/json; charset=utf-8" })
-      response.end(JSON.stringify({ sessions: sessions.size, protocols: box3Protocols.map((p) => p.name), runtime: "nea-runtime-server" }))
+      response.end(JSON.stringify({
+        sessions: sessions.size,
+        protocols: box3Protocols.map((p) => p.name),
+        runtime: "nea-runtime-server",
+        assets: {
+          nativeBindings: staticEntityDiagnostics.nativeBindings,
+          nativeFailures: staticEntityDiagnostics.nativeFailures,
+          skipped: staticEntityDiagnostics.skipped,
+        },
+      }))
       return
     }
     if (url.pathname === "/api/map/entities") {
       try {
-        staticEntitySceneJson ??= JSON.stringify(buildStaticEntityScene(options.sourceRoot, importedProject.entities, options.assetRoot))
+        if (staticEntitySceneJson === null) {
+          const scene = buildStaticEntityScene(options.sourceRoot, importedProject.entities, options.assetRoot)
+          staticEntityDiagnostics = scene.diagnostics
+          staticEntitySceneJson = JSON.stringify(scene)
+        }
         const acceptsGzip = String(request.headers["accept-encoding"] ?? "").includes("gzip")
         if (acceptsGzip) {
           staticEntitySceneGzip ??= gzipSync(staticEntitySceneJson, { level: 6 })
@@ -526,7 +560,7 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
     // page origin, so expose the same engine/m/<sha256-base64url> contract.
     if (request.method === "GET" && url.pathname.startsWith("/engine/m/")) {
       const hash = url.pathname.slice("/engine/m/".length)
-      if (!/^[A-Za-z0-9_-]{43}$/.test(hash)) {
+      if (!/^[A-Za-z0-9_-]{42,43}$/.test(hash)) {
         response.writeHead(400); response.end("invalid content hash"); return
       }
       const assetPath = resolve(options.assetRoot, "engine", "m", hash)
@@ -544,7 +578,7 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
     // having to special-case the historical engine path.
     if (request.method === "GET" && url.pathname.startsWith("/api/mesh/")) {
       const hash = url.pathname.slice("/api/mesh/".length)
-      if (!/^[A-Za-z0-9_-]{43}$/.test(hash)) {
+      if (!/^[A-Za-z0-9_-]{42,43}$/.test(hash)) {
         response.writeHead(400); response.end("invalid mesh hash"); return
       }
       const meshPath = resolve(options.assetRoot, "engine", "m", hash)
@@ -561,7 +595,7 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
     }
     if (request.method === "GET" && url.pathname.startsWith("/api/mesh-decoded/")) {
       const hash = url.pathname.slice("/api/mesh-decoded/".length)
-      if (!/^[A-Za-z0-9_-]{43}$/.test(hash)) {
+      if (!/^[A-Za-z0-9_-]{42,43}$/.test(hash)) {
         response.writeHead(400); response.end("invalid mesh hash"); return
       }
       const meshPath = resolve(options.assetRoot, "engine", "m", hash)
@@ -789,6 +823,11 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
     }
 
     if (schema === gameNet) {
+      handlers.input = (client, data) => {
+        const playerId = sessions.get(client.sessionId)
+        if (!playerId) return
+        runtime.dispatchInputEvents(playerId, data)
+      }
       handlers.join = (client) => {
         const playerId = `p-${randomUUID().slice(0, 8)}`
         sessions.set(client.sessionId, playerId)
@@ -840,7 +879,12 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
               tick: 4,
               pauseCounter: 0,
               displays: [{ id: 1, name: sessionNames.get(client.sessionId) ?? "Player", avatarSkin: LOCAL_AVATAR_SKIN_PART_IDS }],
-              players: [{ id: 1, position: VIEW_SPAWN, flags: 252 }],
+              players: [{
+                id: 1,
+                position: VIEW_SPAWN,
+                // onPlayerJoin may already have changed permissions.
+                flags: playerFlags(runtime.snapshot().players.find((entry: any) => entry.id === playerId)),
+              }],
             })
             netClient.sendRaw(packet, false)
             log(`[session] sent net-state frame to ${client.sessionId}`)
@@ -1076,31 +1120,51 @@ function buildStaticEntityScene(sourceRoot: string, entities: readonly any[], as
     shininess: number
   }> = []
   const skipped: Array<{ mesh: string; reason: string }> = []
+  let nativeBindings = 0
+  let nativeFailures = 0
   for (const [sourceIndex, entity] of entities.entries()) {
     const mesh = String(entity.source?.mesh ?? entity.mesh ?? "")
     if (!mesh.endsWith(".vb")) continue
     const gltfName = mesh.slice(0, -3) + ".gltf"
     if (!meshes[mesh]) {
-      const meshAssetHash = resolveMeshAssetHash(sourceRoot, assetRoot, mesh, entity.source?.meshId ?? entity.meshId)
+      const binding = resolveMeshAssetBinding(sourceRoot, assetRoot, mesh, entity.source?.meshId ?? entity.meshId)
+      const meshAssetHash = binding.hash
+      if (meshAssetHash) nativeBindings++
+      else nativeFailures++
+      if (binding.reason && !skipped.some(entry => entry.mesh === mesh)) skipped.push({ mesh, reason: binding.reason })
       const gltfPath = resolve(sourceRoot, "assets", gltfName)
       if (!existsSync(gltfPath)) {
-        if (!skipped.some(entry => entry.mesh === mesh)) skipped.push({ mesh, reason: "missing glTF fallback" })
-        continue
-      }
-      try {
-      const metadata = meshAssetHash ? readMeshMetadata(assetRoot, meshAssetHash) : null
-      const decoded = readEmbeddedGltfMesh(gltfPath)
-      meshes[mesh] = {
-        positionsF32: encodeFloat32Base64(decoded.positions),
-        uvsF32: encodeFloat32Base64(decoded.uvs),
-        indicesU32: encodeUint32Base64(decoded.indices),
-        ...(decoded.texturePng ? { texturePngBase64: Buffer.from(decoded.texturePng).toString("base64") } : {}),
-        ...(meshAssetHash ? { meshAssetHash } : {}),
-        ...(metadata?.renderBoxOffset ? { renderBoxOffset: metadata.renderBoxOffset } : {}),
-      }
-      } catch (error) {
-        if (!skipped.some(entry => entry.mesh === mesh)) skipped.push({ mesh, reason: String(error) })
-        continue
+        // A successfully bound native .vb asset is authoritative and does
+        // not require a glTF sidecar. The browser fills decoded_geometry from
+        // /api/mesh-decoded/{hash}; only unbound meshes need the fallback.
+        if (!meshAssetHash) {
+          if (!skipped.some(entry => entry.mesh === mesh)) skipped.push({ mesh, reason: "missing glTF fallback" })
+          continue
+        }
+        const metadata = readMeshMetadata(assetRoot, meshAssetHash)
+        meshes[mesh] = {
+          positionsF32: "",
+          uvsF32: "",
+          indicesU32: "",
+          meshAssetHash,
+          ...(metadata?.renderBoxOffset ? { renderBoxOffset: metadata.renderBoxOffset } : {}),
+        }
+      } else {
+        try {
+          const metadata = meshAssetHash ? readMeshMetadata(assetRoot, meshAssetHash) : null
+          const decoded = readEmbeddedGltfMesh(gltfPath)
+          meshes[mesh] = {
+            positionsF32: encodeFloat32Base64(decoded.positions),
+            uvsF32: encodeFloat32Base64(decoded.uvs),
+            indicesU32: encodeUint32Base64(decoded.indices),
+            ...(decoded.texturePng ? { texturePngBase64: Buffer.from(decoded.texturePng).toString("base64") } : {}),
+            ...(meshAssetHash ? { meshAssetHash } : {}),
+            ...(metadata?.renderBoxOffset ? { renderBoxOffset: metadata.renderBoxOffset } : {}),
+          }
+        } catch (error) {
+          if (!skipped.some(entry => entry.mesh === mesh)) skipped.push({ mesh, reason: String(error) })
+          continue
+        }
       }
     }
     const entityScale = (entity.source?.scale ?? [1 / 64, 1 / 64, 1 / 64]).map(Number)
@@ -1145,7 +1209,7 @@ function buildStaticEntityScene(sourceRoot: string, entities: readonly any[], as
       shininess: Math.max(0, Number(entity.source?.shininess ?? 0)),
     })
   }
-  return { meshes, entities: instances, skipped }
+  return { meshes, entities: instances, skipped, diagnostics: { nativeBindings, nativeFailures, skipped } }
 }
 
 function encodeFloat32Base64(values: readonly number[]): string {
@@ -1176,19 +1240,26 @@ function readMeshMetadata(assetRoot: string, requestKey: string) {
   }
 }
 
-function resolveMeshAssetHash(sourceRoot: string, assetRoot: string, mesh: string, meshId: unknown) {
+function resolveMeshAssetBinding(sourceRoot: string, assetRoot: string, mesh: string, meshId: unknown) {
+  const failures: string[] = []
   const usable = (requestKey: string) => {
     const path = resolve(assetRoot, "engine", "m", requestKey)
-    if (!existsSync(path)) return false
+    if (!existsSync(path)) { failures.push(`${requestKey}: missing metadata`); return false }
     try {
       const bytes = readFileSync(path)
       const metadata = bytes[0] === 0x7b ? JSON.parse(bytes.toString("utf8")) : null
       const dataHash = typeof metadata?.dataHash === "string" ? metadata.dataHash : requestKey
       const binaryPath = resolve(assetRoot, "engine", "m", dataHash)
-      if (!existsSync(binaryPath) || !decodeMeshAssetTool) return false
-      decodeMeshAssetTool(new Uint8Array(readFileSync(binaryPath)))
+      if (!existsSync(binaryPath)) { failures.push(`${requestKey}: missing data ${dataHash}`); return false }
+      if (!decodeMeshAssetTool) { failures.push(`${requestKey}: decoder unavailable`); return false }
+      const decoded = decodeMeshAssetTool(new Uint8Array(readFileSync(binaryPath)))
+      if (!decoded || decoded.decodeError) {
+        failures.push(`${requestKey}: ${decoded?.decodeError ?? "decoder returned no result"}`)
+        return false
+      }
       return true
-    } catch {
+    } catch (error) {
+      failures.push(`${requestKey}: ${String(error)}`)
       return false
     }
   }
@@ -1198,7 +1269,7 @@ function resolveMeshAssetHash(sourceRoot: string, assetRoot: string, mesh: strin
       const bootstrap = JSON.parse(readFileSync(bootstrapPath, "utf8"))
       const binding = bootstrap.entities?.find((entry: any) => Number(entry.meshId) === Number(meshId) || entry.mesh === mesh)
       for (const requestKey of binding?.candidates ?? []) {
-        if (usable(requestKey)) return requestKey
+        if (usable(requestKey)) return { hash: requestKey }
       }
     } catch {}
   }
@@ -1206,7 +1277,7 @@ function resolveMeshAssetHash(sourceRoot: string, assetRoot: string, mesh: strin
   const metadataPath = resolve(assetRoot, "engine", "m", key)
   if (!existsSync(metadataPath)) {
     const catalogPath = resolve(sourceRoot, "assets", "models", "catalog.json")
-    if (!existsSync(catalogPath)) return undefined
+    if (!existsSync(catalogPath)) return { reason: "no catalog binding" }
     try {
       const catalog = JSON.parse(readFileSync(catalogPath, "utf8"))
       const entries = (Array.isArray(catalog) ? catalog : catalog.models ?? []).filter((item: any) =>
@@ -1214,16 +1285,17 @@ function resolveMeshAssetHash(sourceRoot: string, assetRoot: string, mesh: strin
       )
       for (const entry of entries) {
         const hash = entry?.modelFileHash
-        if (typeof hash === "string" && usable(hash)) return hash
+        if (typeof hash === "string" && usable(hash)) return { hash }
       }
     } catch {}
-    return undefined
+    return { reason: failures[0] ?? "no catalog binding" }
   }
   try {
     const value = JSON.parse(readFileSync(metadataPath, "utf8"))
-    return typeof value?.dataHash === "string" ? value.dataHash : undefined
+    if (typeof value?.dataHash === "string" && usable(value.dataHash)) return { hash: value.dataHash }
+    return { reason: failures[0] ?? "metadata has no dataHash" }
   } catch {
-    return undefined
+    return { reason: failures[0] ?? "invalid mesh metadata" }
   }
 }
 

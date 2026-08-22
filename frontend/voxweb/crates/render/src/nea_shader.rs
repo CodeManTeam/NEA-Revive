@@ -136,6 +136,19 @@ fn global_shade(value: f32) -> f32 {
   return value * (1.0 - globals.light_color_global.w) + globals.light_color_global.w;
 }
 
+// Indoor maps can legitimately store a zero sun direction together with a
+// black sun color. The native path effectively disables direct sunlight in
+// that case; never normalize the zero vector into NaNs that poison the whole
+// fragment color.
+fn safe_light_direction() -> vec3f {
+  let direction = globals.light_direction_gamma.xyz;
+  let length_squared = dot(direction, direction);
+  if (length_squared <= 0.00000001) {
+    return vec3f(0.0);
+  }
+  return direction / sqrt(length_squared);
+}
+
 fn aces_tone_map(color: vec3f) -> vec3f {
   let mapped = (color * (2.51 * color + vec3f(0.03))) /
     (color * (2.43 * color + vec3f(0.59)) + vec3f(0.14));
@@ -261,7 +274,7 @@ fn shade_surface(
   shadow: f32,
 ) -> vec3f {
   let n = normalize(normal);
-  let light = normalize(globals.light_direction_gamma.xyz);
+  let light = safe_light_direction();
   let normal_light = saturate(dot(n, light));
   let face_n = normalize(geometry_normal);
   let face_u = vec3f(face_n.y + face_n.z, 0.0, -face_n.x);
@@ -367,7 +380,7 @@ fn fs_main(in: VsOut) -> @location(0) vec4f {
   // The recovered WebGPU voxel pipeline only consumes material.b (emissive).
   // Metalness/smoothness and the bump atlas belong to the older WebGL path.
   let material = select(textureSample(material_atlas, material_sampler, tex_coord), vec4f(0.5, 0.5, 0.5, 1.0), globals.atlas_params.y < 2.0);
-  let normal_light = saturate(dot(face_normal, normalize(globals.light_direction_gamma.xyz)));
+  let normal_light = saturate(dot(face_normal, safe_light_direction()));
   let face_shadow = step(0.0, dot(face_normal, globals.light_direction_gamma.xyz));
   var shadow = face_shadow;
   if (shadow_data.enabled_splits.x > 0.0) {
