@@ -5,7 +5,7 @@
 //! Activated by `?nea=<createSessionUrl>` on the page; the default game
 //! path is untouched.
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::OnceLock;
@@ -39,6 +39,9 @@ use voxweb_physics::NeaPlayerPhysics;
 
 const COLOR_ATLAS_MIP_COUNT: usize = 10;
 const MATERIAL_ATLAS_MIP_COUNT: usize = 10;
+// Keep the browser console focused on lifecycle/errors by default. Enable
+// this temporarily when investigating movement or render-frame drift.
+const DEBUG_DIAGNOSTICS: bool = false;
 const BUMP_ATLAS_MIP_COUNT: usize = 12;
 const CHUNK_SIZE: usize = 16 * 256 * 16;
 const RECOVERED_WALK_CYCLE_TICKS: f32 = 13.45;
@@ -203,6 +206,27 @@ fn default_interact_radius() -> f32 {
 }
 fn default_entity_tint() -> [f32; 4] {
     [255.0, 255.0, 255.0, 255.0]
+}
+
+/// Return distance from the player to the nearest point of the rendered
+/// interaction volume. Static models often have a large bounds box or a
+/// model-space offset, so testing only the entity origin makes doors appear
+/// out of range while the player is visibly standing beside them.
+fn interaction_distance(entity: &StaticEntityInstance, player: [f32; 3]) -> f32 {
+    let center = [
+        entity.position[0] + entity.mesh_offset[0],
+        entity.position[1] + entity.mesh_offset[1],
+        entity.position[2] + entity.mesh_offset[2],
+    ];
+    let dx = center[0] - player[0];
+    let dy = center[1] - player[1];
+    let dz = center[2] - player[2];
+    let center_distance = (dx * dx + dy * dy + dz * dz).sqrt();
+    let radius = (entity.half_extents[0] * entity.half_extents[0]
+        + entity.half_extents[1] * entity.half_extents[1]
+        + entity.half_extents[2] * entity.half_extents[2])
+        .sqrt();
+    (center_distance - radius).max(0.0)
 }
 
 impl Default for AvatarRollState {
@@ -531,7 +555,19 @@ fn recovered_fluid_info(block: u16) -> Option<[f32; 4]> {
 /// JS-native logging (bypasses tracing-wasm so CDP reliably sees it).
 macro_rules! jslog {
     ($($arg:tt)*) => {
-        web_sys::console::log_1(&JsValue::from_str(&format!($($arg)*)))
+        {
+            let message = format!($($arg)*);
+            let lower = message.to_ascii_lowercase();
+            if DEBUG_DIAGNOSTICS
+                || lower.contains("failed")
+                || lower.contains("error")
+                || lower.contains("rejected")
+                || lower.contains("interact")
+                || lower.contains("socket")
+            {
+                web_sys::console::log_1(&JsValue::from_str(&message));
+            }
+        }
     };
 }
 
@@ -646,7 +682,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
         map_environment.sky_front[0]
     );
     let mut static_collision_bodies = build_static_entity_collision_bodies(&entity_scene);
-    let mut entity_scene_dirty = false;
+    let mut entity_instances_dirty = false;
     jslog!(
         "[nea] static entity scene: {} meshes {} instances",
         entity_scene.meshes.len(),
@@ -755,6 +791,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
     let mut pending_chunks: Vec<(u32, u32, u32)> = Vec::new();
     let mut near_count: usize = 0;
     let mut chunk_cells: Vec<(u32, u32, u32, Vec<u16>)> = Vec::new();
+    let mut full_map_built = false;
     // net-state: incremental base + decoded player body position
     let mut ns_base = voxweb_protocol::netstate::NetStateBase::default();
     let mut avatar_catalog = voxweb_protocol::AvatarCatalog::default();
@@ -794,6 +831,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
     let mut last_eye_ambient_ms = 0u32;
     let mut exposure_synchronized = false;
     let mut last_exposure_log_ms = 0u32;
+    let mut last_render_diag_ms = 0u32;
     // 8) driver loop: poll, advance state machine, decode chunk
     let deadline_ms = 45000u32;
     let start_ms = now_ms();
@@ -881,7 +919,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                         u32::from(d.player_id),
                                         now_ms(),
                                     );
-                                    if now_ms() - last_log_ms > 2000 {
+                                    if DEBUG_DIAGNOSTICS && now_ms() - last_log_ms > 2000 {
                                         jslog!(
                                             "[nea] other players: {}",
                                             remote_players
@@ -923,7 +961,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                             // independent player simulation.
                                             prediction_history.discard_echo_through(f.tick);
                                         }
-                                        if now_ms() - last_log_ms > 2000 {
+                                        if DEBUG_DIAGNOSTICS && now_ms() - last_log_ms > 2000 {
                                             jslog!(
                                                 "[nea] player body id={} pos=({:.1},{:.1},{:.1}) tick={}",
                                                 b.id,
@@ -983,11 +1021,15 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                 && let Some(dialog) = voxweb_protocol::decode_dialog_open(value)
                                 && let Ok(json) = serde_json::to_value(dialog)
                             {
+                                input.borrow_mut().clear_held();
                                 let event = serde_json::json!({"type":"nea-historical-dialog-open","dialog":json});
                                 let _ = crate::nea_client_runtime::receive_event(&event);
                             }
                         }
-                        if proto == "dialog" && (name == "cancelDialogs" || name == "cancelDialog")
+                        if proto == "dialog"
+                            && (name == "cancelDialogs"
+                                || name == "cancelDialog"
+                                || name == "close")
                         {
                             let event = serde_json::json!({"type":"nea-historical-dialog-cancel"});
                             let _ = crate::nea_client_runtime::receive_event(&event);
@@ -1088,11 +1130,6 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                             if let Some(value) = parsed_v.as_ref() {
                                 match voxweb_protocol::session::decode_remote_client_event(value) {
                                     Ok(event) => {
-                                        jslog!(
-                                            "[nea] remote client event tick={} event={}",
-                                            event.tick,
-                                            event.event
-                                        );
                                         if let Err(error) =
                                             crate::nea_client_runtime::receive_event(&event.event)
                                         {
@@ -1100,7 +1137,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                                 "[nea] client script event delivery failed: {error}"
                                             );
                                         }
-                                        entity_scene_dirty |= apply_entity_state_event(
+                                        entity_instances_dirty |= apply_entity_state_event(
                                             &event.event,
                                             &mut static_collision_bodies,
                                             &mut entity_scene,
@@ -1195,28 +1232,13 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                 let scy = (reset.origin[1] as u32 / 32).clamp(0, grid[1] - 1);
                                 let scz = (reset.origin[2] as u32 / 32).clamp(0, grid[2] - 1);
                                 if pending_chunks.is_empty() {
-                                    // 全图拉取（minecraft 8×8×4=256 chunks）：所有 xz × 全高。
-                                    // near（出生点周围 5×5×全高）排序在前，先渲染出生区域，
-                                    // 其余后台补全后重建全图。
-                                    let x1 = grid[0] - 1;
-                                    let z1 = grid[2] - 1;
-                                    let mut near = Vec::new();
-                                    let mut rest = Vec::new();
-                                    for cy in 0..grid[1] {
-                                        for cx in 0..=x1 {
-                                            for cz in 0..=z1 {
-                                                let entry = (cx, cy, cz);
-                                                if cx.abs_diff(scx) <= 2 && cz.abs_diff(scz) <= 2 {
-                                                    near.push(entry);
-                                                } else {
-                                                    rest.push(entry);
-                                                }
-                                            }
-                                        }
-                                    }
-                                    pending_chunks = near;
-                                    near_count = pending_chunks.len();
-                                    pending_chunks.extend(rest);
+                                    // Map-independent loader ordering: near
+                                    // chunks arrive first, while the rest can
+                                    // be cached without forcing a full rebuild.
+                                    let (planned, count) =
+                                        crate::nea_map::plan_chunks(grid, [scx, scy, scz]);
+                                    pending_chunks = planned;
+                                    near_count = count;
                                     jslog!(
                                         "[nea] fetch plan: {} chunks (full map, near={}, spawn chunk {},{},{})",
                                         pending_chunks.len(),
@@ -1249,7 +1271,10 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                             if let Some(value) = parsed_v.as_ref() {
                                 let runs = voxel_runs_from_value(value);
                                 if apply_world_voxel_runs(&mut chunk_cells, &runs) {
-                                    jslog!("[nea] applied voxelChange runs={}", runs.len());
+                                    jslog!(
+                                        "[nea][terrain] rebuild source=voxelChange runs={}",
+                                        runs.len()
+                                    );
                                     terrain = Some(RenderTerrain::build_chunks(
                                         &dc.device,
                                         &dc.queue,
@@ -1262,6 +1287,10 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                         dc.surface_format,
                                         width,
                                         height,
+                                        // Voxel sky visibility is independent of
+                                        // the map sun pass. Backroom has a black
+                                        // sun but still needs packed sky light.
+                                        true,
                                     ));
                                 }
                             }
@@ -1331,6 +1360,10 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                     let near_done = near_count > 0 && arrived >= near_count;
                                     if !pending_chunks.is_empty() && near_done {
                                         if terrain.is_none() {
+                                            jslog!(
+                                                "[nea][terrain] rebuild source=near-arrival chunks={}",
+                                                chunk_cells.len()
+                                            );
                                             terrain = Some(RenderTerrain::build_chunks(
                                                 &dc.device,
                                                 &dc.queue,
@@ -1343,6 +1376,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                                 dc.surface_format,
                                                 width,
                                                 height,
+                                                true,
                                             ));
                                             // place the player on the terrain
                                             // top (solid block with 4 AIR
@@ -1416,10 +1450,16 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                             );
                                             loading.set_status("地形渲染完成，进入世界…");
                                             loading.set_progress(0.98);
-                                        } else if arrived == pending_chunks.len() {
-                                            // 全图到达 → 重建补全其余区域（位置保持）
+                                        }
+                                        if arrived == pending_chunks.len()
+                                            && !full_map_built
+                                            && arrived > near_count
+                                        {
+                                            // The current Rust renderer owns one combined mesh;
+                                            // unlike dump's worker, late chunks cannot become
+                                            // visible without a final full-map build.
                                             jslog!(
-                                                "[nea] rebuilding full map terrain ({} chunks)",
+                                                "[nea][terrain] rebuild source=full-map chunks={}",
                                                 arrived
                                             );
                                             terrain = Some(RenderTerrain::build_chunks(
@@ -1434,7 +1474,9 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                                 dc.surface_format,
                                                 width,
                                                 height,
+                                                true,
                                             ));
+                                            full_map_built = true;
                                             loading.set_status("全图加载完成");
                                             loading.set_progress(1.0);
                                         }
@@ -1527,24 +1569,14 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 Err(error) => jslog!("[nea] recovered avatar load failed: {error}"),
             }
         }
-        // Entity-only maps and late model updates must rebuild even when the
-        // voxel chunk set is empty; otherwise model visibility/transform
-        // changes remain trapped in the scene JSON and never reach WebGPU.
-        if entity_scene_dirty {
-            terrain = Some(RenderTerrain::build_chunks(
-                &dc.device,
-                &dc.queue,
-                &atlas,
-                &material_atlas,
-                &bump_atlas,
-                &water_bump,
-                &chunk_cells,
-                &entity_scene,
-                dc.surface_format,
-                width,
-                height,
-            ));
-            entity_scene_dirty = false;
+        // Entity state arrives every simulation tick. Refresh only the
+        // instanced model buffers; rebuilding terrain here used to re-run the
+        // full-map light pass and recreate every pipeline on every tick.
+        if entity_instances_dirty {
+            if let Some(render_terrain) = terrain.as_mut() {
+                render_terrain.update_entity_instances(&dc.device, &dc.queue, &entity_scene);
+            }
+            entity_instances_dirty = false;
         }
         // Render once per browser animation frame. Network polling, physics,
         // and presentation share the display cadence instead of busy-spinning
@@ -1568,10 +1600,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 .iter()
                 .filter(|entity| entity.enable_interact)
                 .filter_map(|entity| {
-                    let dx = entity.position[0] - local_pos[0];
-                    let dy = entity.position[1] - local_pos[1];
-                    let dz = entity.position[2] - local_pos[2];
-                    let distance = (dx * dx + dy * dy + dz * dz).sqrt();
+                    let distance = interaction_distance(entity, local_pos);
                     (distance <= entity.interact_radius.max(0.0))
                         .then_some((distance, entity.interact_hint.as_str()))
                 })
@@ -1585,10 +1614,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     .iter()
                     .filter(|entity| entity.enable_interact)
                     .filter_map(|entity| {
-                        let dx = entity.position[0] - local_pos[0];
-                        let dy = entity.position[1] - local_pos[1];
-                        let dz = entity.position[2] - local_pos[2];
-                        let distance = (dx * dx + dy * dy + dz * dz).sqrt();
+                        let distance = interaction_distance(entity, local_pos);
                         (distance <= entity.interact_radius.max(0.0)).then_some((distance, entity))
                     })
                     .min_by(|left, right| left.0.total_cmp(&right.0));
@@ -1671,7 +1697,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
             local_pos = physics.position;
             local_vel = physics.velocity;
             player_pos = Some(physics.position);
-            if now_ms() - last_log_ms > 2000 {
+            if DEBUG_DIAGNOSTICS && now_ms() - last_log_ms > 2000 {
                 last_log_ms = now_ms();
                 let foot = block_voxel_at(
                     &chunk_cells,
@@ -1763,7 +1789,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                         },
                     );
                     unsubmitted_jump_edge = false;
-                    if now_ms() - last_log_ms > 2000 {
+                    if DEBUG_DIAGNOSTICS && now_ms() - last_log_ms > 2000 {
                         jslog!(
                             "[nea] input state={:04x} angle={} cam={} pitch={} pressed={} tick={} pos=({:.1},{:.1},{:.1})",
                             state,
@@ -1875,22 +1901,14 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     environment.sun_direction[0],
                     environment.sun_direction[1],
                     environment.sun_direction[2],
-                    if map_environment.sky_front == [0.0; 3]
-                        && map_environment.sky_back == [0.0; 3]
-                        && map_environment.sky_left == [0.0; 3]
-                        && map_environment.sky_right == [0.0; 3]
-                        && map_environment.sky_top == [0.0; 3]
-                        && map_environment.sky_bottom == [0.0; 3]
-                    {
-                        -1.0
-                    } else {
-                        4.0 / 24.0
-                    },
+                    // Raw sky colors are zero in Natural mode by design;
+                    // use the derived phase so the skybox is not disabled.
+                    map_environment.sun_phase,
                 ],
                 fog_color: [
-                    environment.sky_front[0] / 255.0,
-                    environment.sky_front[1] / 255.0,
-                    environment.sky_front[2] / 255.0,
+                    environment.sky_front[0].clamp(0.0, 1.0),
+                    environment.sky_front[1].clamp(0.0, 1.0),
+                    environment.sky_front[2].clamp(0.0, 1.0),
                     1.0,
                 ],
             };
@@ -2044,6 +2062,8 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 &environment,
                 Some(&map_environment),
             );
+            let mut visible_terrain_batches = 0usize;
+            let mut visible_terrain_indices = 0u64;
             {
                 let mut sky_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                     label: Some("nea.skybox"),
@@ -2089,19 +2109,36 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     occlusion_query_set: None,
                     multiview_mask: None,
                 });
-                let inp_debug_view = input.borrow().debug_view;
-                for terrain_pipeline in &t.terrain_pipelines {
-                    terrain_pipeline.set_camera(
-                        &dc.queue,
-                        &mvp,
-                        &eye,
-                        eye_fluid,
-                        exposure,
-                        inp_debug_view,
-                        &environment,
-                        Some(&map_environment),
-                    );
-                    terrain_pipeline.draw(&mut pass);
+                // Diagnostic views are intentionally unreachable in the
+                // normal build. This also clears any stale in-memory value
+                // after a hot reload or an older tab toggled F1.
+                let inp_debug_view = if DEBUG_DIAGNOSTICS {
+                    input.borrow().debug_view
+                } else {
+                    0.0
+                };
+                let hide_terrain = page_flag("hideTerrain");
+                if !hide_terrain {
+                    for (batch_index, terrain_pipeline) in t.terrain_pipelines.iter().enumerate() {
+                        if let Some(bounds) = t.terrain_bounds.get(batch_index)
+                            && !aabb_visible(&mvp, bounds)
+                        {
+                            continue;
+                        }
+                        visible_terrain_batches += 1;
+                        visible_terrain_indices += u64::from(terrain_pipeline.index_count);
+                        terrain_pipeline.set_camera(
+                            &dc.queue,
+                            &mvp,
+                            &eye,
+                            eye_fluid,
+                            exposure,
+                            inp_debug_view,
+                            &environment,
+                            Some(&map_environment),
+                        );
+                        terrain_pipeline.draw(&mut pass);
+                    }
                 }
                 if !page_flag("hideEntities") {
                     for entity_pipeline in &t.entity_pipelines {
@@ -2136,8 +2173,12 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 // F4（Shadow debug）下跳过透明面（流体/玻璃），用于隔离
                 // "图层盖在人物之上"是否来自透明渲染。
                 if (inp_debug_view as i32) != 4 {
-                    t.alpha_pipeline.draw(&mut pass, t.fluid_pipeline.oit());
-                    t.fluid_pipeline.draw(&mut pass);
+                    if !page_flag("hideAlpha") {
+                        t.alpha_pipeline.draw(&mut pass, t.fluid_pipeline.oit());
+                    }
+                    if !page_flag("hideFluid") {
+                        t.fluid_pipeline.draw(&mut pass);
+                    }
                 }
             }
             t.fluid_pipeline.resolve(&mut encoder, &view, &depth_view);
@@ -2148,13 +2189,33 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 loading_finished = true;
                 loading.finish();
             }
-            if now_ms() - last_log_ms > 2000 {
+            if DEBUG_DIAGNOSTICS && now_ms() - last_log_ms > 2000 {
                 jslog!(
                     "[nea] rendering tick={} playerId={} fps~60",
                     driver.borrow().last_server_tick,
                     driver.borrow().player_id
                 );
                 last_log_ms = now_ms();
+            }
+            if DEBUG_DIAGNOSTICS && now_ms() - last_render_diag_ms > 2000 {
+                jslog!(
+                    "[nea][render] eye=({:.1},{:.1},{:.1}) player=({:.1},{:.1},{:.1}) firstPerson={} eyeBlock={} terrainVisible={}/{} idx={} flags=terrain:{} alpha:{} fluid:{}",
+                    eye[0],
+                    eye[1],
+                    eye[2],
+                    player_pos.map_or(0.0, |p| p[0]),
+                    player_pos.map_or(0.0, |p| p[1]),
+                    player_pos.map_or(0.0, |p| p[2]),
+                    first_person,
+                    eye_block,
+                    visible_terrain_batches,
+                    t.terrain_pipelines.len(),
+                    visible_terrain_indices,
+                    !page_flag("hideTerrain"),
+                    !page_flag("hideAlpha"),
+                    !page_flag("hideFluid"),
+                );
+                last_render_diag_ms = now_ms();
             }
         }
         if let SessionStage::Failed(e) = driver.borrow().stage.clone() {
@@ -2170,12 +2231,16 @@ struct RenderTerrain {
     #[allow(dead_code)]
     mesh: MeshBuffers,
     terrain_pipelines: Vec<NeaTerrainPipeline>,
+    terrain_bounds: Vec<([f32; 3], [f32; 3])>,
     entity_pipelines: Vec<voxweb_render::nea_entity::NeaEntityPipeline>,
+    entity_keys: Vec<String>,
+    entity_pipeline_keys: Vec<String>,
     #[allow(dead_code)]
     entity_textures: Vec<voxweb_render::nea_atlas::AtlasTexture>,
     alpha_pipeline: NeaAlphaPipeline,
     fluid_pipeline: NeaFluidPipeline,
     voxel_light: StaticVoxelLight,
+    light_chunks: HashMap<(u32, u32, u32), Vec<u16>>,
     shadow_map: voxweb_render::nea_shadow::NeaShadowMap,
 }
 
@@ -2219,6 +2284,59 @@ fn split_mesh_batches(mesh: MeshBuffers, max_vertex_floats: usize) -> Vec<MeshBu
     batches
 }
 
+fn mesh_bounds(mesh: &MeshBuffers) -> ([f32; 3], [f32; 3]) {
+    let mut min = [f32::INFINITY; 3];
+    let mut max = [f32::NEG_INFINITY; 3];
+    for vertex in mesh.vertices.chunks_exact(FLOATS_PER_VERTEX) {
+        for axis in 0..3 {
+            min[axis] = min[axis].min(vertex[axis]);
+            max[axis] = max[axis].max(vertex[axis]);
+        }
+    }
+    if !min.iter().all(|value| value.is_finite()) || !max.iter().all(|value| value.is_finite()) {
+        ([0.0; 3], [0.0; 3])
+    } else {
+        (min, max)
+    }
+}
+
+fn aabb_visible(mvp: &[f32; 16], bounds: &([f32; 3], [f32; 3])) -> bool {
+    let (min, max) = bounds;
+    let corners = [
+        [min[0], min[1], min[2]],
+        [max[0], min[1], min[2]],
+        [min[0], max[1], min[2]],
+        [max[0], max[1], min[2]],
+        [min[0], min[1], max[2]],
+        [max[0], min[1], max[2]],
+        [min[0], max[1], max[2]],
+        [max[0], max[1], max[2]],
+    ];
+    let clip = |p: [f32; 3]| {
+        [
+            mvp[0] * p[0] + mvp[4] * p[1] + mvp[8] * p[2] + mvp[12],
+            mvp[1] * p[0] + mvp[5] * p[1] + mvp[9] * p[2] + mvp[13],
+            mvp[2] * p[0] + mvp[6] * p[1] + mvp[10] * p[2] + mvp[14],
+            mvp[3] * p[0] + mvp[7] * p[1] + mvp[11] * p[2] + mvp[15],
+        ]
+    };
+    let points = corners.map(clip);
+    for plane in 0..6 {
+        let outside = points.iter().all(|p| match plane {
+            0 => p[0] < -p[3],
+            1 => p[0] > p[3],
+            2 => p[1] < -p[3],
+            3 => p[1] > p[3],
+            4 => p[2] < 0.0,
+            _ => p[2] > p[3],
+        });
+        if outside {
+            return false;
+        }
+    }
+    true
+}
+
 async fn fetch_static_entity_scene(url: &str) -> Result<StaticEntityScene, JsValue> {
     let bytes = fetch_bytes(url).await?;
     let mut scene: StaticEntityScene = serde_json::from_slice(&bytes)
@@ -2255,14 +2373,24 @@ fn decode_base64_bytes(encoded: &str) -> Result<Vec<u8>, JsValue> {
 
 fn decode_base64_f32(encoded: &str) -> Result<Vec<f32>, JsValue> {
     let bytes = decode_base64_bytes(encoded)?;
-    if bytes.len() % 4 != 0 { return Err(JsValue::from_str("packed f32 mesh field is misaligned")); }
-    Ok(bytes.chunks_exact(4).map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]])).collect())
+    if bytes.len() % 4 != 0 {
+        return Err(JsValue::from_str("packed f32 mesh field is misaligned"));
+    }
+    Ok(bytes
+        .chunks_exact(4)
+        .map(|b| f32::from_le_bytes([b[0], b[1], b[2], b[3]]))
+        .collect())
 }
 
 fn decode_base64_u32(encoded: &str) -> Result<Vec<u32>, JsValue> {
     let bytes = decode_base64_bytes(encoded)?;
-    if bytes.len() % 4 != 0 { return Err(JsValue::from_str("packed u32 mesh field is misaligned")); }
-    Ok(bytes.chunks_exact(4).map(|b| u32::from_le_bytes([b[0], b[1], b[2], b[3]])).collect())
+    if bytes.len() % 4 != 0 {
+        return Err(JsValue::from_str("packed u32 mesh field is misaligned"));
+    }
+    Ok(bytes
+        .chunks_exact(4)
+        .map(|b| u32::from_le_bytes([b[0], b[1], b[2], b[3]]))
+        .collect())
 }
 
 /// Fetch the map's recovered DAO3 environment fields. Any failure (missing
@@ -2284,6 +2412,15 @@ async fn fetch_map_environment(url: &str) -> voxweb_render::nea_environment::Map
     let sky = value.get("sky").cloned().unwrap_or_default();
     let fog = value.get("fog").cloned().unwrap_or_default();
     MapEnvironment {
+        sky_type: sky.get("skyType").and_then(|v| v.as_u64()).unwrap_or(0) as u8,
+        sun_phase: sky
+            .get("sunPhase")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(4.0 / 24.0) as f32,
+        sun_frequency: sky
+            .get("sunFrequency")
+            .and_then(|v| v.as_f64())
+            .unwrap_or(0.0) as f32,
         sun_direction: json_vec3_value(sky.get("sunDirection")).unwrap_or([0.0; 3]),
         sun_color: json_color_value(sky.get("sunColor")).unwrap_or([0.0; 3]),
         sky_left: json_color_value(sky.get("skyLeft")).unwrap_or([0.0; 3]),
@@ -2322,6 +2459,9 @@ async fn fetch_map_environment(url: &str) -> voxweb_render::nea_environment::Map
 fn default_map_environment() -> voxweb_render::nea_environment::MapEnvironment {
     use voxweb_render::nea_environment::MapEnvironment;
     MapEnvironment {
+        sky_type: 0,
+        sun_phase: 4.0 / 24.0,
+        sun_frequency: 0.0,
         sun_direction: [0.4975186, 0.8617275, 0.09950372],
         sun_color: [1.0, 1.0, 1.0],
         sky_left: [0.74, 0.88, 1.0],
@@ -2339,14 +2479,22 @@ fn default_map_environment() -> voxweb_render::nea_environment::MapEnvironment {
 }
 
 fn json_vec3_value(value: Option<&serde_json::Value>) -> Option<[f32; 3]> {
-    let values = value?.as_array()?;
-    (values.len() >= 3).then(|| {
-        [
-            values.first().and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
-            values.get(1).and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
-            values.get(2).and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
-        ]
-    })
+    let value = value?;
+    if let Some(values) = value.as_array() {
+        return (values.len() >= 3).then(|| {
+            [
+                values.first().and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
+                values.get(1).and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
+                values.get(2).and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
+            ]
+        });
+    }
+    let object = value.as_object()?;
+    Some([
+        object.get("x").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
+        object.get("y").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
+        object.get("z").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32,
+    ])
 }
 
 fn json_color_value(value: Option<&serde_json::Value>) -> Option<[f32; 3]> {
@@ -2396,93 +2544,121 @@ async fn prefetch_entity_mesh_assets(origin: &str, scene: &mut StaticEntityScene
         .values()
         .filter_map(|mesh| mesh.mesh_asset_hash.clone())
         .collect::<Vec<_>>();
-    for hash in hashes {
-        if !seen.insert(hash.clone()) {
-            continue;
+    let hashes = hashes
+        .into_iter()
+        .filter(|hash| seen.insert(hash.clone()))
+        .collect::<Vec<_>>();
+    // Decode requests are independent. Keep a small bounded batch in flight
+    // so 160+ models do not serialize network latency or flood the browser.
+    for batch in hashes.chunks(8) {
+        let mut pending = Vec::with_capacity(batch.len());
+        for hash in batch {
+            let hash = hash.clone();
+            let url = format!("{origin}/api/mesh-decoded/{hash}");
+            let (sender, receiver) = futures_channel::oneshot::channel();
+            wasm_bindgen_futures::spawn_local(async move {
+                let _ = sender.send(fetch_bytes(&url).await);
+            });
+            pending.push((hash, receiver));
         }
-        match fetch_bytes(&format!("{origin}/api/mesh-decoded/{hash}")).await {
-            Ok(bytes) => match serde_json::from_slice::<serde_json::Value>(&bytes) {
-                Ok(value) => {
-                    let format = value
-                        .get("format")
-                        .and_then(|v| v.as_str())
-                        .unwrap_or("unknown");
-                    let version = value.get("version").and_then(|v| v.as_u64()).unwrap_or(0);
-                    let texture = value
-                        .get("texture")
-                        .and_then(|v| v.get("width"))
-                        .and_then(|v| v.as_u64())
-                        .unwrap_or(0);
-                    jslog!(
-                        "[nea] decoded mesh ready: {hash} format={format} v{version} texture={texture}px"
-                    );
-                    if let Ok(payload) = serde_json::from_value::<DecodedMeshPayload>(value) {
-                        if let Some(texture) = payload.texture.as_ref() {
-                            if let Some(target) = scene
-                                .meshes
-                                .values_mut()
-                                .find(|entry| entry.mesh_asset_hash.as_deref() == Some(&hash))
-                            {
-                                target.texture_width = texture.width;
-                                target.texture_height = texture.height;
-                                target.texture_rgba = texture.rgba.clone();
-                            }
-                        }
-                        for mesh in payload.meshes {
-                            let faces = mesh
-                                .into_iter()
-                                .map(|face| voxweb_protocol::AvatarFace {
-                                    sizes: face.sizes,
-                                    uv_flags: face.uv_flags,
-                                    uvs: face.uvs,
-                                    vertices: face.vertices,
-                                })
-                                .collect::<Vec<_>>();
-                            if let Ok(model) = voxweb_render::avatar_mesh::build_avatar_part_mesh(
-                                &voxweb_protocol::AvatarPart {
-                                    part_id: 0,
-                                    bind_matrix: [0.0; 16],
-                                    faces,
-                                    texture: voxweb_protocol::AvatarTexture {
-                                        width: 0,
-                                        data: Vec::new(),
-                                        palette: Vec::new(),
-                                    },
-                                },
-                            ) {
-                                jslog!(
-                                    "[nea] decoded mesh quads={} vertices={}",
-                                    model.quad_count,
-                                    model.buffers.vertices.len()
-                                        / voxweb_render::nea_mesh::FLOATS_PER_VERTEX
-                                );
+        for (hash, receiver) in pending {
+            match receiver
+                .await
+                .unwrap_or_else(|_| Err(JsValue::from_str("mesh request cancelled")))
+            {
+                Ok(bytes) => match serde_json::from_slice::<serde_json::Value>(&bytes) {
+                    Ok(value) => {
+                        let format = value
+                            .get("format")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("unknown");
+                        let version = value.get("version").and_then(|v| v.as_u64()).unwrap_or(0);
+                        let texture = value
+                            .get("texture")
+                            .and_then(|v| v.get("width"))
+                            .and_then(|v| v.as_u64())
+                            .unwrap_or(0);
+                        jslog!(
+                            "[nea] decoded mesh ready: {hash} format={format} v{version} texture={texture}px"
+                        );
+                        if let Ok(payload) = serde_json::from_value::<DecodedMeshPayload>(value) {
+                            if let Some(texture) = payload.texture.as_ref() {
                                 if let Some(target) = scene
                                     .meshes
                                     .values_mut()
                                     .find(|entry| entry.mesh_asset_hash.as_deref() == Some(&hash))
                                 {
-                                    let geometry =
-                                        target.decoded_geometry.get_or_insert_with(|| {
-                                            (Vec::new(), Vec::new(), Vec::new())
-                                        });
-                                    let base = (geometry.0.len() / 3) as u32;
-                                    for vertex in
-                                        model.buffers.vertices.chunks_exact(FLOATS_PER_VERTEX)
-                                    {
-                                        geometry.0.extend_from_slice(&vertex[0..3]);
-                                        geometry.1.extend_from_slice(&vertex[6..8]);
-                                    }
-                                    geometry.2.extend(
-                                        model.buffers.indices.iter().map(|index| index + base),
+                                    target.texture_width = texture.width;
+                                    target.texture_height = texture.height;
+                                    target.texture_rgba = texture.rgba.clone();
+                                }
+                            }
+                            let texture_size = payload
+                                .texture
+                                .as_ref()
+                                .filter(|texture| texture.width > 0 && texture.height > 0)
+                                .map(|texture| (texture.width as f32, texture.height as f32));
+                            for mesh in payload.meshes {
+                                let faces = mesh
+                                    .into_iter()
+                                    .map(|face| voxweb_protocol::AvatarFace {
+                                        sizes: face.sizes,
+                                        uv_flags: face.uv_flags,
+                                        uvs: face.uvs,
+                                        vertices: face.vertices,
+                                    })
+                                    .collect::<Vec<_>>();
+                                if let Ok(model) =
+                                    voxweb_render::avatar_mesh::build_avatar_part_mesh(
+                                        &voxweb_protocol::AvatarPart {
+                                            part_id: 0,
+                                            bind_matrix: [0.0; 16],
+                                            faces,
+                                            texture: voxweb_protocol::AvatarTexture {
+                                                width: 0,
+                                                data: Vec::new(),
+                                                palette: Vec::new(),
+                                            },
+                                        },
+                                    )
+                                {
+                                    jslog!(
+                                        "[nea] decoded mesh quads={} vertices={}",
+                                        model.quad_count,
+                                        model.buffers.vertices.len()
+                                            / voxweb_render::nea_mesh::FLOATS_PER_VERTEX
                                     );
+                                    if let Some(target) = scene.meshes.values_mut().find(|entry| {
+                                        entry.mesh_asset_hash.as_deref() == Some(&hash)
+                                    }) {
+                                        let geometry =
+                                            target.decoded_geometry.get_or_insert_with(|| {
+                                                (Vec::new(), Vec::new(), Vec::new())
+                                            });
+                                        let base = (geometry.0.len() / 3) as u32;
+                                        for vertex in
+                                            model.buffers.vertices.chunks_exact(FLOATS_PER_VERTEX)
+                                        {
+                                            geometry.0.extend_from_slice(&vertex[0..3]);
+                                            let uv = if let Some((width, height)) = texture_size {
+                                                [vertex[6] / width, vertex[7] / height]
+                                            } else {
+                                                [vertex[6], vertex[7]]
+                                            };
+                                            geometry.1.extend_from_slice(&uv);
+                                        }
+                                        geometry.2.extend(
+                                            model.buffers.indices.iter().map(|index| index + base),
+                                        );
+                                    }
                                 }
                             }
                         }
                     }
-                }
-                Err(error) => jslog!("[nea] decoded mesh JSON invalid: {hash}: {error}"),
-            },
-            Err(error) => jslog!("[nea] mesh asset fetch failed: {hash}: {:?}", error),
+                    Err(error) => jslog!("[nea] decoded mesh JSON invalid: {hash}: {error}"),
+                },
+                Err(error) => jslog!("[nea] mesh asset fetch failed: {hash}: {:?}", error),
+            }
         }
     }
 }
@@ -2600,6 +2776,7 @@ fn build_static_entity_instances(
     scene: &StaticEntityScene,
     mesh_key: &str,
     voxel_light: &StaticVoxelLight,
+    light_chunks: &HashMap<(u32, u32, u32), Vec<u16>>,
 ) -> Option<(
     Vec<voxweb_render::nea_entity::EntityVertex>,
     Vec<u32>,
@@ -2609,17 +2786,44 @@ fn build_static_entity_instances(
     let (positions, uvs, indices) = mesh
         .decoded_geometry
         .as_ref()
-        .map(|(positions, uvs, indices)| {
-            (positions.as_slice(), uvs.as_slice(), indices.as_slice())
-        })
+        .map(|(positions, uvs, indices)| (positions.as_slice(), uvs.as_slice(), indices.as_slice()))
         .unwrap_or((&mesh.positions, &mesh.uvs, &mesh.indices));
     let vertex_count = positions.len() / 3;
     if vertex_count == 0 || indices.is_empty() {
         return None;
     }
+    if positions.iter().any(|value| !value.is_finite()) {
+        jslog!(
+            "[nea][entity] skipped mesh={} because positions contain non-finite values",
+            mesh_key
+        );
+        return None;
+    }
+    // Do not upload malformed triangles. An out-of-range index can render as
+    // a giant fan on some WebGPU adapters instead of failing gracefully.
+    let safe_indices = indices
+        .chunks_exact(3)
+        .filter(|triangle| {
+            triangle
+                .iter()
+                .all(|index| (*index as usize) < vertex_count)
+        })
+        .flat_map(|triangle| triangle.iter().copied())
+        .collect::<Vec<_>>();
+    if safe_indices.is_empty() {
+        jslog!(
+            "[nea][entity] skipped mesh={} because no valid triangles remain",
+            mesh_key
+        );
+        return None;
+    }
     let mut normals = vec![glam::Vec3::ZERO; vertex_count];
-    for triangle in indices.chunks_exact(3) {
-        let (a, b, c) = (triangle[0] as usize, triangle[1] as usize, triangle[2] as usize);
+    for triangle in safe_indices.chunks_exact(3) {
+        let (a, b, c) = (
+            triangle[0] as usize,
+            triangle[1] as usize,
+            triangle[2] as usize,
+        );
         if a >= vertex_count || b >= vertex_count || c >= vertex_count {
             continue;
         }
@@ -2633,25 +2837,124 @@ fn build_static_entity_instances(
     }
     let vertices = (0..vertex_count)
         .map(|index| voxweb_render::nea_entity::EntityVertex {
-            position: [positions[index * 3], positions[index * 3 + 1], positions[index * 3 + 2]],
+            position: [
+                positions[index * 3],
+                positions[index * 3 + 1],
+                positions[index * 3 + 2],
+            ],
             normal: normals[index].normalize_or_zero().to_array(),
-            uv: [uvs.get(index * 2).copied().unwrap_or(0.0), uvs.get(index * 2 + 1).copied().unwrap_or(0.0)],
+            uv: [
+                uvs.get(index * 2).copied().unwrap_or(0.0),
+                uvs.get(index * 2 + 1).copied().unwrap_or(0.0),
+            ],
         })
         .collect::<Vec<_>>();
-    let instances = scene.entities.iter().filter(|instance| instance.visible && instance.mesh == mesh_key)
+    let mut local_lo = [f32::INFINITY; 3];
+    let mut local_hi = [f32::NEG_INFINITY; 3];
+    for position in positions.chunks_exact(3) {
+        for axis in 0..3 {
+            local_lo[axis] = local_lo[axis].min(position[axis]);
+            local_hi[axis] = local_hi[axis].max(position[axis]);
+        }
+    }
+    if !local_lo.iter().all(|value| value.is_finite())
+        || !local_hi.iter().all(|value| value.is_finite())
+    {
+        return None;
+    }
+    let instances = scene
+        .entities
+        .iter()
+        .filter(|instance| instance.visible && instance.mesh == mesh_key)
         .map(|instance| {
-            let rotation = glam::Quat::from_xyzw(instance.rotation[0], instance.rotation[1], instance.rotation[2], instance.rotation[3]).normalize();
-            let translation = glam::Vec3::from_array(instance.position) + rotation * glam::Vec3::from_array(instance.mesh_offset);
-            let model = glam::Mat4::from_scale_rotation_translation(glam::Vec3::from_array(instance.scale), rotation, translation);
-            let tint_scale = if instance.tint.iter().any(|value| *value > 1.0) { 1.0 / 255.0 } else { 1.0 };
+            let rotation = glam::Quat::from_xyzw(
+                instance.rotation[0],
+                instance.rotation[1],
+                instance.rotation[2],
+                instance.rotation[3],
+            )
+            .normalize();
+            let translation = glam::Vec3::from_array(instance.position)
+                + rotation * glam::Vec3::from_array(instance.mesh_offset);
+            let model = glam::Mat4::from_scale_rotation_translation(
+                glam::Vec3::from_array(instance.scale),
+                rotation,
+                translation,
+            );
+            let tint_scale = if instance.tint.iter().any(|value| *value > 1.0) {
+                1.0 / 255.0
+            } else {
+                1.0
+            };
+            let corners = [
+                [local_lo[0], local_lo[1], local_lo[2]],
+                [local_hi[0], local_lo[1], local_lo[2]],
+                [local_lo[0], local_hi[1], local_lo[2]],
+                [local_hi[0], local_hi[1], local_lo[2]],
+                [local_lo[0], local_lo[1], local_hi[2]],
+                [local_hi[0], local_lo[1], local_hi[2]],
+                [local_lo[0], local_hi[1], local_hi[2]],
+                [local_hi[0], local_hi[1], local_hi[2]],
+            ];
+            // The recovered client contracts each probe 5% toward the model
+            // center before querying LightEngine.sampleLight. This avoids
+            // probing exactly on a model wall and is part of the native
+            // updateLightmap path (j=.95, H=(1-j)/8).
+            let center = glam::Vec3::from_array(local_lo)
+                + (glam::Vec3::from_array(local_hi) - glam::Vec3::from_array(local_lo)) * 0.5;
+            let ambient = corners.map(|corner| {
+                let local = center + (glam::Vec3::from_array(corner) - center) * 0.95;
+                let world = model.transform_point3(local);
+                // The dump worker adds one only because its LightEngine owns
+                // a padded VoxelView. StaticVoxelLight is already indexed in
+                // world coordinates, so applying that worker-local offset here
+                // would sample both light and opacity from the neighboring cell.
+                voxel_light.sample_continuous_filtered(world.x, world.y, world.z, &|x, y, z| {
+                    light_opaque_voxel_owned(light_chunks, x, y, z)
+                })
+            });
             voxweb_render::nea_entity::EntityInstance {
                 model: model.to_cols_array_2d(),
                 tint: instance.tint.map(|value| value * tint_scale),
-                light: [1.0; 4],
-                material: [0.0, instance.metalness, instance.shininess, instance.static_shadow as u8 as f32],
+                lo: [local_lo[0], local_lo[1], local_lo[2], 0.0],
+                hi: [local_hi[0], local_hi[1], local_hi[2], 0.0],
+                ambient,
+                material: [
+                    instance.metalness,
+                    instance.shininess,
+                    instance.emissive,
+                    instance.static_shadow as u8 as f32,
+                ],
             }
-        }).collect::<Vec<_>>();
-    if instances.is_empty() { None } else { Some((vertices, indices.to_vec(), instances)) }
+        })
+        .collect::<Vec<_>>();
+    if instances.is_empty() {
+        None
+    } else {
+        // Keep one compact diagnostic for the first model batch. It reports
+        // the exact values uploaded to the native model shader without adding
+        // per-frame logging or changing the render path.
+        static LIGHT_DIAG: std::sync::Once = std::sync::Once::new();
+        LIGHT_DIAG.call_once(|| {
+            let first = &instances[0];
+            let mut lo = [f32::INFINITY; 4];
+            let mut hi = [f32::NEG_INFINITY; 4];
+            for probe in first.ambient {
+                for channel in 0..4 {
+                    lo[channel] = lo[channel].min(probe[channel]);
+                    hi[channel] = hi[channel].max(probe[channel]);
+                }
+            }
+            jslog!(
+                "[nea][entity-light] mesh={} instances={} ambientLo={:?} ambientHi={:?}",
+                mesh_key,
+                instances.len(),
+                lo,
+                hi
+            );
+        });
+        Some((vertices, safe_indices, instances))
+    }
 }
 
 fn build_static_entity_collision_bodies(
@@ -2842,7 +3145,18 @@ impl RenderTerrain {
         surface_format: wgpu::TextureFormat,
         width: u32,
         height: u32,
+        _direct_sky: bool,
     ) -> Self {
+        use std::sync::atomic::{AtomicU32, Ordering};
+        static BUILD_ID: AtomicU32 = AtomicU32::new(0);
+        let build_id = BUILD_ID.fetch_add(1, Ordering::Relaxed) + 1;
+        let build_start = now_ms();
+        jslog!(
+            "[nea][perf] terrain-build start id={} chunks={} direct_sky={}",
+            build_id,
+            chunks.len(),
+            _direct_sky
+        );
         let catalog_json = include_str!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../../tools/parity/fixtures/block-texture-map.json"
@@ -2876,6 +3190,10 @@ impl RenderTerrain {
             .iter()
             .map(|(x, y, z, cells)| ((*x, *y, *z), cells.as_slice()))
             .collect();
+        let light_chunks: HashMap<(u32, u32, u32), Vec<u16>> = chunks
+            .iter()
+            .map(|(x, y, z, cells)| ((*x, *y, *z), cells.clone()))
+            .collect();
         let min_chunk_x = chunks.iter().map(|(x, _, _, _)| *x).min().unwrap_or(0);
         let max_chunk_x = chunks
             .iter()
@@ -2901,19 +3219,37 @@ impl RenderTerrain {
             .unwrap_or(64)
             .min(128)
             .max(64);
-        let voxel_light = StaticVoxelLight::build(
+        let light_start = now_ms();
+        let voxel_light = StaticVoxelLight::build_with_sky(
             light_min_x,
             light_min_z,
             light_size_x,
             light_size_z,
             light_height,
-            &|x, y, z| solid_voxel_indexed(&chunk_index, x, y, z),
+            // Dump LightEngine._isTransparent uses the voxel id parity
+            // contract; physics solidity is deliberately not reused here.
+            &|x, y, z| light_opaque_voxel_indexed(&chunk_index, x, y, z),
             &|x, y, z| {
                 let block = block_voxel_indexed(&chunk_index, x, y, z);
-                catalog.get(block).map_or(0, |entry| entry.emissive)
+                let block_id = block & voxweb_protocol::geometry::BLOCK_ID_MASK;
+                catalog.get(block_id).map_or(0, |entry| entry.emissive)
             },
+            // Dump LightEngine constructor's third argument is MIN_LIGHT,
+            // not a switch for sky rays. Sky rays are always seeded from the
+            // per-column yRays scan; Backroom uses the default false value.
+            false,
+        );
+        let light_ms = now_ms().saturating_sub(light_start);
+        jslog!(
+            "[nea][perf] terrain-build light id={} ms={} volume={}x{}x{}",
+            build_id,
+            light_ms,
+            light_size_x,
+            light_height,
+            light_size_z
         );
 
+        let mesh_start = now_ms();
         for (cx, cy, cz, cells) in chunks {
             // NEA 32³ cells -> 4 VoxWeb 16×256×16 columns
             let mut columns = [[0u16; CHUNK_SIZE]; 4];
@@ -3081,11 +3417,24 @@ impl RenderTerrain {
             vertices: all_verts,
             indices: all_idx,
         };
+        let mesh_ms = now_ms().saturating_sub(mesh_start);
+        jslog!(
+            "[nea][perf] terrain-build mesh id={} ms={} solid={} fluid={} verts={} idx={} alphaVerts={} fluidVerts={}",
+            build_id,
+            mesh_ms,
+            solid,
+            fluid_cells,
+            mesh.vertices.len() / FLOATS_PER_VERTEX,
+            mesh.indices.len(),
+            alpha_verts.len() / FLOATS_PER_VERTEX,
+            fluid_verts.len() / FLOATS_PER_VERTEX
+        );
         let shadow_map = voxweb_render::nea_shadow::NeaShadowMap::new(
             device,
             voxweb_render::nea_shadow::DEFAULT_SHADOW_RESOLUTION,
         );
         let terrain_meshes = split_mesh_batches(mesh.clone(), 4 * 1024 * 1024);
+        let terrain_bounds = terrain_meshes.iter().map(mesh_bounds).collect::<Vec<_>>();
         let terrain_pipelines = terrain_meshes
             .iter()
             .enumerate()
@@ -3128,21 +3477,32 @@ impl RenderTerrain {
                 .expect("valid entity texture")
             })
             .collect::<Vec<_>>();
+        let entity_start = now_ms();
         let mut entity_pipelines = Vec::new();
+        let mut entity_pipeline_keys = Vec::new();
         for (mesh_index, key) in entity_keys.iter().enumerate() {
             let Some((vertices, indices, instances)) =
-                build_static_entity_instances(entity_scene, key, &voxel_light)
-            else { continue };
+                build_static_entity_instances(entity_scene, key, &voxel_light, &light_chunks)
+            else {
+                continue;
+            };
             entity_pipelines.push(voxweb_render::nea_entity::NeaEntityPipeline::new(
                 device,
                 &entity_textures[mesh_index],
                 &vertices,
                 &indices,
                 &instances,
+                entity_scene
+                    .entities
+                    .iter()
+                    .filter(|entity| entity.mesh == *key)
+                    .count(),
+                entity_scene.meshes[key].decoded_geometry.is_none(),
                 surface_format,
                 wgpu::TextureFormat::Depth32Float,
                 &format!("nea.entities.{mesh_index}"),
             ));
+            entity_pipeline_keys.push(key.clone());
         }
         let fluid_mesh = MeshBuffers {
             vertices: fluid_verts,
@@ -3172,6 +3532,15 @@ impl RenderTerrain {
             surface_format,
             wgpu::TextureFormat::Depth32Float,
         );
+        let entity_ms = now_ms().saturating_sub(entity_start);
+        let total_ms = now_ms().saturating_sub(build_start);
+        jslog!(
+            "[nea][perf] terrain-build done id={} entities={} ms={} total={}",
+            build_id,
+            entity_pipelines.len(),
+            entity_ms,
+            total_ms
+        );
         jslog!(
             "[nea] terrain mesh built: {} verts {} idx ({} solid, {} fluid cells, {} entity batches)",
             mesh.vertices.len(),
@@ -3183,12 +3552,45 @@ impl RenderTerrain {
         Self {
             mesh,
             terrain_pipelines,
+            terrain_bounds,
             entity_pipelines,
+            entity_keys,
+            entity_pipeline_keys,
             entity_textures,
             alpha_pipeline,
             fluid_pipeline,
             voxel_light,
+            light_chunks: chunks
+                .iter()
+                .map(|(x, y, z, cells)| ((*x, *y, *z), cells.clone()))
+                .collect(),
             shadow_map,
+        }
+    }
+
+    fn update_entity_instances(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        entity_scene: &StaticEntityScene,
+    ) {
+        for (index, key) in self.entity_pipeline_keys.iter().enumerate() {
+            let Some((_, _, instances)) = build_static_entity_instances(
+                entity_scene,
+                key,
+                &self.voxel_light,
+                &self.light_chunks,
+            ) else {
+                let Some(pipeline) = self.entity_pipelines.get_mut(index) else {
+                    continue;
+                };
+                pipeline.update_instances(device, queue, &[]);
+                continue;
+            };
+            let Some(pipeline) = self.entity_pipelines.get_mut(index) else {
+                continue;
+            };
+            pipeline.update_instances(device, queue, &instances);
         }
     }
 }
@@ -3273,10 +3675,13 @@ fn corner_light(
             }
             cell[tangent_axes[0]] += first_offset;
             cell[tangent_axes[1]] += second_offset;
-            if solid_voxel_indexed(chunk_index, cell[0], cell[1], cell[2]) {
+            if light_opaque_voxel_indexed(chunk_index, cell[0], cell[1], cell[2]) {
                 continue;
             }
-            let sample = voxel_light.sample(cell[0], cell[1], cell[2]);
+            // Mesh worker vertices carry raw 4-bit light nibbles. Do not use
+            // the nonlinear sampleLight transform here; that transform is
+            // reserved for eye-local ambient/exposure sampling.
+            let sample = voxel_light.sample_raw(cell[0], cell[1], cell[2]);
             for channel in 0..4 {
                 visible[channel] += sample[channel];
             }
@@ -3318,6 +3723,17 @@ fn solid_voxel_at(chunks: &[(u32, u32, u32, Vec<u16>)], vx: i32, vy: i32, vz: i3
         return true;
     }
     block_is_solid(block_voxel_at(chunks, vx, vy, vz))
+}
+
+fn light_opaque_voxel_at(chunks: &[(u32, u32, u32, Vec<u16>)], vx: i32, vy: i32, vz: i32) -> bool {
+    if vy < 0 {
+        return true;
+    }
+    if vy >= 256 {
+        return false;
+    }
+    let block_id = block_voxel_at(chunks, vx, vy, vz) & voxweb_protocol::geometry::BLOCK_ID_MASK;
+    block_id != 0 && (block_id & 1) != 0
 }
 
 fn block_voxel_at(chunks: &[(u32, u32, u32, Vec<u16>)], vx: i32, vy: i32, vz: i32) -> u16 {
@@ -3381,6 +3797,70 @@ fn solid_voxel_indexed(
         return false;
     }
     block_is_solid(block_voxel_indexed(chunks, vx, vy, vz))
+}
+
+/// Dump LightEngine transparency contract: odd voxel ids are opaque, while
+/// even ids (including alpha materials and the invisible barrier id) allow
+/// light propagation. Rotation bits are removed before the parity check.
+fn light_opaque_voxel_indexed(
+    chunks: &HashMap<(u32, u32, u32), &[u16]>,
+    vx: i32,
+    vy: i32,
+    vz: i32,
+) -> bool {
+    if vy < 0 {
+        return true;
+    }
+    if vy >= 256 {
+        return false;
+    }
+    let block_id =
+        block_voxel_indexed(chunks, vx, vy, vz) & voxweb_protocol::geometry::BLOCK_ID_MASK;
+    block_id != 0 && (block_id & 1) != 0
+}
+
+fn light_opaque_voxel_owned(
+    chunks: &HashMap<(u32, u32, u32), Vec<u16>>,
+    vx: i32,
+    vy: i32,
+    vz: i32,
+) -> bool {
+    if vy < 0 {
+        return true;
+    }
+    if vy >= 256 {
+        return false;
+    }
+    let block_id = block_voxel_owned(chunks, vx, vy, vz) & voxweb_protocol::geometry::BLOCK_ID_MASK;
+    block_id != 0 && (block_id & 1) != 0
+}
+
+fn block_voxel_owned(
+    chunks: &HashMap<(u32, u32, u32), Vec<u16>>,
+    vx: i32,
+    vy: i32,
+    vz: i32,
+) -> u16 {
+    if !(0..256).contains(&vy) {
+        return 0;
+    }
+    let chunk = (
+        vx.div_euclid(32) as u32,
+        vy.div_euclid(32) as u32,
+        vz.div_euclid(32) as u32,
+    );
+    let local_x = vx.rem_euclid(32) as u32;
+    let local_y = vy.rem_euclid(32) as u32;
+    let local_z = vz.rem_euclid(32) as u32;
+    chunks
+        .get(&chunk)
+        .and_then(|cells| {
+            cells.get(voxweb_protocol::terrain::chunk_cell_index(
+                local_x, local_y, local_z,
+            ))
+        })
+        .copied()
+        .unwrap_or(0)
 }
 
 fn block_voxel_indexed(
@@ -3701,6 +4181,22 @@ const MOVEMENT_DOUBLE_TAP_MS: u32 = 200;
 const PITCH_CLAMP: f32 = std::f32::consts::FRAC_PI_2 - 1e-3;
 
 impl InputState {
+    fn clear_held(&mut self) {
+        self.forward = false;
+        self.back = false;
+        self.left = false;
+        self.right = false;
+        self.jump = false;
+        self.crouching = false;
+        self.running = false;
+        self.jump_edge = false;
+        self.flight_toggle = false;
+        self.interact_edge = false;
+        self.action0 = false;
+        self.action1 = false;
+        self.look_axis = [0.0, 0.0];
+    }
+
     fn movement_pressed(&self) -> bool {
         self.forward || self.back || self.left || self.right
     }
@@ -3843,17 +4339,62 @@ fn install_keyboard(canvas: &HtmlCanvasElement, input: &Rc<RefCell<InputState>>)
     let down_state = Rc::clone(input);
     let up_state = Rc::clone(input);
     let mouse_state = Rc::clone(input);
+    let blur_state = Rc::clone(input);
     let mouse_window = window.clone();
     let mouse_document = window.document();
+    let click_document = mouse_document.clone();
     let lock_canvas = canvas.clone();
+    // Browsers reject requestPointerLock() briefly after ESC/dialog unlock.
+    // Suppress immediate retries so the rejection cannot break input.
+    let lock_cooldown_until_ms = Rc::new(Cell::new(0u32));
+    let lock_cooldown_for_click = Rc::clone(&lock_cooldown_until_ms);
     let on_click =
         Closure::<dyn FnMut(web_sys::MouseEvent)>::new(move |ev: web_sys::MouseEvent| {
-            lock_canvas.request_pointer_lock();
+            // Modal dialogs own the click. Do not let the window-level canvas
+            // handler reacquire pointer lock while the browser is completing
+            // the unlock caused by opening the dialog.
+            let dialog_click = ev
+                .target()
+                .and_then(|target| target.dyn_into::<web_sys::Element>().ok())
+                .and_then(|element| element.closest("#nea-historical-dialog").ok().flatten())
+                .is_some();
+            if !dialog_click
+                && click_document
+                    .as_ref()
+                    .is_some_and(|document| document.pointer_lock_element().is_none())
+                && now_ms() >= lock_cooldown_for_click.get()
+            {
+                lock_cooldown_for_click.set(now_ms().saturating_add(500));
+                lock_canvas.request_pointer_lock();
+            }
             ev.prevent_default();
         });
+    let lock_document = mouse_document.clone();
+    let lock_cooldown_for_change = Rc::clone(&lock_cooldown_until_ms);
+    let on_lock_change = Closure::<dyn FnMut()>::new(move || {
+        if lock_document
+            .as_ref()
+            .is_some_and(|document| document.pointer_lock_element().is_none())
+        {
+            lock_cooldown_for_change.set(now_ms().saturating_add(500));
+        }
+    });
     let on_down =
         Closure::<dyn FnMut(web_sys::KeyboardEvent)>::new(move |ev: web_sys::KeyboardEvent| {
             let code = ev.code();
+            // Historical dialogs own keyboard focus. Do not leak E/Space or
+            // movement edges into the game while a modal is visible; doing so
+            // can trigger a second nearby interaction before the first one is
+            // acknowledged by the server.
+            let dialog_open = ev
+                .target()
+                .and_then(|target| target.dyn_into::<web_sys::Element>().ok())
+                .and_then(|element| element.closest("#nea-historical-dialog").ok().flatten())
+                .is_some();
+            if dialog_open {
+                ev.prevent_default();
+                return;
+            }
             let mut s = match down_state.try_borrow_mut() {
                 Ok(s) => s,
                 Err(_) => return, // main loop holds the state; skip this event
@@ -3893,7 +4434,7 @@ fn install_keyboard(canvas: &HtmlCanvasElement, input: &Rc<RefCell<InputState>>)
                     handled = true;
                 }
                 // Debug view 切换：F1..F6（再按同键回到 Final）
-                "F1" | "F2" | "F3" | "F4" | "F5" | "F6" => {
+                "F1" | "F2" | "F3" | "F4" | "F5" | "F6" if DEBUG_DIAGNOSTICS => {
                     let index = code.as_str().chars().nth(1).and_then(|c| c.to_digit(10));
                     if let Some(i) = index {
                         let value = i as f32;
@@ -3941,6 +4482,11 @@ fn install_keyboard(canvas: &HtmlCanvasElement, input: &Rc<RefCell<InputState>>)
             }
             ev.prevent_default();
         });
+    let on_blur = Closure::<dyn FnMut()>::new(move || {
+        if let Ok(mut state) = blur_state.try_borrow_mut() {
+            state.clear_held();
+        }
+    });
     let on_mouse =
         Closure::<dyn FnMut(web_sys::MouseEvent)>::new(move |ev: web_sys::MouseEvent| {
             if !mouse_document
@@ -4009,14 +4555,21 @@ fn install_keyboard(canvas: &HtmlCanvasElement, input: &Rc<RefCell<InputState>>)
         .add_event_listener_with_callback("mousedown", on_action_down.as_ref().unchecked_ref());
     let r5 =
         window.add_event_listener_with_callback("mouseup", on_action_up.as_ref().unchecked_ref());
+    let r6 = window.add_event_listener_with_callback(
+        "pointerlockchange",
+        on_lock_change.as_ref().unchecked_ref(),
+    );
+    let r7 = window.add_event_listener_with_callback("blur", on_blur.as_ref().unchecked_ref());
     jslog!(
-        "[nea] listener reg: click={} keydown={} keyup={} mousemove={} mousedown={} mouseup={}",
+        "[nea] listener reg: click={} keydown={} keyup={} mousemove={} mousedown={} mouseup={} pointerlock={} blur={}",
         r0.is_ok(),
         r1.is_ok(),
         r2.is_ok(),
         r3.is_ok(),
         r4.is_ok(),
-        r5.is_ok()
+        r5.is_ok(),
+        r6.is_ok(),
+        r7.is_ok()
     );
     on_click.forget();
     on_down.forget();
@@ -4024,6 +4577,8 @@ fn install_keyboard(canvas: &HtmlCanvasElement, input: &Rc<RefCell<InputState>>)
     on_mouse.forget();
     on_action_down.forget();
     on_action_up.forget();
+    on_lock_change.forget();
+    on_blur.forget();
     jslog!("[nea] keyboard + mouse listeners installed");
 }
 
