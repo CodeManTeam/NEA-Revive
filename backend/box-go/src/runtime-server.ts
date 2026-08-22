@@ -93,6 +93,8 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   const sessions = new Map<string, string>() // sessionId -> playerId
   const sessionNames = new Map<string, string>() // sessionId -> playerName（来自 createSession）
   const playerSessions = new Map<string, string>() // playerId -> sessionId
+  const wirePlayerIds = new Map<string, number>() // runtime player id -> net-state id
+  let nextWirePlayerId = 1
   const pendingClientEvents = new Map<string, unknown[]>() // playerId -> pre-join RemoteChannel events
   const chatLogIds = new Map<string, number>() // sessionId -> chat log id
   let gameChatProtocolRef: any = null
@@ -118,6 +120,14 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   function remoteChannelClients(): Record<string, any> { return remoteChannelProtocolRef?.clients ?? {} }
   function dialogClients(): Record<string, any> { return dialogProtocolRef?.clients ?? {} }
   const pendingDialogs = new Map<string, { rpcId: number, resolve: (result: unknown) => void, reject: (error: unknown) => void }[]>() // playerId -> pending dialog promises
+
+  function wirePlayerIdFor(playerId: string): number {
+    const existing = wirePlayerIds.get(playerId)
+    if (existing !== undefined) return existing
+    const assigned = nextWirePlayerId++
+    wirePlayerIds.set(playerId, assigned)
+    return assigned
+  }
 
   // Convert a script-facing dialog config into the mudb dialog.open payload.
   // The client-direction union is { text, input, select }; each arm nests the
@@ -364,6 +374,36 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
     },
   })
   await runtime.start()
+  function netStateDisplays(snap: any): Array<{ id: number, name: string, avatarSkin: number[], dead?: boolean }> {
+    return (snap.players ?? []).map((player: any) => ({
+      id: wirePlayerIdFor(String(player.id)),
+      name: String(player.name ?? "Player"),
+      avatarSkin: LOCAL_AVATAR_SKIN_PART_IDS,
+      dead: Boolean(player.dead),
+    }))
+  }
+  function netStatePlayers(snap: any): Array<Record<string, unknown>> {
+    return (snap.players ?? []).map((player: any) => ({
+      id: wirePlayerIdFor(String(player.id)),
+      position: player.position,
+      walkSpeed: player.walkSpeed,
+      walkAcceleration: player.walkAcceleration,
+      runSpeed: player.runSpeed,
+      runAcceleration: player.runAcceleration,
+      crouchSpeed: player.crouchSpeed,
+      crouchAcceleration: player.crouchAcceleration,
+      swimSpeed: player.swimSpeed,
+      swimAcceleration: player.swimAcceleration,
+      flySpeed: player.flySpeed,
+      flyAcceleration: player.flyAcceleration,
+      jumpPower: player.jumpPower,
+      jumpSpeedFactor: player.jumpSpeedFactor,
+      jumpAccelerationFactor: player.jumpAccelerationFactor,
+      doubleJumpPower: player.doubleJumpPower,
+      stepHeight: importedProject.physics?.stepHeight,
+      flags: playerFlags(player),
+    }))
+  }
   // 20Hz 逻辑 tick：冲刷聊天 FIFO 并驱动脚本 onTick
   const tickTimer = setInterval(() => runtime.tick(), 50)
   tickTimer.unref?.()
@@ -375,6 +415,8 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
     const snap: any = runtime.snapshot()
     const tick = netStateTick
     netStateTick += 2
+    const displays = netStateDisplays(snap)
+    const players = netStatePlayers(snap)
     for (const [playerId, sessionId] of playerSessions) {
       const player = snap.players.find((p: any) => p.id === playerId)
       const netClient = gameNetClients()[sessionId]
@@ -402,40 +444,12 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         freezedForwardDirection: player.freezedForwardDirection,
         enable3DCursor: player.enable3DCursor,
       })
-      // DAO3 player flags are authoritative input permissions. Keep the
-      // recovered defaults, then clear permissions explicitly disabled by
-      // the server script (notably enableDoubleJump=false in Backroom).
-      const flags = playerFlags(player)
       try {
         const packet = encodeNetPublicPacket({
           tick,
           pauseCounter: 0,
-          displays: [{
-            id: 1,
-            name: String(player.name ?? "Player"),
-            avatarSkin: LOCAL_AVATAR_SKIN_PART_IDS,
-            dead: Boolean(player.dead),
-          }],
-          players: [{
-            id: 1,
-            position: player.position,
-            walkSpeed: player.walkSpeed,
-            walkAcceleration: player.walkAcceleration,
-            runSpeed: player.runSpeed,
-            runAcceleration: player.runAcceleration,
-            crouchSpeed: player.crouchSpeed,
-            crouchAcceleration: player.crouchAcceleration,
-            swimSpeed: player.swimSpeed,
-            swimAcceleration: player.swimAcceleration,
-            flySpeed: player.flySpeed,
-            flyAcceleration: player.flyAcceleration,
-            jumpPower: player.jumpPower,
-            jumpSpeedFactor: player.jumpSpeedFactor,
-            jumpAccelerationFactor: player.jumpAccelerationFactor,
-            doubleJumpPower: player.doubleJumpPower,
-            stepHeight: importedProject.physics?.stepHeight,
-            flags,
-          }],
+          displays,
+          players,
         })
         netClient.sendRaw(packet, false)
       } catch (error) {
@@ -878,6 +892,7 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
       }
       handlers.join = (client) => {
         const playerId = `p-${randomUUID().slice(0, 8)}`
+        const wirePlayerId = wirePlayerIdFor(playerId)
         sessions.set(client.sessionId, playerId)
         playerSessions.set(playerId, client.sessionId)
         flushPendingClientEvents(playerId)
@@ -899,7 +914,7 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         setTimeout(() => flushPendingClientEvents(playerId), 25)
         // voxweb 握手：join 后立即发 secret 原始帧（game-net rawId=10）：
         // varint(10) varint(1) 'E' 0 varint(playerId) uint8(5) varint(playerId) uint8(1) varint(playerId)
-        const secret = encodeAnonymousPlayerSecret(1)
+        const secret = encodeAnonymousPlayerSecret(wirePlayerId)
         client.sendRaw(secret, false)
         log(`[session] join ${client.sessionId} -> player ${playerId}`)
         // 人物模型：models.appendSkinPartHashes（先于 net-state 帧，让 avatar_catalog 解析 part hash）
@@ -923,16 +938,12 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         setTimeout(() => {
           const netClient = gameNetClients()[client.sessionId]
           if (netClient) {
+            const snap: any = runtime.snapshot()
             const packet = encodeNetPublicPacket({
               tick: 4,
               pauseCounter: 0,
-              displays: [{ id: 1, name: sessionNames.get(client.sessionId) ?? "Player", avatarSkin: LOCAL_AVATAR_SKIN_PART_IDS }],
-              players: [{
-                id: 1,
-                position: VIEW_SPAWN,
-                // onPlayerJoin may already have changed permissions.
-                flags: playerFlags(runtime.snapshot().players.find((entry: any) => entry.id === playerId)),
-              }],
+              displays: netStateDisplays(snap),
+              players: netStatePlayers(snap),
             })
             netClient.sendRaw(packet, false)
             log(`[session] sent net-state frame to ${client.sessionId}`)
@@ -1064,6 +1075,7 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
           if (playerId) {
             runtime.removePlayer(playerId)
             playerSessions.delete(playerId)
+            wirePlayerIds.delete(playerId)
           }
           sessions.delete(client.sessionId)
           sessionNames.delete(client.sessionId)
