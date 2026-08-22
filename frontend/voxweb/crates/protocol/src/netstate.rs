@@ -254,6 +254,10 @@ pub struct NetPublicFrame {
 #[derive(Clone, Debug, PartialEq)]
 pub struct RuntimePlayerState {
     pub id: u64,
+    /// Authoritative platform position from PlayerSchema.platformX/Y/Z.
+    /// The reduced local runtime does not populate the legacy rigid-body
+    /// section, so clients use this position as the render/collision anchor.
+    pub position: [f32; 3],
     pub flags: u64,
     pub phys_ground: bool,
     pub phys_fluid: f32,
@@ -501,6 +505,7 @@ fn runtime_player_from_value(value: &crate::Value) -> Option<RuntimePlayerState>
         jump_speed_factor: number(7),
         phys_fluid: number(8),
         platform_velocity: [number(9), number(10), number(11)],
+        position: [number(9), number(10), number(11)],
         run_acceleration: number(12),
         run_speed: number(13),
         step_height: number(14),

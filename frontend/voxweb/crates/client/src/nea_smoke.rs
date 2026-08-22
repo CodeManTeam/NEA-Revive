@@ -12,7 +12,7 @@ use std::sync::OnceLock;
 
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::JsFuture;
-use web_sys::{HtmlCanvasElement, Request, RequestInit, Response};
+use web_sys::{HtmlCanvasElement, HtmlInputElement, Request, RequestInit, Response};
 
 use voxweb_protocol::Value;
 use voxweb_protocol::atlas::AtlasImage;
@@ -634,7 +634,8 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
     // scenes can spend noticeable time decoding assets, and installing these
     // listeners near the network loop made the page appear unresponsive.
     let input = Rc::new(RefCell::new(InputState::default()));
-    install_keyboard(&canvas, &input);
+    let chat_overlay = ChatOverlay::new(&document)?;
+    install_keyboard(&canvas, &input, chat_overlay.clone());
 
     // 3) WebGPU device + surface
     let dc = init_device(&canvas)
@@ -903,8 +904,20 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                     // does not simulate player contacts. Its
                                     // schema-default contact values must not
                                     // overwrite locally solved ground state.
-                                    collision_bodies = f
-                                        .bodies
+                                    // The reduced runtime publishes player
+                                    // transforms in state.players, while the
+                                    // legacy rigid-body section is empty. Keep
+                                    // both forms usable so remote avatars and
+                                    // player collision do not depend on the
+                                    // legacy section being present.
+                                    let mut player_bodies = f.bodies.clone();
+                                    for runtime_player in &f.runtime_players {
+                                        let id = runtime_player.id as u32;
+                                        if !player_bodies.iter().any(|body| body.id == id) {
+                                            player_bodies.push(runtime_player_body(runtime_player));
+                                        }
+                                    }
+                                    collision_bodies = player_bodies
                                         .iter()
                                         .filter(|body| {
                                             body.id != d.player_id as u32
@@ -914,7 +927,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                         .cloned()
                                         .collect();
                                     remote_players.update(
-                                        &f.bodies,
+                                        &player_bodies,
                                         &f.players,
                                         u32::from(d.player_id),
                                         now_ms(),
@@ -934,7 +947,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                         );
                                     }
                                     if let Some(b) =
-                                        f.bodies.iter().find(|b| b.id == d.player_id as u32)
+                                        player_bodies.iter().find(|b| b.id == d.player_id as u32)
                                     {
                                         local_body_half_extents =
                                             recovered_player_collision_half_extents(b);
@@ -1518,7 +1531,13 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
             }
         }
         match crate::nea_client_runtime::drain_events() {
-            Ok(events) => {
+            Ok(mut events) => {
+                for message in chat_overlay.drain() {
+                    events.push(serde_json::json!({
+                        "type": "chat",
+                        "message": message,
+                    }));
+                }
                 for event in events {
                     if let Ok(Some(frame)) =
                         voxweb_protocol::encode_runtime_outbound(&table, &event)
@@ -4095,6 +4114,39 @@ fn avatar_instance_from_body(
     )
 }
 
+fn runtime_player_body(
+    state: &voxweb_protocol::netstate::RuntimePlayerState,
+) -> voxweb_protocol::netstate::RigidBody {
+    let [px, py, pz] = state.position;
+    voxweb_protocol::netstate::RigidBody {
+        id: state.id as u32,
+        flags: 2,
+        group: 0,
+        mass: voxweb_protocol::player::PLAYER_MASS,
+        friction: 0.1,
+        restitution: 0.0,
+        rx: 1.0,
+        ry: 1.0,
+        rz: 1.0,
+        px,
+        py,
+        pz,
+        vx: 0.0,
+        vy: 0.0,
+        vz: 0.0,
+        qx: 0.0,
+        qy: 0.0,
+        qz: 0.0,
+        qw: 1.0,
+        hsx: voxweb_protocol::player::PLAYER_RADIUS,
+        hsy: voxweb_protocol::player::PLAYER_HEIGHT,
+        hsz: voxweb_protocol::player::PLAYER_RADIUS,
+        ax: 0.0,
+        ay: 0.0,
+        az: 0.0,
+    }
+}
+
 fn recovered_player_collision_half_extents(
     body: &voxweb_protocol::netstate::RigidBody,
 ) -> [f32; 3] {
@@ -4125,6 +4177,98 @@ fn normalize_player_collision_half_extents(transmitted: [f32; 3]) -> [f32; 3] {
         transmitted
     } else {
         RECOVERED_PLAYER_HALF_EXTENTS
+    }
+}
+
+/// Small engine-owned chat input for the ?nea path. The historical client
+/// delivers chat through game-chat.noticeMessage; keeping the input here
+/// avoids coupling map scripts or the recovered UI tree to engine transport.
+struct ChatOverlay {
+    input: HtmlInputElement,
+    pending: Rc<RefCell<Vec<String>>>,
+    _keydown: Closure<dyn FnMut(web_sys::KeyboardEvent)>,
+}
+
+impl ChatOverlay {
+    fn new(document: &web_sys::Document) -> Result<Rc<Self>, JsValue> {
+        let input: HtmlInputElement = document.create_element("input")?.dyn_into()?;
+        input.set_id("nea-chat-input");
+        input.set_type("text");
+        input.set_placeholder("输入消息，按 Enter 发送");
+        input.set_hidden(true);
+        input.set_attribute(
+            "style",
+            "position:fixed;left:50%;bottom:72px;transform:translateX(-50%);z-index:1200;width:min(560px,calc(100vw - 32px));box-sizing:border-box;padding:10px 14px;border:1px solid rgba(220,184,96,.75);border-radius:6px;background:rgba(10,16,18,.94);color:#e2eae5;font:16px/1.3 system-ui,sans-serif;outline:none;box-shadow:0 8px 24px rgba(0,0,0,.35);",
+        )?;
+        document
+            .body()
+            .ok_or_else(|| JsValue::from_str("document body unavailable"))?
+            .append_child(&input)?;
+
+        let pending = Rc::new(RefCell::new(Vec::new()));
+        let pending_for_key = pending.clone();
+        let keydown = Closure::<dyn FnMut(web_sys::KeyboardEvent)>::new(
+            move |event: web_sys::KeyboardEvent| {
+                event.stop_propagation();
+                match event.code().as_str() {
+                    "Enter" => {
+                        let target = event
+                            .target()
+                            .and_then(|value| value.dyn_into::<HtmlInputElement>().ok());
+                        if let Some(target) = target {
+                            let message = target.value().trim().to_string();
+                            target.set_value("");
+                            target.set_hidden(true);
+                            let _ = target.blur();
+                            if !message.is_empty() {
+                                pending_for_key.borrow_mut().push(message);
+                            }
+                        }
+                        event.prevent_default();
+                    }
+                    "Escape" => {
+                        if let Some(target) = event
+                            .target()
+                            .and_then(|value| value.dyn_into::<HtmlInputElement>().ok())
+                        {
+                            target.set_value("");
+                            target.set_hidden(true);
+                            let _ = target.blur();
+                        }
+                        event.prevent_default();
+                    }
+                    _ => {}
+                }
+            },
+        );
+        input.add_event_listener_with_callback("keydown", keydown.as_ref().unchecked_ref())?;
+        Ok(Rc::new(Self {
+            input,
+            pending,
+            _keydown: keydown,
+        }))
+    }
+
+    fn is_open(&self) -> bool {
+        !self.input.hidden()
+    }
+
+    fn toggle(&self) {
+        if self.is_open() {
+            self.input.set_value("");
+            self.input.set_hidden(true);
+            let _ = self.input.blur();
+        } else {
+            if let Some(document) = web_sys::window().and_then(|window| window.document()) {
+                document.exit_pointer_lock();
+            }
+            self.input.set_hidden(false);
+            let _ = self.input.focus();
+        }
+    }
+
+    fn drain(&self) -> Vec<String> {
+        std::mem::take(&mut *self.pending.borrow_mut())
     }
 }
 
@@ -4346,7 +4490,11 @@ impl InputState {
 
 /// Install keydown/keyup/mousemove listeners that mutate the shared input
 /// state. Camera follows the mouse; WASD moves relative to the camera yaw.
-fn install_keyboard(canvas: &HtmlCanvasElement, input: &Rc<RefCell<InputState>>) {
+fn install_keyboard(
+    canvas: &HtmlCanvasElement,
+    input: &Rc<RefCell<InputState>>,
+    chat: Rc<ChatOverlay>,
+) {
     let window = match web_sys::window() {
         Some(w) => w,
         None => return,
@@ -4355,6 +4503,7 @@ fn install_keyboard(canvas: &HtmlCanvasElement, input: &Rc<RefCell<InputState>>)
     let up_state = Rc::clone(input);
     let mouse_state = Rc::clone(input);
     let blur_state = Rc::clone(input);
+    let chat_state = chat;
     let mouse_window = window.clone();
     let mouse_document = window.document();
     let click_document = mouse_document.clone();
@@ -4373,7 +4522,13 @@ fn install_keyboard(canvas: &HtmlCanvasElement, input: &Rc<RefCell<InputState>>)
                 .and_then(|target| target.dyn_into::<web_sys::Element>().ok())
                 .and_then(|element| element.closest("#nea-historical-dialog").ok().flatten())
                 .is_some();
+            let chat_click = ev
+                .target()
+                .and_then(|target| target.dyn_into::<web_sys::Element>().ok())
+                .and_then(|element| element.closest("#nea-chat-input").ok().flatten())
+                .is_some();
             if !dialog_click
+                && !chat_click
                 && click_document
                     .as_ref()
                     .is_some_and(|document| document.pointer_lock_element().is_none())
@@ -4443,6 +4598,12 @@ fn install_keyboard(canvas: &HtmlCanvasElement, input: &Rc<RefCell<InputState>>)
                 "KeyE" => {
                     s.interact_edge = true;
                     handled = true;
+                }
+                "KeyT" => {
+                    drop(s);
+                    chat_state.toggle();
+                    ev.prevent_default();
+                    return;
                 }
                 "ShiftLeft" | "ShiftRight" => {
                     s.crouching = true;
@@ -4908,11 +5069,11 @@ mod tests {
     use super::{
         AvatarRollState, InputState, RuntimeCameraState, StaticEntityScene,
         apply_entity_state_event, apply_runtime_camera_state, block_is_solid,
-        build_static_entity_collision_bodies,
-        fluid_volume_fraction, make_camera, network_tick_is_newer,
-        normalize_player_collision_half_extents, recovered_avatar_yaw, recovered_fluid_height,
-        recovered_fluid_info, recovered_player_state, recovered_rotated_face_rects,
-        recovered_voxel_face_visible, recovered_walk_phase_delta, write_recovered_texture_rotation,
+        build_static_entity_collision_bodies, fluid_volume_fraction, make_camera,
+        network_tick_is_newer, normalize_player_collision_half_extents, recovered_avatar_yaw,
+        recovered_fluid_height, recovered_fluid_info, recovered_player_state,
+        recovered_rotated_face_rects, recovered_voxel_face_visible, recovered_walk_phase_delta,
+        write_recovered_texture_rotation,
     };
     use voxweb_physics::NeaPlayerPhysics;
     use voxweb_protocol::player::MoveMode;
