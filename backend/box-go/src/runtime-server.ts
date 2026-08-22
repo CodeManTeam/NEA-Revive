@@ -502,7 +502,10 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
     if (url.pathname === "/api/map/entities") {
       try {
         if (staticEntitySceneJson === null) {
-          const scene = buildStaticEntityScene(options.sourceRoot, importedProject.entities, options.assetRoot)
+          const interactionOverrides = new Map(
+            runtime.entityInteractionStates().map((entry: any) => [Number(entry.entityId), entry]),
+          )
+          const scene = buildStaticEntityScene(options.sourceRoot, importedProject.entities, options.assetRoot, interactionOverrides)
           staticEntityDiagnostics = scene.diagnostics
           staticEntitySceneJson = JSON.stringify(scene)
         }
@@ -1094,7 +1097,12 @@ function encodeAnonymousPlayerSecret(playerId: number): Uint8Array {
   return Uint8Array.from(bytes)
 }
 
-function buildStaticEntityScene(sourceRoot: string, entities: readonly any[], assetRoot: string) {
+function buildStaticEntityScene(
+  sourceRoot: string,
+  entities: readonly any[],
+  assetRoot: string,
+  interactionOverrides: ReadonlyMap<number, any> = new Map(),
+) {
   const meshes: Record<string, { positionsF32: string; uvsF32: string; indicesU32: string; texturePngBase64?: string; meshAssetHash?: string; renderBoxOffset?: number[] }> = {}
   const instances: Array<{
     id: number
@@ -1195,9 +1203,9 @@ function buildStaticEntityScene(sourceRoot: string, entities: readonly any[], as
       mass: Math.max(0.001, Number(entity.source?.mass ?? 1)),
       friction: Math.max(0, Number(entity.source?.friction ?? 0)),
       restitution: Math.max(0, Number(entity.source?.restitution ?? 0)),
-      enableInteract: Boolean(entity.source?.enableInteract ?? false),
-      interactHint: String(entity.source?.interactHint ?? ""),
-      interactRadius: Math.max(0, Number(entity.source?.interactRadius ?? 3)),
+      enableInteract: Boolean(interactionOverrides.get(sourceIndex + 0x10000)?.enableInteract ?? entity.source?.enableInteract ?? false),
+      interactHint: String(interactionOverrides.get(sourceIndex + 0x10000)?.interactHint ?? entity.source?.interactHint ?? ""),
+      interactRadius: Math.max(0, Number(interactionOverrides.get(sourceIndex + 0x10000)?.interactRadius ?? entity.source?.interactRadius ?? 3)),
       visible: entity.source?.meshInvisible !== true,
       // These are preserved entity render fields from the DAO3 seed schema.
       // Do not discard them in the transport adapter: the renderer needs
