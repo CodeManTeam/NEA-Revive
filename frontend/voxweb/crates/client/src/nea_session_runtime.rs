@@ -3081,6 +3081,11 @@ fn apply_entity_state_event(
     }
     if let Some(scale) = json_vec3(state.pointer("/model/scale")) {
         if let Some(entity) = scene.entities.iter_mut().find(|entity| entity.id == id) {
+            entity.half_extents = [
+                entity.half_extents[0] * scale[0].max(0.001) / entity.scale[0].max(0.001),
+                entity.half_extents[1] * scale[1].max(0.001) / entity.scale[1].max(0.001),
+                entity.half_extents[2] * scale[2].max(0.001) / entity.scale[2].max(0.001),
+            ];
             entity.scale = scale;
         }
     }
