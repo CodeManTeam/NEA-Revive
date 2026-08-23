@@ -3911,28 +3911,27 @@ impl RenderTerrain {
     ) {
         let entity_instances_dirty_for_all = false;
         for (index, key) in self.entity_pipeline_keys.iter().enumerate() {
-            let transforms_changed = self.entity_transforms.get(key).is_none_or(|previous| {
-                entity_scene
-                    .entities
-                    .iter()
-                    .filter(|entity| entity.mesh == *key && entity.visible)
-                    .any(|entity| {
-                        previous
-                            .get(&entity.id)
-                            .is_none_or(|last| *last != entity_transform(entity))
-                    })
-            });
+            let transforms_changed = match self.entity_transforms.get(key) {
+                None => true,
+                Some(previous) => {
+                    let current = entity_scene
+                        .entities
+                        .iter()
+                        .filter(|entity| entity.mesh == *key && entity.visible)
+                        .map(|entity| (entity.id, entity_transform(entity)))
+                        .collect::<HashMap<_, _>>();
+                    let changed = current.len() != previous.len()
+                        || current.iter().any(|(id, transform)| {
+                            previous.get(id).is_none_or(|last| last != transform)
+                        });
+                    if changed {
+                        self.entity_transforms.insert(key.clone(), current);
+                    }
+                    changed
+                }
+            };
             if !transforms_changed && !entity_instances_dirty_for_all {
                 continue;
-            }
-            for entity in entity_scene
-                .entities
-                .iter()
-                .filter(|entity| entity.mesh == *key && entity.visible)
-            {
-                if let Some(map) = self.entity_transforms.get_mut(key) {
-                    map.insert(entity.id, entity_transform(entity));
-                }
             }
             let Some((_, _, instances)) = build_static_entity_instances(
                 entity_scene,
