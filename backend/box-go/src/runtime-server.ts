@@ -880,7 +880,11 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         const entityId = Number(packet?.id)
         const tick = Number(packet?.tick)
         if (!Number.isSafeInteger(entityId) || entityId < 0 || !Number.isFinite(tick)) return
-        runtime.dispatchInteract(playerId, entityId, tick)
+        const dispatched = runtime.dispatchInteract(playerId, entityId, tick)
+        // The historical Player waits for this edge before releasing the
+        // interaction promise. Keep the acknowledgement on the same socket
+        // and only acknowledge a validated runtime target.
+        if (dispatched) client.message.acknowledgeInteract()
       }
     }
 

@@ -13,6 +13,7 @@ pub struct StaticVoxelLight {
 }
 
 impl StaticVoxelLight {
+    #[cfg(test)]
     pub fn build(
         min_x: i32,
         min_z: i32,
@@ -54,15 +55,20 @@ impl StaticVoxelLight {
         light
     }
 
-    pub fn sample(&self, x: i32, y: i32, z: i32) -> [f32; 4] {
-        unpack_channels(self.sample_quantized(x, y, z))
-    }
-
     /// Raw packed light channels used by the dump chunk worker's mesh
     /// vertices. The worker writes the 4-bit nibbles directly; the nonlinear
     /// `sampleLight` transform is only used by eye-ambient queries.
     pub fn sample_raw(&self, x: i32, y: i32, z: i32) -> [f32; 4] {
         self.sample_quantized(x, y, z)
+    }
+
+    #[cfg(test)]
+    fn sample(&self, x: i32, y: i32, z: i32) -> [f32; 4] {
+        let mut channels = self.sample_quantized(x, y, z);
+        for channel in &mut channels {
+            *channel = (*channel / (16.0 - 15.0 * *channel)).min(1.0);
+        }
+        channels
     }
 
     /// Recovered worker `sampleLight`: trilinear interpolation of packed
@@ -260,10 +266,6 @@ impl StaticVoxelLight {
         }
     }
 
-    fn level_at(&self, x: usize, y: usize, z: usize) -> u16 {
-        self.index(x, y, z).map_or(0, |index| self.levels[index])
-    }
-
     fn set_level(&mut self, x: usize, y: usize, z: usize, level: u16) {
         if let Some(index) = self.index(x, y, z) {
             self.levels[index] = level;
@@ -305,13 +307,6 @@ fn quantized_channels(level: u16) -> [f32; 4] {
     // Dump `_sampleLightInt` divides each four-bit channel by its actual
     // maximum (15, 240, 3840, 61440), i.e. every nibble is normalized by 15.
     [0, 4, 8, 12].map(|shift| ((level >> shift) & 0xf) as f32 / 15.0)
-}
-
-fn unpack_channels(mut channels: [f32; 4]) -> [f32; 4] {
-    for channel in &mut channels {
-        *channel /= 16.0 - 15.0 * *channel;
-    }
-    channels
 }
 
 fn axis_weight(fraction: f32, high: i32) -> f32 {
