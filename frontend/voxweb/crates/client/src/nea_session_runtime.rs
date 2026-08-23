@@ -169,24 +169,76 @@ fn default_entity_tint() -> [f32; 4] {
     [255.0, 255.0, 255.0, 255.0]
 }
 
+/// Uniform-grid acceleration structure for broad-phase interaction queries.
+#[derive(Default)]
+struct EntityInteractionIndex {
+    cell_size: i32,
+    cells: HashMap<(i32, i32, i32), Vec<u32>>,
+}
+
+impl EntityInteractionIndex {
+    fn build(entities: &[StaticEntityInstance]) -> Self {
+        const CELL_SIZE: i32 = 24;
+        let mut index = Self {
+            cell_size: CELL_SIZE,
+            cells: HashMap::new(),
+        };
+        for entity in entities.iter().filter(|entity| entity.enable_interact) {
+            let center = interaction_center(entity);
+            let radius =
+                interaction_bounds_radius(entity).max(entity.interact_radius.max(0.0));
+            let min = center.map(|value| (value - radius).floor() as i32 / CELL_SIZE);
+            let max = center.map(|value| (value + radius).floor() as i32 / CELL_SIZE);
+            for z in min[2]..=max[2] {
+                for y in min[1]..=max[1] {
+                    for x in min[0]..=max[0] {
+                        index.cells.entry((x, y, z)).or_default().push(entity.id);
+                    }
+                }
+            }
+        }
+        index
+    }
+
+    fn candidate_ids(&self, player: [f32; 3]) -> Vec<u32> {
+        let cell = player.map(|value| value.floor() as i32 / self.cell_size);
+        let mut ids = self
+            .cells
+            .get(&(cell[0], cell[1], cell[2]))
+            .cloned()
+            .unwrap_or_default();
+        ids.sort_unstable();
+        ids.dedup();
+        ids
+    }
+}
+
+fn interaction_center(entity: &StaticEntityInstance) -> [f32; 3] {
+    [
+        entity.position[0] + entity.mesh_offset[0],
+        entity.position[1] + entity.mesh_offset[1],
+        entity.position[2] + entity.mesh_offset[2],
+    ]
+}
+
+fn interaction_bounds_radius(entity: &StaticEntityInstance) -> f32 {
+    (entity.half_extents[0] * entity.half_extents[0]
+        + entity.half_extents[1] * entity.half_extents[1]
+        + entity.half_extents[2] * entity.half_extents[2])
+        .sqrt()
+}
+
 /// Return distance from the player to the nearest point of the rendered
 /// interaction volume. Static models often have a large bounds box or a
 /// model-space offset, so testing only the entity origin makes doors appear
 /// out of range while the player is visibly standing beside them.
 fn interaction_distance(entity: &StaticEntityInstance, player: [f32; 3]) -> f32 {
-    let center = [
-        entity.position[0] + entity.mesh_offset[0],
-        entity.position[1] + entity.mesh_offset[1],
-        entity.position[2] + entity.mesh_offset[2],
-    ];
+    let center = interaction_center(entity);
     let dx = center[0] - player[0];
     let dy = center[1] - player[1];
     let dz = center[2] - player[2];
     let center_distance = (dx * dx + dy * dy + dz * dz).sqrt();
-    let radius = (entity.half_extents[0] * entity.half_extents[0]
-        + entity.half_extents[1] * entity.half_extents[1]
-        + entity.half_extents[2] * entity.half_extents[2])
-        .sqrt();
+    let radius = interaction_bounds_radius(entity);
     (center_distance - radius).max(0.0)
 }
 
@@ -610,6 +662,10 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
         map_environment.sky_front[0]
     );
     let mut static_collision_bodies = build_static_entity_collision_bodies(&entity_scene);
+    let mut physics_bodies = static_collision_bodies.clone();
+    let interaction_index = Rc::new(RefCell::new(EntityInteractionIndex::build(
+        &entity_scene.entities,
+    )));
     let mut entity_instances_dirty = false;
     jslog!(
         "[nea] static entity scene: {} meshes {} instances",
@@ -1090,6 +1146,10 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                             &mut static_collision_bodies,
                                             &mut entity_scene,
                                         );
+                                        if entity_instances_dirty {
+                                            *interaction_index.borrow_mut() =
+                                                EntityInteractionIndex::build(&entity_scene.entities);
+                                        }
                                         damage_overlay
                                             .apply_event(&event.event, f64::from(now_ms()));
                                         if event
@@ -1549,10 +1609,14 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 .map_or(0, |player| player.input_direction_state);
             let movement = inp.movement_vector_with_state(input_direction_state);
             let move_mode = inp.move_mode();
-            let interaction_hint = entity_scene
-                .entities
-                .iter()
-                .filter(|entity| entity.enable_interact)
+            let interaction_hint = interaction_index
+                .borrow()
+                .candidate_ids(local_pos)
+                .into_iter()
+                .filter_map(|id| {
+                    let entity = entity_scene.entities.iter().find(|entity| entity.id == id)?;
+                    (entity.visible && entity.enable_interact).then_some(entity)
+                })
                 .filter_map(|entity| {
                     let distance = interaction_distance(entity, local_pos);
                     (distance <= entity.interact_radius.max(0.0))
@@ -1563,10 +1627,14 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
             interaction_overlay.set(interaction_hint);
             let interact_edge = std::mem::take(&mut inp.interact_edge);
             if interact_edge {
-                let nearest = entity_scene
-                    .entities
-                    .iter()
-                    .filter(|entity| entity.enable_interact)
+                let nearest = interaction_index
+                    .borrow()
+                    .candidate_ids(local_pos)
+                    .into_iter()
+                    .filter_map(|id| {
+                        let entity = entity_scene.entities.iter().find(|entity| entity.id == id)?;
+                        (entity.visible && entity.enable_interact).then_some(entity)
+                    })
                     .filter_map(|entity| {
                         let distance = interaction_distance(entity, local_pos);
                         (distance <= entity.interact_radius.max(0.0)).then_some((distance, entity))
@@ -1637,8 +1705,9 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 block_surface_material(support_block, &surface_materials);
             physics.set_surface_friction(surface_friction);
             physics.set_surface_restitution(surface_restitution);
-            let mut physics_bodies = collision_bodies.clone();
-            physics_bodies.extend(static_collision_bodies.iter().cloned());
+            physics_bodies.clear();
+            physics_bodies.extend_from_slice(&collision_bodies);
+            physics_bodies.extend_from_slice(&static_collision_bodies);
             physics.step_with_bodies(
                 movement,
                 move_mode,
@@ -4461,8 +4530,8 @@ fn yield_animation_frame() -> js_sys::Promise {
 #[cfg(test)]
 mod tests {
     use super::{
-        AvatarRollState, InputState, RuntimeCameraState, StaticEntityScene,
-        apply_entity_state_event, apply_runtime_camera_state, block_is_solid,
+        AvatarRollState, EntityInteractionIndex, InputState, RuntimeCameraState,
+        StaticEntityScene, apply_entity_state_event, apply_runtime_camera_state, block_is_solid,
         build_static_entity_collision_bodies, fluid_volume_fraction, make_camera,
         network_tick_is_newer, normalize_player_collision_half_extents, recovered_avatar_yaw,
         recovered_fluid_height, recovered_fluid_info, recovered_player_state,
@@ -4472,6 +4541,68 @@ mod tests {
     use voxweb_physics::NeaPlayerPhysics;
     use voxweb_protocol::player::MoveMode;
     use voxweb_render::nea_mesh::{FLOATS_PER_VERTEX, MeshBuffers};
+
+    fn interaction_entity(id: u32, x: f32) -> serde_json::Value {
+        serde_json::json!({
+            "id": id,
+            "mesh": "marker",
+            "position": [x, 0.0, 0.0],
+            "scale": [1.0, 1.0, 1.0],
+            "rotation": [0.0, 0.0, 0.0, 1.0],
+            "collision": false,
+            "fixed": true,
+            "halfExtents": [0.5, 0.5, 0.5],
+            "mass": 1.0,
+            "friction": 0.0,
+            "restitution": 0.0,
+            "enableInteract": true,
+            "interactHint": "test",
+            "interactRadius": 1.0
+        })
+    }
+
+    #[test]
+    fn interaction_index_returns_nearby_and_excludes_far_entities() {
+        let scene: StaticEntityScene = serde_json::from_value(serde_json::json!({
+            "meshes": {},
+            "entities": [
+                interaction_entity(1, 0.0),
+                interaction_entity(2, 100.0)
+            ]
+        }))
+        .expect("interaction fixture");
+
+        let index = EntityInteractionIndex::build(&scene.entities);
+        let near_ids = index.candidate_ids([0.0, 0.0, 0.0]);
+        assert!(near_ids.contains(&1));
+        assert!(!near_ids.contains(&2));
+
+        let far_ids = index.candidate_ids([100.0, 0.0, 0.0]);
+        assert!(far_ids.contains(&2));
+        assert!(!far_ids.contains(&1));
+    }
+
+    #[test]
+    fn interaction_index_rebuilds_after_interactable_changes() {
+        let mut scene: StaticEntityScene = serde_json::from_value(serde_json::json!({
+            "meshes": {},
+            "entities": [interaction_entity(7, 0.0)]
+        }))
+        .expect("rebuild fixture");
+        let mut bodies = Vec::new();
+        assert!(apply_entity_state_event(
+            &serde_json::json!({
+                "type": "nea-revive:entity-state",
+                "entityId": 7,
+                "state": {"enableInteract": false}
+            }),
+            &mut bodies,
+            &mut scene,
+        ));
+
+        let index = EntityInteractionIndex::build(&scene.entities);
+        assert!(index.candidate_ids([0.0, 0.0, 0.0]).is_empty());
+    }
 
     #[test]
     fn entity_state_updates_interaction_without_a_collision_body() {
