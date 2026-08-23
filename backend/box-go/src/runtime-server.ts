@@ -411,6 +411,8 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   // spectator 等 DAO3 player API）推送到前端本地物理。初始帧在 join 后发一次，
   // 之后每 200ms 按 runtime.snapshot() 的权威玩家状态补发。
   let netStateTick = 4
+  let lastWorldPhysics: unknown = null
+  const lastCameraState = new Map<string, unknown>()
   const netStateTimer = setInterval(() => {
     const snap: any = runtime.snapshot()
     const tick = netStateTick
@@ -421,14 +423,17 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
       const player = snap.players.find((p: any) => p.id === playerId)
       const netClient = gameNetClients()[sessionId]
       if (!player || !netClient) continue
-      deliverClientEvent(playerId, {
-        type: "nea-revive:world-physics",
+      const worldPhysics = {
         gravity: snap.worldPhysics?.gravity,
         airFriction: snap.worldPhysics?.airFriction,
         tickRate: snap.worldPhysics?.tickRate,
         materials: snap.worldPhysics?.materials,
-      })
-      deliverClientEvent(playerId, {
+      }
+      if (JSON.stringify(lastWorldPhysics) !== JSON.stringify(worldPhysics)) {
+        lastWorldPhysics = structuredClone(worldPhysics)
+        deliverClientEvent(playerId, { type: "nea-revive:world-physics", ...worldPhysics })
+      }
+      const cameraState = {
         type: "nea-revive:camera-state",
         mode: player.cameraMode,
         fovY: player.cameraFovY,
@@ -443,7 +448,11 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         freezedAxis: player.cameraFreezedAxis,
         freezedForwardDirection: player.freezedForwardDirection,
         enable3DCursor: player.enable3DCursor,
-      })
+      }
+      if (JSON.stringify(lastCameraState.get(playerId)) !== JSON.stringify(cameraState)) {
+        lastCameraState.set(playerId, structuredClone(cameraState))
+        deliverClientEvent(playerId, cameraState)
+      }
       try {
         const packet = encodeNetPublicPacket({
           tick,

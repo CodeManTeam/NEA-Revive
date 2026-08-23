@@ -41,6 +41,7 @@ export class RuntimeGameZone {
   #remove;
   #selectorSource = "*";
   #selectorTest = new ParsedGameSelector("*");
+  #candidatesDirty = true;
 
   constructor(config, remove) {
     this.#remove = remove;
@@ -109,18 +110,41 @@ export class RuntimeGameZone {
 
   _has(entity) { return this.#active.has(entity); }
   _clear() { this.#active.clear(); this.#enter.clear(); this.#leave.clear(); }
-  _matchesSelector(entity) { this._syncSelector(); return this.#selectorTest.test(entity); }
-  _isPlayerSelector() { this._syncSelector(); return this.#selectorSource === "player"; }
+  _matchesSelector(entity) {
+    this._syncSelector();
+    return this.#selectorTest.test(entity);
+  }
+  _isPlayerSelector() {
+    this._syncSelector();
+    return this.#selectorSource === "player";
+  }
   _syncSelector() {
     if (this.selector === this.#selectorSource) return;
     this.#selectorTest = new ParsedGameSelector(this.selector);
     this.selector = this.#selectorSource = this.#selectorTest.normalize();
+  }
+
+  _invalidateCandidates() {
+    this.#candidatesDirty = true;
+  }
+
+  _candidatesDirty() {
+    return this.#candidatesDirty;
+  }
+
+  _clearCandidatesDirty() {
+    this.#candidatesDirty = false;
+  }
+
+  _candidateCount() {
+    return this.#candidatesDirty ? -1 : undefined;
   }
 }
 
 export class GameZoneSystem {
   #zones = [];
   #tick = 0;
+  #candidateCache = new WeakMap();
 
   list() { return this.#zones.slice(); }
 
@@ -141,11 +165,24 @@ export class GameZoneSystem {
   poll(tick, entities, players = entities) {
     this.#tick = tick;
     for (const zone of this.#zones) {
-      for (const entity of zone.entities()) if (!matches(zone, entity)) zone._leave(tick, entity);
       // Player-only zones are common in recovered maps. Avoid rescanning every
       // static prop (often hundreds of entities) on every simulation tick.
       const candidates = zone._isPlayerSelector() ? players : entities;
-      for (const entity of candidates) if (!zone._has(entity) && matches(zone, entity)) zone._enter(tick, entity);
+      let cache = this.#candidateCache.get(zone);
+      if (!cache || cache.candidates !== candidates || zone._candidatesDirty()) {
+        zone._clearCandidatesDirty();
+        cache = {
+          candidates,
+          matched: candidates.filter(entity => matches(zone, entity)),
+        };
+        this.#candidateCache.set(zone, cache);
+      }
+      const current = cache.matched;
+      const active = zone.entities();
+      const activeSet = new Set(active);
+      const matchedSet = new Set(current);
+      for (const entity of active) if (!matchedSet.has(entity) || !matches(zone, entity)) zone._leave(tick, entity);
+      for (const entity of current) if (!zone._has(entity)) zone._enter(tick, entity);
     }
   }
 }
