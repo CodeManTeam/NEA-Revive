@@ -1006,6 +1006,7 @@ export class ScriptRuntime {
       sleep: milliseconds => new Promise(resolveSleep => this.#schedule(resolveSleep, milliseconds, [])),
       // Recovered dialog enum used by real maps (parkour "帮助" command).
       Box3DialogType: Object.freeze({ TEXT: 0, RICH_TEXT: 1, PLAYER_LIST: 2, PLAYER: 3 }),
+      GameDialogType: Object.freeze({ INPUT: "input", SELECT: "select", TEXT: "text" }),
       structuredClone,
     };
   }

@@ -1618,6 +1618,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
             if let Some(render_terrain) = terrain.as_mut() {
                 render_terrain.update_entity_instances(&dc.device, &dc.queue, &entity_scene);
             }
+            static_collision_bodies = build_static_entity_collision_bodies(&entity_scene);
             entity_instances_dirty = false;
         }
         // Render once per browser animation frame. Network polling, physics,
