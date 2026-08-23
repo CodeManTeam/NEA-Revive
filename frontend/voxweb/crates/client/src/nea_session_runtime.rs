@@ -2195,6 +2195,7 @@ struct RenderTerrain {
     voxel_light: StaticVoxelLight,
     light_chunks: HashMap<(u32, u32, u32), Vec<u16>>,
     shadow_map: voxweb_render::nea_shadow::NeaShadowMap,
+    entity_transforms: HashMap<String, HashMap<u32, EntityTransform>>,
 }
 
 /// Keep each WebGPU vertex allocation comfortably below browser adapter
@@ -3339,6 +3340,7 @@ impl RenderTerrain {
         let entity_start = now_ms();
         let mut entity_pipelines = Vec::new();
         let mut entity_pipeline_keys = Vec::new();
+        let mut entity_transforms = HashMap::new();
         for (mesh_index, key) in entity_keys.iter().enumerate() {
             let Some((vertices, indices, instances)) =
                 build_static_entity_instances(entity_scene, key, &voxel_light, &light_chunks)
@@ -3362,6 +3364,13 @@ impl RenderTerrain {
                 &format!("nea.entities.{mesh_index}"),
             ));
             entity_pipeline_keys.push(key.clone());
+            entity_transforms.insert(
+                key.clone(),
+                scene_entities_by_key(entity_scene, key)
+                    .into_iter()
+                    .map(|entity| (entity.id, entity_transform(entity)))
+                    .collect(),
+            );
         }
         let fluid_mesh = MeshBuffers {
             vertices: fluid_verts,
@@ -3423,6 +3432,7 @@ impl RenderTerrain {
                 .map(|(x, y, z, cells)| ((*x, *y, *z), cells.clone()))
                 .collect(),
             shadow_map,
+            entity_transforms,
         }
     }
 
@@ -3432,7 +3442,21 @@ impl RenderTerrain {
         queue: &wgpu::Queue,
         entity_scene: &StaticEntityScene,
     ) {
+        let entity_instances_dirty_for_all = false;
         for (index, key) in self.entity_pipeline_keys.iter().enumerate() {
+            let transforms_changed = self.entity_transforms.get(key).is_none_or(|previous| {
+                entity_scene.entities.iter().filter(|entity| entity.mesh == *key && entity.visible).any(|entity| {
+                    previous.get(&entity.id).is_none_or(|last| *last != entity_transform(entity))
+                })
+            });
+            if !transforms_changed && !entity_instances_dirty_for_all {
+                continue;
+            }
+            for entity in entity_scene.entities.iter().filter(|entity| entity.mesh == *key && entity.visible) {
+                if let Some(map) = self.entity_transforms.get_mut(key) {
+                    map.insert(entity.id, entity_transform(entity));
+                }
+            }
             let Some((_, _, instances)) = build_static_entity_instances(
                 entity_scene,
                 key,
@@ -3451,6 +3475,30 @@ impl RenderTerrain {
             pipeline.update_instances(device, queue, &instances);
         }
     }
+}
+
+#[derive(Clone, Copy, PartialEq)]
+struct EntityTransform {
+    position: [f32; 3],
+    rotation: [f32; 4],
+    scale: [f32; 3],
+    mesh_offset: [f32; 3],
+}
+
+fn entity_transform(instance: &StaticEntityInstance) -> EntityTransform {
+    EntityTransform {
+        position: instance.position,
+        rotation: instance.rotation,
+        scale: instance.scale,
+        mesh_offset: instance.mesh_offset,
+    }
+}
+
+fn scene_entities_by_key<'a>(
+    scene: &'a StaticEntityScene,
+    key: &str,
+) -> impl Iterator<Item = &'a StaticEntityInstance> {
+    scene.entities.iter().filter(move |entity| entity.mesh == key)
 }
 
 fn apply_recovered_fluid_heights(
