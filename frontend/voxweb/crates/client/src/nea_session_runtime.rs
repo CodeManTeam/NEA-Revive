@@ -185,8 +185,7 @@ impl EntityInteractionIndex {
         };
         for entity in entities.iter().filter(|entity| entity.enable_interact) {
             let center = interaction_center(entity);
-            let radius =
-                interaction_bounds_radius(entity).max(entity.interact_radius.max(0.0));
+            let radius = interaction_bounds_radius(entity).max(entity.interact_radius.max(0.0));
             let min = center.map(|value| (value - radius).floor() as i32 / CELL_SIZE);
             let max = center.map(|value| (value + radius).floor() as i32 / CELL_SIZE);
             for z in min[2]..=max[2] {
@@ -1148,7 +1147,9 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                         );
                                         if entity_instances_dirty {
                                             *interaction_index.borrow_mut() =
-                                                EntityInteractionIndex::build(&entity_scene.entities);
+                                                EntityInteractionIndex::build(
+                                                    &entity_scene.entities,
+                                                );
                                         }
                                         damage_overlay
                                             .apply_event(&event.event, f64::from(now_ms()));
@@ -1283,23 +1284,51 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                         "[nea][terrain] rebuild source=voxelChange runs={}",
                                         runs.len()
                                     );
-                                    terrain = Some(RenderTerrain::build_chunks(
-                                        &dc.device,
-                                        &dc.queue,
-                                        &atlas,
-                                        &material_atlas,
-                                        &bump_atlas,
-                                        &water_bump,
-                                        &chunk_cells,
-                                        &entity_scene,
-                                        dc.surface_format,
-                                        width,
-                                        height,
-                                        // Voxel sky visibility is independent of
-                                        // the map sun pass. Backroom has a black
-                                        // sun but still needs packed sky light.
-                                        true,
-                                    ));
+                                    let changed_chunks = runs
+                                        .iter()
+                                        .filter_map(|&(offset, count, _)| {
+                                            let (x, y, _) =
+                                                voxweb_protocol::terrain::rle_offset_to_voxel(
+                                                    offset,
+                                                );
+                                            let (_, _, z) =
+                                                voxweb_protocol::terrain::rle_offset_to_voxel(
+                                                    offset.saturating_add(count.saturating_sub(1)),
+                                                );
+                                            Some((
+                                                (x >> 5) as u32,
+                                                (y >> 5) as u32,
+                                                (z >> 5) as u32,
+                                            ))
+                                        })
+                                        .collect::<Vec<_>>();
+                                    if let Some(current) = terrain.as_mut() {
+                                        current.append_or_replace_chunks(
+                                            &dc.device,
+                                            &dc.queue,
+                                            &atlas,
+                                            &material_atlas,
+                                            &bump_atlas,
+                                            &chunk_cells,
+                                            changed_chunks,
+                                            dc.surface_format,
+                                        );
+                                    } else {
+                                        terrain = Some(RenderTerrain::build_chunks(
+                                            &dc.device,
+                                            &dc.queue,
+                                            &atlas,
+                                            &material_atlas,
+                                            &bump_atlas,
+                                            &water_bump,
+                                            &chunk_cells,
+                                            &entity_scene,
+                                            dc.surface_format,
+                                            width,
+                                            height,
+                                            true,
+                                        ));
+                                    }
                                 }
                             }
                         }
@@ -1386,104 +1415,103 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                                 height,
                                                 true,
                                             ));
-                                            // place the player on the terrain
-                                            // top (solid block with 4 AIR
-                                            // blocks above so the standing
-                                            // player at eye 1.62 has clear
-                                            // view — probing only y+1 left
-                                            // the head inside a ceiling,
-                                            // rendering black)
-                                            for gy in 0..=128 {
-                                                if solid_at(
-                                                    &chunk_cells,
-                                                    local_pos[0],
-                                                    gy as f32,
-                                                    local_pos[2],
-                                                ) && !solid_at(
-                                                    &chunk_cells,
-                                                    local_pos[0],
-                                                    gy as f32 + 1.0,
-                                                    local_pos[2],
-                                                ) && !solid_at(
-                                                    &chunk_cells,
-                                                    local_pos[0],
-                                                    gy as f32 + 2.0,
-                                                    local_pos[2],
-                                                ) && !solid_at(
-                                                    &chunk_cells,
-                                                    local_pos[0],
-                                                    gy as f32 + 3.0,
-                                                    local_pos[2],
-                                                ) && !solid_at(
-                                                    &chunk_cells,
-                                                    local_pos[0],
-                                                    gy as f32 + 4.0,
-                                                    local_pos[2],
-                                                ) {
-                                                    // 玩家脚底应落在「脚下 solid 方块顶面」(gy+1)，
-                                                    // center = 顶面 + body 半高。旧公式 gy+1.1 让脚底
-                                                    // 落在方块内部 (gy)，物理会把玩家顶出/弹飞（悬空下落）。
-                                                    local_pos[1] = gy as f32
-                                                        + 1.0
-                                                        + local_body_half_extents[1];
-                                                    local_vel[1] = 0.0;
-                                                    // 若本地物理已初始化（地形重建等），同步其位置，
-                                                    // 避免旧位置继续主导（悬空/下落）。
-                                                    if let Some(p) = local_physics.as_mut() {
-                                                        p.position = local_pos;
-                                                        p.velocity = [0.0, 0.0, 0.0];
-                                                        p.grounded = true;
-                                                    }
-                                                    player_pos = Some(local_pos);
-                                                    break;
-                                                }
+                                        } else {
+                                            let latest = chunk_cells.len().saturating_sub(1);
+                                            if let Some(&(cx, cy, cz, _)) = chunk_cells.get(latest)
+                                            {
+                                                jslog!(
+                                                    "[nea][terrain] append source=chunk-arrival chunk={cx},{cy},{cz}"
+                                                );
+                                                terrain
+                                                    .as_mut()
+                                                    .expect("terrain")
+                                                    .append_or_replace_chunks(
+                                                        &dc.device,
+                                                        &dc.queue,
+                                                        &atlas,
+                                                        &material_atlas,
+                                                        &bump_atlas,
+                                                        &chunk_cells,
+                                                        [(cx, cy, cz)],
+                                                        dc.surface_format,
+                                                    );
                                             }
-                                            jslog!(
-                                                "[nea] spawn ground: pos=({:.1},{:.1},{:.1})",
-                                                local_pos[0],
-                                                local_pos[1],
-                                                local_pos[2]
-                                            );
-                                            let foot_block = block_voxel_at(
-                                                &chunk_cells,
-                                                local_pos[0].floor() as i32,
-                                                (local_pos[1] - local_body_half_extents[1]).floor()
-                                                    as i32,
-                                                local_pos[2].floor() as i32,
-                                            );
-                                            jslog!(
-                                                "[nea] spawn foot block={} half_h={:.2}",
-                                                foot_block,
-                                                local_body_half_extents[1]
-                                            );
-                                            loading.set_status("地形渲染完成，进入世界…");
-                                            loading.set_progress(0.98);
                                         }
+                                        // place the player on the terrain
+                                        // top (solid block with 4 AIR
+                                        // blocks above so the standing
+                                        // player at eye 1.62 has clear
+                                        // view — probing only y+1 left
+                                        // the head inside a ceiling,
+                                        // rendering black)
+                                        for gy in 0..=128 {
+                                            if solid_at(
+                                                &chunk_cells,
+                                                local_pos[0],
+                                                gy as f32,
+                                                local_pos[2],
+                                            ) && !solid_at(
+                                                &chunk_cells,
+                                                local_pos[0],
+                                                gy as f32 + 1.0,
+                                                local_pos[2],
+                                            ) && !solid_at(
+                                                &chunk_cells,
+                                                local_pos[0],
+                                                gy as f32 + 2.0,
+                                                local_pos[2],
+                                            ) && !solid_at(
+                                                &chunk_cells,
+                                                local_pos[0],
+                                                gy as f32 + 3.0,
+                                                local_pos[2],
+                                            ) && !solid_at(
+                                                &chunk_cells,
+                                                local_pos[0],
+                                                gy as f32 + 4.0,
+                                                local_pos[2],
+                                            ) {
+                                                // 玩家脚底应落在「脚下 solid 方块顶面」(gy+1)，
+                                                // center = 顶面 + body 半高。旧公式 gy+1.1 让脚底
+                                                // 落在方块内部 (gy)，物理会把玩家顶出/弹飞（悬空下落）。
+                                                local_pos[1] =
+                                                    gy as f32 + 1.0 + local_body_half_extents[1];
+                                                local_vel[1] = 0.0;
+                                                // 若本地物理已初始化（地形重建等），同步其位置，
+                                                // 避免旧位置继续主导（悬空/下落）。
+                                                if let Some(p) = local_physics.as_mut() {
+                                                    p.position = local_pos;
+                                                    p.velocity = [0.0, 0.0, 0.0];
+                                                    p.grounded = true;
+                                                }
+                                                player_pos = Some(local_pos);
+                                                break;
+                                            }
+                                        }
+                                        jslog!(
+                                            "[nea] spawn ground: pos=({:.1},{:.1},{:.1})",
+                                            local_pos[0],
+                                            local_pos[1],
+                                            local_pos[2]
+                                        );
+                                        let foot_block = block_voxel_at(
+                                            &chunk_cells,
+                                            local_pos[0].floor() as i32,
+                                            (local_pos[1] - local_body_half_extents[1]).floor()
+                                                as i32,
+                                            local_pos[2].floor() as i32,
+                                        );
+                                        jslog!(
+                                            "[nea] spawn foot block={} half_h={:.2}",
+                                            foot_block,
+                                            local_body_half_extents[1]
+                                        );
+                                        loading.set_status("地形渲染完成，进入世界…");
+                                        loading.set_progress(0.98);
                                         if arrived == pending_chunks.len()
                                             && !full_map_built
                                             && arrived > near_count
                                         {
-                                            // The current Rust renderer owns one combined mesh;
-                                            // unlike dump's worker, late chunks cannot become
-                                            // visible without a final full-map build.
-                                            jslog!(
-                                                "[nea][terrain] rebuild source=full-map chunks={}",
-                                                arrived
-                                            );
-                                            terrain = Some(RenderTerrain::build_chunks(
-                                                &dc.device,
-                                                &dc.queue,
-                                                &atlas,
-                                                &material_atlas,
-                                                &bump_atlas,
-                                                &water_bump,
-                                                &chunk_cells,
-                                                &entity_scene,
-                                                dc.surface_format,
-                                                width,
-                                                height,
-                                                true,
-                                            ));
                                             full_map_built = true;
                                             loading.set_status("全图加载完成");
                                             loading.set_progress(1.0);
@@ -1614,7 +1642,10 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 .candidate_ids(local_pos)
                 .into_iter()
                 .filter_map(|id| {
-                    let entity = entity_scene.entities.iter().find(|entity| entity.id == id)?;
+                    let entity = entity_scene
+                        .entities
+                        .iter()
+                        .find(|entity| entity.id == id)?;
                     (entity.visible && entity.enable_interact).then_some(entity)
                 })
                 .filter_map(|entity| {
@@ -1632,7 +1663,10 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     .candidate_ids(local_pos)
                     .into_iter()
                     .filter_map(|id| {
-                        let entity = entity_scene.entities.iter().find(|entity| entity.id == id)?;
+                        let entity = entity_scene
+                            .entities
+                            .iter()
+                            .find(|entity| entity.id == id)?;
                         (entity.visible && entity.enable_interact).then_some(entity)
                     })
                     .filter_map(|entity| {
@@ -2255,6 +2289,8 @@ struct RenderTerrain {
     mesh: MeshBuffers,
     terrain_pipelines: Vec<NeaTerrainPipeline>,
     terrain_bounds: Vec<([f32; 3], [f32; 3])>,
+    terrain_chunk_keys: Vec<(u32, u32, u32)>,
+    terrain_mesh_cache: HashMap<(u32, u32, u32), TerrainChunkMeshes>,
     entity_pipelines: Vec<voxweb_render::nea_entity::NeaEntityPipeline>,
     entity_pipeline_keys: Vec<String>,
     #[allow(dead_code)]
@@ -2265,6 +2301,18 @@ struct RenderTerrain {
     light_chunks: HashMap<(u32, u32, u32), Vec<u16>>,
     shadow_map: voxweb_render::nea_shadow::NeaShadowMap,
     entity_transforms: HashMap<String, HashMap<u32, EntityTransform>>,
+}
+
+/// Mesh output for one NEA chunk. Keeping these buffers lets newly arrived
+/// chunks append without remeshing the whole world and voxel changes replace
+/// only the affected chunk.
+#[derive(Clone, Default)]
+struct TerrainChunkMeshes {
+    opaque: MeshBuffers,
+    alpha: MeshBuffers,
+    fluid: MeshBuffers,
+    solid_cells: usize,
+    fluid_cells: usize,
 }
 
 /// Keep each WebGPU vertex allocation comfortably below browser adapter
@@ -3115,6 +3163,8 @@ impl RenderTerrain {
         let mut fluid_base = 0u32;
         let mut solid = 0usize;
         let mut fluid_cells = 0usize;
+        let mut terrain_mesh_cache: HashMap<(u32, u32, u32), TerrainChunkMeshes> =
+            HashMap::with_capacity(chunks.len());
         let chunk_index: HashMap<(u32, u32, u32), &[u16]> = chunks
             .iter()
             .map(|(x, y, z, cells)| ((*x, *y, *z), cells.as_slice()))
@@ -3180,6 +3230,11 @@ impl RenderTerrain {
 
         let mesh_start = now_ms();
         for (cx, cy, cz, cells) in chunks {
+            let chunk_key = (*cx, *cy, *cz);
+            if terrain_mesh_cache.contains_key(&chunk_key) {
+                continue;
+            }
+            let mut chunk_meshes = TerrainChunkMeshes::default();
             // NEA 32³ cells -> 4 VoxWeb 16×256×16 columns
             let mut columns = [[0u16; CHUNK_SIZE]; 4];
             let cells32: [u16; 32768] = {
@@ -3270,6 +3325,16 @@ impl RenderTerrain {
                                     {
                                         vertex[8..12].copy_from_slice(&info);
                                     }
+                                    let vertex_offset = (chunk_meshes.fluid.vertices.len()
+                                        / FLOATS_PER_VERTEX)
+                                        as u32;
+                                    chunk_meshes
+                                        .fluid
+                                        .vertices
+                                        .extend_from_slice(&packed.vertices);
+                                    chunk_meshes.fluid.indices.extend(
+                                        packed.indices.iter().map(|index| index + vertex_offset),
+                                    );
                                     fluid_verts.extend_from_slice(&packed.vertices);
                                     fluid_idx.extend(
                                         packed.indices.iter().map(|index| index + fluid_base),
@@ -3277,6 +3342,7 @@ impl RenderTerrain {
                                     fluid_base +=
                                         (packed.vertices.len() / FLOATS_PER_VERTEX) as u32;
                                     fluid_cells += 1;
+                                    chunk_meshes.fluid_cells += 1;
                                 }
                                 continue;
                             }
@@ -3326,20 +3392,40 @@ impl RenderTerrain {
                             );
                             let uses_alpha = block_id & 1 == 0;
                             if uses_alpha {
+                                let vertex_offset =
+                                    (chunk_meshes.alpha.vertices.len() / FLOATS_PER_VERTEX) as u32;
+                                chunk_meshes
+                                    .alpha
+                                    .vertices
+                                    .extend_from_slice(&packed.vertices);
+                                chunk_meshes.alpha.indices.extend(
+                                    packed.indices.iter().map(|index| index + vertex_offset),
+                                );
                                 alpha_verts.extend_from_slice(&packed.vertices);
                                 alpha_idx
                                     .extend(packed.indices.iter().map(|index| index + alpha_base));
                                 alpha_base += (packed.vertices.len() / FLOATS_PER_VERTEX) as u32;
                             } else {
+                                let vertex_offset =
+                                    (chunk_meshes.opaque.vertices.len() / FLOATS_PER_VERTEX) as u32;
+                                chunk_meshes
+                                    .opaque
+                                    .vertices
+                                    .extend_from_slice(&packed.vertices);
+                                chunk_meshes.opaque.indices.extend(
+                                    packed.indices.iter().map(|index| index + vertex_offset),
+                                );
                                 all_verts.extend_from_slice(&packed.vertices);
                                 all_idx.extend(packed.indices.iter().map(|index| index + base));
                                 base += (packed.vertices.len() / FLOATS_PER_VERTEX) as u32;
                             }
                             solid += 1;
+                            chunk_meshes.solid_cells += 1;
                         }
                     }
                 }
             }
+            terrain_mesh_cache.insert(chunk_key, chunk_meshes);
         }
 
         let mesh = MeshBuffers {
@@ -3362,19 +3448,36 @@ impl RenderTerrain {
             device,
             voxweb_render::nea_shadow::DEFAULT_SHADOW_RESOLUTION,
         );
-        let terrain_meshes = split_mesh_batches(mesh.clone(), 4 * 1024 * 1024);
-        let terrain_bounds = terrain_meshes.iter().map(mesh_bounds).collect::<Vec<_>>();
+        let terrain_meshes = terrain_mesh_cache
+            .iter()
+            .flat_map(|(chunk_key, chunk_meshes)| {
+                [
+                    &chunk_meshes.opaque,
+                    &chunk_meshes.alpha,
+                    &chunk_meshes.fluid,
+                ]
+                .into_iter()
+                .filter(|mesh| !mesh.indices.is_empty())
+                .flat_map(|mesh| split_mesh_batches(mesh.clone(), 4 * 1024 * 1024))
+                .map(move |batch| (*chunk_key, batch))
+            })
+            .collect::<Vec<_>>();
+        let terrain_chunk_keys = terrain_mesh_cache.keys().copied().collect::<Vec<_>>();
+        let terrain_bounds = terrain_meshes
+            .iter()
+            .map(|(_, mesh)| mesh_bounds(mesh))
+            .collect::<Vec<_>>();
         let terrain_pipelines = terrain_meshes
             .iter()
             .enumerate()
-            .map(|(index, terrain_mesh)| {
+            .map(|(index, _terrain_mesh)| {
                 NeaTerrainPipeline::new(
                     device,
                     atlas,
                     material_atlas,
                     bump_atlas,
                     &shadow_map,
-                    terrain_mesh,
+                    &mesh,
                     surface_format,
                     Some(wgpu::TextureFormat::Depth32Float),
                     &format!("nea.terrain.{index}"),
@@ -3490,6 +3593,8 @@ impl RenderTerrain {
             mesh,
             terrain_pipelines,
             terrain_bounds,
+            terrain_chunk_keys,
+            terrain_mesh_cache,
             entity_pipelines,
             entity_pipeline_keys,
             entity_textures,
@@ -3505,6 +3610,298 @@ impl RenderTerrain {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
+    fn append_or_replace_chunks(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        atlas: &AtlasTexture,
+        material_atlas: &AtlasTexture,
+        bump_atlas: &AtlasTexture,
+        chunks: &[(u32, u32, u32, Vec<u16>)],
+        changed_chunks: impl IntoIterator<Item = (u32, u32, u32)>,
+        surface_format: wgpu::TextureFormat,
+    ) {
+        let changed: std::collections::HashSet<_> = changed_chunks.into_iter().collect();
+        let remesh_start = now_ms();
+        let mut changed_count = 0usize;
+        let mut new_cells = Vec::new();
+        for (cx, cy, cz, cells) in chunks {
+            if !changed.contains(&(*cx, *cy, *cz)) {
+                continue;
+            }
+            self.light_chunks.insert((*cx, *cy, *cz), cells.clone());
+            new_cells.push((*cx, *cy, *cz));
+            changed_count += 1;
+        }
+        let chunk_index: HashMap<(u32, u32, u32), &[u16]> = self
+            .light_chunks
+            .iter()
+            .map(|(key, cells)| (*key, cells.as_slice()))
+            .collect();
+        let catalog_json = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../tools/parity/fixtures/block-texture-map.json"
+        ));
+        let catalog_v: serde_json::Value =
+            serde_json::from_str(catalog_json).expect("embedded block catalog json");
+        let mut catalog = voxweb_protocol::blockinfo::BlockCatalog::from_json(&catalog_v)
+            .expect("embedded block catalog");
+        let emissive_json = include_str!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../tools/parity/fixtures/block-emissive-map.json"
+        ));
+        let emissive_value: serde_json::Value =
+            serde_json::from_str(emissive_json).expect("embedded block emissive fixture");
+        catalog
+            .apply_emissive_json(&emissive_value)
+            .expect("block emissive fixture matches catalog");
+
+        for key in &new_cells {
+            let cells = self.light_chunks.get(key).expect("chunk cells");
+            let chunk_meshes = Self::build_chunk_meshes(
+                key.0,
+                key.1,
+                key.2,
+                cells,
+                &chunk_index,
+                &catalog,
+                &self.voxel_light,
+            );
+            self.terrain_mesh_cache.insert(*key, chunk_meshes);
+            if let Some(index) = self
+                .terrain_chunk_keys
+                .iter()
+                .position(|existing| existing == key)
+            {
+                self.terrain_chunk_keys.remove(index);
+            }
+            self.terrain_chunk_keys.push(*key);
+        }
+        jslog!(
+            "[nea][perf] terrain-incremental remesh chunks={} ms={}",
+            changed_count,
+            now_ms().saturating_sub(remesh_start),
+        );
+        self.rebuild_terrain_batches(
+            device,
+            queue,
+            atlas,
+            material_atlas,
+            bump_atlas,
+            surface_format,
+        );
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn build_chunk_meshes(
+        cx: u32,
+        cy: u32,
+        cz: u32,
+        cells: &[u16],
+        chunk_index: &HashMap<(u32, u32, u32), &[u16]>,
+        catalog: &voxweb_protocol::blockinfo::BlockCatalog,
+        voxel_light: &StaticVoxelLight,
+    ) -> TerrainChunkMeshes {
+        let mut meshes = TerrainChunkMeshes::default();
+        // NEA 32³ cells -> 4 VoxWeb 16×256×16 columns
+        let mut columns = [[0u16; CHUNK_SIZE]; 4];
+        let cells32: [u16; 32768] = {
+            let mut a = [0u16; 32768];
+            let n = cells.len().min(32768);
+            a[..n].copy_from_slice(&cells[..n]);
+            a
+        };
+        voxweb_protocol::adapter::write_voxweb_chunks(&cells32, &mut columns, true);
+        let _positions = voxweb_protocol::adapter::voxweb_chunk_positions(cx, cy, cz);
+        for (ci, col) in columns.iter().enumerate() {
+            let world_base_x = (cx * 32) as f32;
+            let world_base_y = (cy * 32) as f32;
+            let world_base_z = (cz * 32) as f32;
+            for y in 0..32usize {
+                for z in 0..16usize {
+                    for x in 0..16usize {
+                        let block = col[voxweb_protocol::adapter::voxweb_cell_index(x, y, z)];
+                        if block == 0 {
+                            continue;
+                        }
+                        let block_id = block & voxweb_protocol::geometry::BLOCK_ID_MASK;
+                        let rotation = block >> 14;
+                        let Some(entry) = catalog.get(block_id) else {
+                            continue;
+                        };
+                        if is_barrier_block(block_id) {
+                            continue;
+                        }
+                        let unrotated_rects = [
+                            voxweb_protocol::geometry::face_uv_rect(entry.faces.px, 512.0),
+                            voxweb_protocol::geometry::face_uv_rect(entry.faces.nx, 512.0),
+                            voxweb_protocol::geometry::face_uv_rect(entry.faces.py, 512.0),
+                            voxweb_protocol::geometry::face_uv_rect(entry.faces.ny, 512.0),
+                            voxweb_protocol::geometry::face_uv_rect(entry.faces.pz, 512.0),
+                            voxweb_protocol::geometry::face_uv_rect(entry.faces.nz, 512.0),
+                        ];
+                        let rects = recovered_rotated_face_rects(unrotated_rects, rotation);
+                        let local_x = (ci & 1) * 16 + x;
+                        let local_z = (ci >> 1) * 16 + z;
+                        let wx = world_base_x + local_x as f32;
+                        let wy = world_base_y + y as f32;
+                        let wz = world_base_z + local_z as f32;
+                        if entry.fluid {
+                            let air = |dx: i32, dy: i32, dz: i32| {
+                                block_voxel_indexed(
+                                    chunk_index,
+                                    wx as i32 + dx,
+                                    wy as i32 + dy,
+                                    wz as i32 + dz,
+                                ) == 0
+                            };
+                            let mut fluid_mask = 0u8;
+                            for (bit, offset) in [
+                                (0, [1, 0, 0]),
+                                (1, [-1, 0, 0]),
+                                (2, [0, 1, 0]),
+                                (3, [0, -1, 0]),
+                                (4, [0, 0, 1]),
+                                (5, [0, 0, -1]),
+                            ] {
+                                if air(offset[0], offset[1], offset[2]) {
+                                    fluid_mask |= 1 << bit;
+                                }
+                            }
+                            if fluid_mask == 0 {
+                                continue;
+                            }
+                            let geometry = voxweb_protocol::geometry::build_box_geometry_masked(
+                                wx, wy, wz, 1.0, 1.0, 1.0, &rects, fluid_mask,
+                            );
+                            let mut packed = MeshBuffers::from_box_mesh(&geometry);
+                            apply_recovered_fluid_heights(
+                                &mut packed.vertices,
+                                wy as i32,
+                                voxel_light,
+                            );
+                            let info = recovered_fluid_info(block_id).unwrap_or([0.0; 4]);
+                            for vertex in packed.vertices.chunks_exact_mut(FLOATS_PER_VERTEX) {
+                                vertex[8..12].copy_from_slice(&info);
+                            }
+                            let vertex_offset =
+                                (meshes.fluid.vertices.len() / FLOATS_PER_VERTEX) as u32;
+                            meshes.fluid.vertices.extend_from_slice(&packed.vertices);
+                            meshes
+                                .fluid
+                                .indices
+                                .extend(packed.indices.iter().map(|index| index + vertex_offset));
+                            meshes.fluid_cells += 1;
+                            continue;
+                        }
+                        let neighbour = |dx: i32, dy: i32, dz: i32| {
+                            block_voxel_indexed(
+                                chunk_index,
+                                wx as i32 + dx,
+                                wy as i32 + dy,
+                                wz as i32 + dz,
+                            )
+                        };
+                        let mut mask = 0u8;
+                        for (bit, offset) in [
+                            (0, [1, 0, 0]),
+                            (1, [-1, 0, 0]),
+                            (2, [0, 1, 0]),
+                            (3, [0, -1, 0]),
+                            (4, [0, 0, 1]),
+                            (5, [0, 0, -1]),
+                        ] {
+                            if recovered_voxel_face_visible(
+                                block,
+                                neighbour(offset[0], offset[1], offset[2]),
+                            ) {
+                                mask |= 1 << bit;
+                            }
+                        }
+                        if mask == 0 {
+                            continue;
+                        }
+                        let geometry = voxweb_protocol::geometry::build_box_geometry_masked(
+                            wx, wy, wz, 1.0, 1.0, 1.0, &rects, mask,
+                        );
+                        let mut packed = MeshBuffers::from_box_mesh(&geometry);
+                        write_recovered_texture_rotation(&mut packed.vertices, rotation);
+                        write_recovered_corner_light(
+                            &mut packed.vertices,
+                            voxel_light,
+                            chunk_index,
+                        );
+                        let target = if block_id & 1 == 0 {
+                            &mut meshes.alpha
+                        } else {
+                            &mut meshes.opaque
+                        };
+                        let vertex_offset = (target.vertices.len() / FLOATS_PER_VERTEX) as u32;
+                        target.vertices.extend_from_slice(&packed.vertices);
+                        target
+                            .indices
+                            .extend(packed.indices.iter().map(|index| index + vertex_offset));
+                        meshes.solid_cells += 1;
+                    }
+                }
+            }
+        }
+        meshes
+    }
+
+    fn rebuild_terrain_batches(
+        &mut self,
+        device: &wgpu::Device,
+        _queue: &wgpu::Queue,
+        atlas: &AtlasTexture,
+        material_atlas: &AtlasTexture,
+        bump_atlas: &AtlasTexture,
+        surface_format: wgpu::TextureFormat,
+    ) {
+        let build_start = now_ms();
+        let mut terrain_meshes = Vec::with_capacity(self.terrain_chunk_keys.len());
+        for key in &self.terrain_chunk_keys {
+            if let Some(meshes) = self.terrain_mesh_cache.get(key) {
+                for mesh in [&meshes.opaque, &meshes.alpha, &meshes.fluid] {
+                    if !mesh.indices.is_empty() {
+                        terrain_meshes.extend(
+                            split_mesh_batches(mesh.clone(), 4 * 1024 * 1024)
+                                .into_iter()
+                                .map(|batch| (*key, batch)),
+                        );
+                    }
+                }
+            }
+        }
+        self.terrain_bounds = terrain_meshes
+            .iter()
+            .map(|(_, mesh)| mesh_bounds(mesh))
+            .collect();
+        self.terrain_pipelines = terrain_meshes
+            .iter()
+            .enumerate()
+            .map(|(index, (_, mesh))| {
+                NeaTerrainPipeline::new(
+                    device,
+                    atlas,
+                    material_atlas,
+                    bump_atlas,
+                    &self.shadow_map,
+                    mesh,
+                    surface_format,
+                    Some(wgpu::TextureFormat::Depth32Float),
+                    &format!("nea.terrain.{index}"),
+                )
+            })
+            .collect();
+        jslog!(
+            "[nea][perf] terrain-batches batches={} ms={}",
+            self.terrain_pipelines.len(),
+            now_ms().saturating_sub(build_start),
+        );
+    }
+
     fn update_entity_instances(
         &mut self,
         device: &wgpu::Device,
@@ -3514,14 +3911,24 @@ impl RenderTerrain {
         let entity_instances_dirty_for_all = false;
         for (index, key) in self.entity_pipeline_keys.iter().enumerate() {
             let transforms_changed = self.entity_transforms.get(key).is_none_or(|previous| {
-                entity_scene.entities.iter().filter(|entity| entity.mesh == *key && entity.visible).any(|entity| {
-                    previous.get(&entity.id).is_none_or(|last| *last != entity_transform(entity))
-                })
+                entity_scene
+                    .entities
+                    .iter()
+                    .filter(|entity| entity.mesh == *key && entity.visible)
+                    .any(|entity| {
+                        previous
+                            .get(&entity.id)
+                            .is_none_or(|last| *last != entity_transform(entity))
+                    })
             });
             if !transforms_changed && !entity_instances_dirty_for_all {
                 continue;
             }
-            for entity in entity_scene.entities.iter().filter(|entity| entity.mesh == *key && entity.visible) {
+            for entity in entity_scene
+                .entities
+                .iter()
+                .filter(|entity| entity.mesh == *key && entity.visible)
+            {
                 if let Some(map) = self.entity_transforms.get_mut(key) {
                     map.insert(entity.id, entity_transform(entity));
                 }
@@ -3567,7 +3974,10 @@ fn scene_entities_by_key<'a>(
     scene: &'a StaticEntityScene,
     key: &str,
 ) -> impl Iterator<Item = &'a StaticEntityInstance> {
-    scene.entities.iter().filter(move |entity| entity.mesh == key)
+    scene
+        .entities
+        .iter()
+        .filter(move |entity| entity.mesh == key)
 }
 
 fn apply_recovered_fluid_heights(
@@ -4530,8 +4940,8 @@ fn yield_animation_frame() -> js_sys::Promise {
 #[cfg(test)]
 mod tests {
     use super::{
-        AvatarRollState, EntityInteractionIndex, InputState, RuntimeCameraState,
-        StaticEntityScene, apply_entity_state_event, apply_runtime_camera_state, block_is_solid,
+        AvatarRollState, EntityInteractionIndex, InputState, RuntimeCameraState, StaticEntityScene,
+        apply_entity_state_event, apply_runtime_camera_state, block_is_solid,
         build_static_entity_collision_bodies, fluid_volume_fraction, make_camera,
         network_tick_is_newer, normalize_player_collision_half_extents, recovered_avatar_yaw,
         recovered_fluid_height, recovered_fluid_info, recovered_player_state,
