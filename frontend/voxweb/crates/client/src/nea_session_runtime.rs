@@ -241,6 +241,50 @@ fn interaction_distance(entity: &StaticEntityInstance, player: [f32; 3]) -> f32 
     (center_distance - radius).max(0.0)
 }
 
+fn raycast_static_entity(
+    origin: glam::Vec3,
+    direction: glam::Vec3,
+    entities: &[StaticEntityInstance],
+) -> Option<(f32, &StaticEntityInstance)> {
+    if direction.length_squared() < 1.0e-8 {
+        return None;
+    }
+    entities
+        .iter()
+        .filter(|entity| entity.visible && entity.collision)
+        .filter_map(|entity| {
+            let center = glam::Vec3::from_array(interaction_center(entity));
+            let half = glam::Vec3::from_array(entity.half_extents);
+            let min = center - half;
+            let max = center + half;
+            let mut near = 0.0f32;
+            let mut far = f32::INFINITY;
+            for axis in 0..3 {
+                let o = origin[axis];
+                let d = direction[axis];
+                if d.abs() < 1.0e-8 {
+                    if o < min[axis] || o > max[axis] {
+                        return None;
+                    }
+                    continue;
+                }
+                let inv = 1.0 / d;
+                let mut t0 = (min[axis] - o) * inv;
+                let mut t1 = (max[axis] - o) * inv;
+                if t0 > t1 {
+                    std::mem::swap(&mut t0, &mut t1);
+                }
+                near = near.max(t0);
+                far = far.min(t1);
+                if near > far {
+                    return None;
+                }
+            }
+            (far >= 0.0).then_some((near.max(0.0), entity))
+        })
+        .min_by(|left, right| left.0.total_cmp(&right.0))
+}
+
 fn recovered_walk_phase_delta(frame_seconds: f32, mode: voxweb_protocol::player::MoveMode) -> f32 {
     crate::nea_session_context::walk_phase_delta(frame_seconds, mode)
 }
@@ -1811,25 +1855,24 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     (d.player_id, d.last_server_tick)
                 };
                 let action_wire_events = action_events.into_iter().map(|(button, pressed)| {
-                    let target = interaction_index
-                        .borrow()
-                        .candidate_ids(local_pos)
-                        .into_iter()
-                        .filter_map(|id| entity_scene.entities.iter().find(|entity| entity.id == id))
-                        .filter(|entity| entity.visible && entity.enable_interact)
-                        .filter_map(|entity| {
-                            let distance = interaction_distance(entity, local_pos);
-                            (distance <= entity.interact_radius.max(0.0)).then_some((distance, entity))
-                        })
-                        .min_by(|left, right| left.0.total_cmp(&right.0));
-                    let (ray_hit_entity, ray_time, ray_direction) = if let Some((_distance, entity)) = target {
-                        let center = interaction_center(entity);
-                        let delta = glam::Vec3::from_array(center) - glam::Vec3::from_array(local_pos);
-                        let distance = delta.length();
-                        let direction = if distance > 1.0e-4 { delta / distance } else { glam::Vec3::ZERO };
-                        (entity.id, distance, direction.to_array())
+                    let (ray_origin, ray_target) = voxweb_protocol::player::fps_camera(
+                        local_pos,
+                        local_body_half_extents[1],
+                        inp.crouching,
+                        inp.local_pitch,
+                        inp.local_yaw,
+                    );
+                    let ray_delta = glam::Vec3::from_array(ray_target) - glam::Vec3::from_array(ray_origin);
+                    let ray_direction = ray_delta.normalize_or_zero();
+                    let target = raycast_static_entity(
+                        glam::Vec3::from_array(ray_origin),
+                        ray_direction,
+                        &entity_scene.entities,
+                    );
+                    let (ray_hit_entity, ray_time) = if let Some((distance, entity)) = target {
+                        (entity.id, distance)
                     } else {
-                        (0, -1.0, [0.0, 0.0, 0.0])
+                        (0, -1.0)
                     };
                     voxweb_protocol::player::ClientInputEvent {
                         tick: tick_now as f32,
@@ -1839,9 +1882,9 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                         button_state: if pressed { button } else { 0 },
                         prev_button_state: if pressed { 0 } else { button },
                         position: local_pos,
-                        ray_direction,
+                        ray_direction: ray_direction.to_array(),
                         ray_hit_normal: 0,
-                        ray_origin: local_pos,
+                        ray_origin,
                     }
                 }).collect();
                 let ci = voxweb_protocol::player::ClientInput {
@@ -5068,7 +5111,7 @@ mod tests {
         build_static_entity_collision_bodies, fluid_volume_fraction, make_camera,
         network_tick_is_newer, normalize_player_collision_half_extents, recovered_avatar_yaw,
         recovered_fluid_height, recovered_fluid_info, recovered_player_state,
-        recovered_rotated_face_rects, recovered_voxel_face_visible, recovered_walk_phase_delta,
+        raycast_static_entity, recovered_rotated_face_rects, recovered_voxel_face_visible, recovered_walk_phase_delta,
         write_recovered_texture_rotation,
     };
     use voxweb_physics::NeaPlayerPhysics;
@@ -5113,6 +5156,34 @@ mod tests {
         let far_ids = index.candidate_ids([100.0, 0.0, 0.0]);
         assert!(far_ids.contains(&2));
         assert!(!far_ids.contains(&1));
+    }
+
+    #[test]
+    fn entity_raycast_does_not_require_interaction_metadata() {
+        let scene: StaticEntityScene = serde_json::from_value(serde_json::json!({
+            "meshes": {},
+            "entities": [{
+                "id": 99,
+                "mesh": "snowman",
+                "position": [0.0, 0.0, 4.0],
+                "scale": [1.0, 1.0, 1.0],
+                "rotation": [0.0, 0.0, 0.0, 1.0],
+                "collision": true,
+                "fixed": true,
+                "halfExtents": [1.0, 1.0, 1.0],
+                "mass": 1.0,
+                "friction": 0.0,
+                "restitution": 0.0,
+                "enableInteract": false
+            }]
+        })).expect("raycast fixture");
+        let hit = raycast_static_entity(
+            glam::Vec3::new(0.0, 0.0, 0.0),
+            glam::Vec3::new(0.0, 0.0, 1.0),
+            &scene.entities,
+        ).expect("entity hit");
+        assert_eq!(hit.1.id, 99);
+        assert!((hit.0 - 3.0).abs() < 1.0e-5);
     }
 
     #[test]

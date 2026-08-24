@@ -1080,6 +1080,8 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
           const event = JSON.parse(String((data as { args?: string })?.args ?? "null"))
           if (event?.type === "nea-revive:chat" && typeof event.message === "string") {
             runtime.dispatchChat(playerId, event.message)
+          } else if (event?.type === "nea-revive:camera-toggle") {
+            runtime.toggleCameraMode(playerId)
           } else {
             runtime.dispatchClientEvent(playerId, event)
           }

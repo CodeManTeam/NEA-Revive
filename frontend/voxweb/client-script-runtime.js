@@ -3,6 +3,8 @@
 
   const outbound = [];
   let uiPictureAssets = Object.create(null);
+  let clientDrawReady = false;
+  const pendingPointerLockEvents = [];
   const remoteEvents = createEmitter();
   const pointerLockEvents = createEmitter();
   const screenEvents = createEmitter();
@@ -378,11 +380,104 @@
     },
     unlockPointer: () => document.exitPointerLock(),
   };
+  let inventoryControls = null;
+  function installInventoryControls() {
+    const bagButton = ui.findChildByName("bagButton");
+    const cameraButton = ui.findChildByName("cameraButton");
+    const inventoryImage = ui.findChildByName("inventoryImage");
+    const inventoryCase = ui.findChildByName("inventorycase");
+    const shadow = ui.findChildByName("shadow");
+    const quickTemplate = ui.findChildByName("invQuickItem");
+    const itemTemplate = ui.findChildByName("invItem");
+    if (!bagButton || !cameraButton || !inventoryImage || !shadow || !quickTemplate || !itemTemplate) {
+      inventoryControls = null;
+      return;
+    }
+    const items = [];
+    const counts = [];
+    let visible = false;
+    const setVisible = next => {
+      visible = Boolean(next);
+      inventoryImage.visible = visible;
+      if (inventoryCase) inventoryCase.visible = false;
+      shadow.visible = visible;
+      for (const item of items) item.visible = visible;
+      for (const count of counts) count.visible = visible;
+      if (visible) input.unlockPointer();
+      else input.lockPointer();
+    };
+    const updateSlot = (index, image, number) => {
+      const item = items[index];
+      const count = counts[index];
+      if (!item || !count) return;
+      const amount = Number(number) || 0;
+      count.textFontSize = amount === 1 ? 0 : 16;
+      count.textContent = String(amount);
+      item.imageOpacity = image ? 1 : 0;
+      item.image = image ? resolvePictureUrl(`picture/${image}.png`) : "";
+    };
+    for (let index = 0; index < 9; index++) {
+      const item = quickTemplate.clone();
+      item.position.offset.x += 30.7375 * index;
+      item.pointerEventBehavior = 2;
+      items.push(item);
+      counts.push(item.findChildByName("invQuickNum"));
+    }
+    for (let row = 0; row < 3; row++) {
+      for (let column = 0; column < 9; column++) {
+        const item = itemTemplate.clone();
+        item.position.offset.x += 30.7375 * column;
+        item.position.offset.y += 30.5 * row;
+        item.pointerEventBehavior = 2;
+        items.push(item);
+        counts.push(item.findChildByName("invNum"));
+      }
+    }
+    bagButton.visible = true;
+    cameraButton.visible = true;
+    bagButton.events.on("pointerdown", () => setVisible(!visible));
+    cameraButton.events.on("pointerdown", () => outbound.push({ type: "nea-revive:camera-toggle" }));
+    shadow.events.on("pointerdown", () => setVisible(false));
+    const onInventoryKey = event => {
+      if (event.code !== "KeyE" || document.pointerLockElement === null) return;
+      setVisible(!visible);
+      event.preventDefault();
+    };
+    window.addEventListener("keydown", onInventoryKey, { capture: true });
+    setVisible(false);
+    inventoryControls = {
+      receive(event) {
+        if (event?.type === "draw") {
+          bagButton.visible = true;
+          cameraButton.visible = true;
+        } else if (event?.type === "setAllQI") {
+          const values = Object.values(event.args || {})[0];
+          if (Array.isArray(values)) values.forEach((slot, index) => updateSlot(index, slot?.[0], slot?.[1]));
+        } else if (event?.type === "setSingleQI") {
+          updateSlot(Number(event.args?.index), event.args?.image, event.args?.number);
+        } else if (event?.type === "toggleInventory") {
+          setVisible(event.visible === undefined ? !visible : event.visible);
+        }
+      },
+      dispose() { window.removeEventListener("keydown", onInventoryKey, { capture: true }); },
+    };
+  }
+  function emitPointerLockEvent(name, event) {
+    if (!clientDrawReady) {
+      pendingPointerLockEvents.push([name, event]);
+      return;
+    }
+    pointerLockEvents.emit(name, event);
+  }
+  function flushPointerLockEvents() {
+    if (!clientDrawReady) return;
+    for (const [name, event] of pendingPointerLockEvents.splice(0)) pointerLockEvents.emit(name, event);
+  }
   document.addEventListener("pointerlockchange", () => {
-    pointerLockEvents.emit("pointerlockchange", { isLocked: document.pointerLockElement !== null });
+    emitPointerLockEvent("pointerlockchange", { isLocked: document.pointerLockElement !== null });
   });
   document.addEventListener("pointerlockerror", () => {
-    pointerLockEvents.emit("pointerlockerror", undefined);
+    emitPointerLockEvent("pointerlockerror", undefined);
   });
   window.addEventListener("resize", () => {
     screenEvents.emit("resize", { screenWidth: window.innerWidth, screenHeight: window.innerHeight });
@@ -405,10 +500,14 @@
         : Object.create(null);
       if (typeof runtime.modules["clientIndex.js"] !== "string") throw new Error("Client modules are missing clientIndex.js");
       installUiState(uiState);
+      installInventoryControls();
       loadModule("clientIndex.js");
     },
     receive(json) {
       const event = JSON.parse(json);
+      if (event?.type === "draw") {
+        clientDrawReady = true;
+      }
       if (event?.type === "nea-revive:gui" || event?.type === "nea-historical-gui") applyGuiCommand(event.command);
       else if (event?.type === "nea-historical-dialog-open") openHistoricalDialog(event.dialog);
       else if (event?.type === "nea-historical-dialog-cancel") { activeDialog = null; dialogLayer.visible = false; if (dialogPanel) dialogPanel.visible = false; }
@@ -428,7 +527,11 @@
         // maps do not lose directMessage feedback entirely.
         showEngineNotice(event.message);
       }
-      else remoteEvents.emit("client", event);
+      else {
+        remoteEvents.emit("client", event);
+        inventoryControls?.receive(event);
+        if (event?.type === "draw") flushPointerLockEvents();
+      }
     },
     drain() {
       return JSON.stringify(outbound.splice(0));

@@ -567,6 +567,13 @@ export class ScriptRuntime {
     return true;
   }
 
+  toggleCameraMode(playerId) {
+    const player = this.#players.get(playerId);
+    if (!player) return false;
+    player.cameraMode = String(player.cameraMode).toLowerCase() === "fps" ? "follow" : "fps";
+    return true;
+  }
+
   bindBackendEntities(bindings) {
     if (!Array.isArray(bindings)) return 0;
     const entities = [...this.#entities.values()];
