@@ -30,26 +30,55 @@ const boxes = sparseToBoxes(sparse, shape);
 const entities = convertEntities(entityTree, shape);
 const spawn = normalizePosition(player.initialPosition, [shape[0] / 2, 2, shape[2] / 2]);
 const worldShape = expandedWorldShape(shape, spawn, entities);
+const sourceFallbackName = basename(source).replace(/_Qm[1-9A-HJ-NP-Za-km-z]+$/, "");
+const displayName = info.displayName && info.displayName !== "Blank Map" ? info.displayName : sourceFallbackName;
+const packageName = info.displayName && info.displayName !== "Blank Map"
+  ? packageId(displayName)
+  : packageId(basename(destination));
 const scriptAssets = await readJson("scriptAssets.json");
-const scriptNames = Object.keys(scriptAssets);
+// Some recovered exports keep a leading space in the scriptAssets key while
+// storing the actual body under other/<name>.bin. Normalize the key for the
+// package without changing the source body or entry-point semantics.
+const scriptNameMap = new Map(Object.keys(scriptAssets).map(name => [name, name.trim()]));
+const scriptNames = [...new Set([...scriptNameMap.values()])];
 const missingScripts = [];
 for (const name of scriptNames) {
   try { await access(join(source, "scripts", name)); } catch { missingScripts.push(name); }
 }
 const recoveredScripts = new Map();
-if (missingScripts.length === 1) {
-  const candidate = await readFile(join(source, "other", "scriptAssets.bin"));
-  const name = missingScripts[0];
-  if (candidate.length === Number(scriptAssets[name]?.size)) recoveredScripts.set(name, candidate);
+for (const name of missingScripts) {
+  const originalName = [...scriptNameMap.entries()].find(([, normalized]) => normalized === name)?.[0] ?? name;
+  const candidates = [
+    join(source, "other", `${name.replace(/\.js$/i, "")}.bin`),
+    join(source, "other", `${originalName.replace(/\.js$/i, "")}.bin`),
+    join(source, "other", `${name}.bin`),
+    join(source, "other", `${originalName}.bin`),
+    join(source, "other", "scriptAssets.bin"),
+  ];
+  for (const candidatePath of candidates) {
+    try {
+      const candidate = await readFile(candidatePath);
+      const expected = Number(scriptAssets[originalName]?.size ?? scriptAssets[name]?.size);
+      if (candidate.length === expected) {
+        recoveredScripts.set(name, candidate);
+        break;
+      }
+    } catch (error) {
+      if (error?.code !== "ENOENT") throw error;
+    }
+  }
 }
 const unavailableScripts = missingScripts.filter(name => !recoveredScripts.has(name));
 if (unavailableScripts.length) throw new Error(`Standard export is missing script bodies: ${unavailableScripts.join(", ")}`);
-const serverModules = scriptNames.filter(name => name.endsWith(".js") && name !== "clientIndex.js");
-const clientModules = scriptNames.filter(name => name === "clientIndex.js");
 const entry = String(await readJson("scriptIndex.json"));
+const clientModules = await resolveClientModules("clientIndex.js", scriptNames, source);
+const clientModuleSet = new Set(clientModules);
+const serverModules = scriptNames.filter(name => name.endsWith(".js") && !clientModuleSet.has(name));
 const assets = [
   ...(await collectAssets("mesh", "mesh")),
   ...(await collectAssets("audio", "audio")),
+  ...(await collectAssets("image", "image")),
+  ...(await collectAssets("images", "image")),
 ];
 const modelCatalog = await readOptionalJson(join(source, "mesh", "model-list.json"));
 
@@ -62,7 +91,7 @@ await Promise.all([
   mkdir(join(destination, "assets", "models"), { recursive: true }),
 ]);
 
-for (const directory of ["mesh", "audio"]) {
+for (const directory of ["mesh", "audio", "image", "images"]) {
   try {
     await cp(join(source, directory), join(destination, "assets", directory), { recursive: true });
   } catch (error) {
@@ -73,15 +102,18 @@ for (const directory of ["mesh", "audio"]) {
 for (const name of scriptNames) {
   const recovered = recoveredScripts.get(name);
   if (recovered) await writeFile(join(destination, "scripts", name), recovered);
-  else await cp(join(source, "scripts", name), join(destination, "scripts", name));
+  else {
+    await mkdir(join(destination, "scripts"), { recursive: true });
+    await cp(join(source, "scripts", name), join(destination, "scripts", name));
+  }
 }
 
 await Promise.all([
   writeJson("nea.map.json", {
     formatVersion: "nea-map/v1",
-    id: packageId(info.displayName ?? basename(source)),
+    id: packageName,
     display: {
-      name: info.displayName ?? basename(source),
+      name: displayName,
       description: info.description || "Imported DAO3 standard project export",
     },
     runtime: {
@@ -90,6 +122,7 @@ await Promise.all([
       clientContract: "dao3-client-runtime/v1",
       serverContract: "nea-server-runtime/v1",
       compatibilityLevel: "experimental",
+      groupId: "storage",
     },
     world: {
       shape: worldShape,
@@ -101,6 +134,7 @@ await Promise.all([
       physics: "world/physics.json",
     },
     assets,
+    ui: "source/ui.json",
     ui: "source/ui.json",
     scripts: {
       server: `scripts/${entry}`,
@@ -136,6 +170,15 @@ await Promise.all([
   }),
   writeJson("source/environment.json", environment),
   writeJson("source/player.json", player),
+  writeJson("source/ui.json", {
+    format: "nea-recovered-client-ui",
+    version: 1,
+    sourceMessage: "gameUI.reset",
+    running: true,
+    defaultScreenId,
+    uiTree,
+    pictureAssets,
+  }),
   writeJson("source/ui.json", {
     format: "nea-recovered-client-ui",
     version: 1,
@@ -218,6 +261,28 @@ async function collectAssets(directory, kind) {
   }
   await visit(root);
   return files;
+}
+
+async function resolveClientModules(entryName, available, root) {
+  const availableSet = new Set(available);
+  const result = [];
+  const seen = new Set();
+  const visit = async name => {
+    if (seen.has(name) || !availableSet.has(name)) return;
+    seen.add(name);
+    result.push(name);
+    let source;
+    try { source = await readFile(join(root, "scripts", name), "utf8"); }
+    catch { return; }
+    for (const match of source.matchAll(/(?:import|require)\s*(?:[^'"(]*from\s*)?["'](.+?)["']\s*\)?/g)) {
+      if (!match[1].startsWith(".")) continue;
+      let dependency = match[1].replace(/^\.\//, "");
+      if (!dependency.endsWith(".js")) dependency += ".js";
+      await visit(dependency);
+    }
+  };
+  await visit(entryName);
+  return result;
 }
 
 function sparseToBoxes(value, shape) {

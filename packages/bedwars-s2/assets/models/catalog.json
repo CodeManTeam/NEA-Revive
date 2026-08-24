@@ -1,0 +1,1215 @@
+{
+  "format": "nea-model-catalog/v1",
+  "source": "dao3-models-v2",
+  "models": [
+    {
+      "modelId": 383055520936713,
+      "name": "三叉戟",
+      "animated": false,
+      "modelFileHash": "o7xu2Fq0r9e97HK1bBRvKLxiR7DVyD8dRBEK4HpqpMc",
+      "projectFileHash": "05C6wm2_2sDfXf1w3i7r126YhT2hKN3xc5PvHFRQA4Y",
+      "previewHash": "KWAW_-dzug71ZCZ8piOF5p_ppZoEsnG3Sm9nMjQ63W0",
+      "local": {
+        "vb": "../mesh/三叉戟.vb",
+        "gltf": "../mesh/三叉戟.gltf",
+        "voxa": "source/05C6wm2_2sDfXf1w3i7r126YhT2hKN3xc5PvHFRQA4Y.voxa"
+      }
+    },
+    {
+      "modelId": 383055520936695,
+      "name": "海龟",
+      "animated": false,
+      "modelFileHash": "2tF5TAW8CCQvpfvPyBtdwdYsfRehyWmKtxZ5pqhim38",
+      "projectFileHash": "l35_dcNHe4f2Miq_-y2-Gur5C3sJaO9wnMEbiaDyCsk",
+      "previewHash": "HqgvIxvMrSN6J1pNjjtVHeibF5mkRr9QIefFXcNJAgs",
+      "local": {
+        "vb": "../mesh/海龟.vb",
+        "gltf": "../mesh/海龟.gltf",
+        "voxa": "source/l35_dcNHe4f2Miq_-y2-Gur5C3sJaO9wnMEbiaDyCsk.voxa"
+      }
+    },
+    {
+      "modelId": 383060843508780,
+      "name": "美西螈",
+      "animated": false,
+      "modelFileHash": "7k03zNp50EeLGcAvjN__M90lhLFp_mitHIxV_N7ZvkQ",
+      "projectFileHash": "jLwpA3zvzMYD0_wrn3j4MoWe7_Gx0l0EAowmDWzNoxU",
+      "previewHash": "sLrcdFD1FqBziZm1sv-3LVOPQLCgTzUgRfa6v34VfNM",
+      "local": {
+        "vb": "../mesh/美西螈.vb",
+        "gltf": "../mesh/美西螈.gltf",
+        "voxa": "source/jLwpA3zvzMYD0_wrn3j4MoWe7_Gx0l0EAowmDWzNoxU.voxa"
+      }
+    },
+    {
+      "modelId": 383060726068712,
+      "name": "浮漂",
+      "animated": false,
+      "modelFileHash": "AtqDoXVpilaKD7wCQzOsXwDNdYHq5HAG0OmHm7C3qxE",
+      "projectFileHash": "gtZOrCI7s_KeeeukIg0L1fJALpIvfvzOkCeWm58T8Vg",
+      "previewHash": "n_I2wFkDHl8giyqX_nCXQLowi2vjDeSGGUX8bf5JN3w",
+      "local": {
+        "vb": "../mesh/浮漂.vb",
+        "gltf": "../mesh/浮漂.gltf",
+        "voxa": "source/gtZOrCI7s_KeeeukIg0L1fJALpIvfvzOkCeWm58T8Vg.voxa"
+      }
+    },
+    {
+      "modelId": 383054443000476,
+      "name": "时钟",
+      "animated": false,
+      "modelFileHash": "etaNhGMjm_jL4Q3obZMKnlqBxvoWTIsd09nb6xydBKc",
+      "projectFileHash": "g5Ub5uSneX_YQxnkEimbmKrgyirvwpAprATMHBCvJPg",
+      "previewHash": "3q-rXWsJRAgIImVJntJXBar-Fec8mPHliIwuYJyYMsA",
+      "local": {
+        "vb": "../mesh/时钟.vb",
+        "gltf": "../mesh/时钟.gltf",
+        "voxa": "source/g5Ub5uSneX_YQxnkEimbmKrgyirvwpAprATMHBCvJPg.voxa"
+      }
+    },
+    {
+      "modelId": 383060268889247,
+      "name": "抛竿",
+      "animated": false,
+      "modelFileHash": "d5Tw-UDyCgY2MS6W8X8PoHJyPAepfGI76_Y3DBReSZY",
+      "projectFileHash": "38iHbzG3FJJGqlfUrPi-0_ErxHNwiIlaWxTN6Z_5-Hs",
+      "previewHash": "5hmIfcdNCveSVyH0irweJwypp6_bUb8S7gGZXuHtFPk",
+      "local": {
+        "vb": "../mesh/抛竿.vb",
+        "gltf": "../mesh/抛竿.gltf",
+        "voxa": "source/38iHbzG3FJJGqlfUrPi-0_ErxHNwiIlaWxTN6Z_5-Hs.voxa"
+      }
+    },
+    {
+      "modelId": 383054438806177,
+      "name": "钓鱼竿",
+      "animated": false,
+      "modelFileHash": "g5RLjv-y5RLgZifKd0bwykA5CwQPv_H-NN4S1A-q7sE",
+      "projectFileHash": "Z8DMEYOS-CcLeW_PMRzq5tJTxIyi6JWFeWdX0lMoqhY",
+      "previewHash": "Ps6ujFyS5RVvxMpXClUDlKIzb21592swIB_y3M8To2w",
+      "local": {
+        "vb": "../mesh/钓鱼竿.vb",
+        "gltf": "../mesh/钓鱼竿.gltf",
+        "voxa": "source/Z8DMEYOS-CcLeW_PMRzq5tJTxIyi6JWFeWdX0lMoqhY.voxa"
+      }
+    },
+    {
+      "modelId": 383059874624631,
+      "name": "小河豚",
+      "animated": false,
+      "modelFileHash": "yppK9HALSxFQiiJqUlDyN-8B35-ROtq_ONGXGUFwbtE",
+      "projectFileHash": "oF0Lfb1xFj-8eIb0Thr4kuSiugimIs81b1tpMtfUDtc",
+      "previewHash": "M8fJpNtgp6yOk3qiJ4eeplDa7DiUhtDvHu0slhW5rzg",
+      "local": {
+        "vb": "../mesh/小河豚.vb",
+        "gltf": "../mesh/小河豚.gltf",
+        "voxa": "source/oF0Lfb1xFj-8eIb0Thr4kuSiugimIs81b1tpMtfUDtc.voxa"
+      }
+    },
+    {
+      "modelId": 383059874624625,
+      "name": "胡萝卜鱼竿",
+      "animated": false,
+      "modelFileHash": "UOUEBthcghP7iQrcvyWrC4shEd339ZU5nXWllMvN-2I",
+      "projectFileHash": "1Rkvc9whFzoZvBPHWFF3oGBx2_s5XCBLw3mrC423tOs",
+      "previewHash": "ohOilpqGZqe4TboMUk1qUNrzxsSIZp1nOoh2BkLS5-A",
+      "local": {
+        "vb": "../mesh/胡萝卜鱼竿.vb",
+        "gltf": "../mesh/胡萝卜鱼竿.gltf",
+        "voxa": "source/1Rkvc9whFzoZvBPHWFF3oGBx2_s5XCBLw3mrC423tOs.voxa"
+      }
+    },
+    {
+      "modelId": 383054099067429,
+      "name": "屏障",
+      "animated": false,
+      "modelFileHash": "HrcOMO8WDCWPIaks2zFkpC5C9wVAMsrWTAZHhGzv4Oo",
+      "projectFileHash": "-WMVVUVpHaTiQjpoF6tvSn18xW712OWjeBxVRPHhSag",
+      "previewHash": "ajVCi8LB-XzKNTfgOiF5k7Ag37p14qMOI-yMsNNVdtE",
+      "local": {
+        "vb": "../mesh/屏障.vb",
+        "gltf": "../mesh/屏障.gltf",
+        "voxa": "source/-WMVVUVpHaTiQjpoF6tvSn18xW712OWjeBxVRPHhSag.voxa"
+      }
+    },
+    {
+      "modelId": 383059052541420,
+      "name": "猪",
+      "animated": false,
+      "modelFileHash": "77zN3dd3OFVlPNGA5jZV2Yow5yxq5yf2JniR6zH7pWk",
+      "projectFileHash": "63kYK9aOsgr_jxGBv0PPgZnuhZoVUVW4Mq16jzhfDlg",
+      "previewHash": "9hDiqyc4m2K5yOgYKnXJ8CxAW1huIxt8Shreep0R6E0",
+      "local": {
+        "vb": "../mesh/猪.vb",
+        "gltf": "../mesh/猪.gltf",
+        "voxa": "source/63kYK9aOsgr_jxGBv0PPgZnuhZoVUVW4Mq16jzhfDlg.voxa"
+      }
+    },
+    {
+      "modelId": 383053088240131,
+      "name": "我的世界_Mojang披风",
+      "animated": true,
+      "modelFileHash": "rLvbHlWk71r50kU3BFI00t1HafxRTMKvftKfumyflX4",
+      "projectFileHash": "eakafH9K8BDp0urHOOmiNip_jTegZvlqQlwQQBDy_4Q",
+      "previewHash": "ggaJ5B5klG9csXpplIYJ5LKtlY2eXuBMGtijexIkXQo",
+      "local": {
+        "vb": "../mesh/我的世界_Mojang披风.vb",
+        "gltf": "../mesh/我的世界_Mojang披风.gltf",
+        "voxa": "source/eakafH9K8BDp0urHOOmiNip_jTegZvlqQlwQQBDy_4Q.voxa"
+      }
+    },
+    {
+      "modelId": 383058830242919,
+      "name": "mc苦力怕披风（未完）",
+      "animated": false,
+      "modelFileHash": "zVXB7gsTXrWg8YtxZzWnsyatSyJt6y5iRuIfvFXtpdU",
+      "projectFileHash": "dtk-Go3PB5kYShm5DEdFB0MjiU0c3p2mQFxLRWCURqc",
+      "previewHash": "jsICatTMeH5poWRIE0bDh6wmrabXWt2YwG75VCijpHg",
+      "local": {
+        "vb": "../mesh/mc苦力怕披风（未完）.vb",
+        "gltf": "../mesh/mc苦力怕披风（未完）.gltf",
+        "voxa": "source/dtk-Go3PB5kYShm5DEdFB0MjiU0c3p2mQFxLRWCURqc.voxa"
+      }
+    },
+    {
+      "modelId": 383058830242918,
+      "name": "我的世界_末影人披风",
+      "animated": true,
+      "modelFileHash": "QjmMEV2L5_BmtilKcy6fedUcgjDt-GuEyghrUZNpFwA",
+      "projectFileHash": "CQxR7btbppljArqjPKluXwLDaruFZvmzlAVo8hy2HnQ",
+      "previewHash": "95-1zUFXryFn3TpmnLKo89eli4AQ4wNb865JzcoDpU0",
+      "local": {
+        "vb": "../mesh/我的世界_末影人披风.vb",
+        "gltf": "../mesh/我的世界_末影人披风.gltf",
+        "voxa": "source/CQxR7btbppljArqjPKluXwLDaruFZvmzlAVo8hy2HnQ.voxa"
+      }
+    },
+    {
+      "modelId": 383053021131606,
+      "name": "雪傀儡",
+      "animated": true,
+      "modelFileHash": "DQSd5UGyG-X1IKMFD8j60EzcYUEQM6j2iiOF2pd-Bjo",
+      "projectFileHash": "w4ywJQSmByv6Y4W4gUluyFXuS9SkKi3GY20RJZ550qk",
+      "previewHash": "1WCsNTwKsVsFJ4ZsN46fJF_dxdHZ-QN71Ru_zKdfrm0",
+      "local": {
+        "vb": "../mesh/雪傀儡.vb",
+        "gltf": "../mesh/雪傀儡.gltf",
+        "voxa": "source/w4ywJQSmByv6Y4W4gUluyFXuS9SkKi3GY20RJZ550qk.voxa"
+      }
+    },
+    {
+      "modelId": 383058469532938,
+      "name": "轻雪披风",
+      "animated": false,
+      "modelFileHash": "d2RRYNkJRUDZzmZuxvZzMR_DYF3VixMU9XVI_0A0ySE",
+      "projectFileHash": "waDrwLKICCkI2zG39ZQUag7Anos9vG5kPbuOU_W87c8",
+      "previewHash": "tSs3uCUyZ1NDrog54XkWCeI-owktafPEusshqbzkCF0",
+      "local": {
+        "vb": "../mesh/轻雪披风.vb",
+        "gltf": "../mesh/轻雪披风.gltf",
+        "voxa": "source/waDrwLKICCkI2zG39ZQUag7Anos9vG5kPbuOU_W87c8.voxa"
+      }
+    },
+    {
+      "modelId": 383052693976047,
+      "name": "末影龙翅膀",
+      "animated": false,
+      "modelFileHash": "itiybAx4uL5bzZwXVQ-9957GWEGXQinJQws9OczSCik",
+      "projectFileHash": "Hs0JM0BL3-F-8pL_kEVmff1reLZBCFrkZXOl2TelwY8",
+      "previewHash": "ihZW3FjRikhnRCPEkxpchYqVJLJe-ONJb2a2Uaxi2MY",
+      "local": {
+        "vb": "../mesh/末影龙翅膀.vb",
+        "gltf": "../mesh/末影龙翅膀.gltf",
+        "voxa": "source/Hs0JM0BL3-F-8pL_kEVmff1reLZBCFrkZXOl2TelwY8.voxa"
+      }
+    },
+    {
+      "modelId": 383058431783997,
+      "name": "世界崩解之镐",
+      "animated": false,
+      "modelFileHash": "opEx6KAa9jeNBYmIiSvhR1BNmKum6xpKRwMCuTNNeCA",
+      "projectFileHash": "cynTzhvTZoz0N5vIfn-XIUe1tfrpnvCi7zF4x-zLftA",
+      "previewHash": "PDOIu45YLYCtYxHYO3HfZ7XYohjdU7nX0_jX3PYTxQs",
+      "local": {
+        "vb": "../mesh/世界崩解之镐.vb",
+        "gltf": "../mesh/世界崩解之镐.gltf",
+        "voxa": "source/cynTzhvTZoz0N5vIfn-XIUe1tfrpnvCi7zF4x-zLftA.voxa"
+      }
+    },
+    {
+      "modelId": 383052689781358,
+      "name": "短剑",
+      "animated": false,
+      "modelFileHash": "cbAHNmzcBW58TuXFYKmt7a33K9BcYdiqETIgH7b_COk",
+      "projectFileHash": "lBkNwzDteqEtq4J75DBzrmab4-lc-Vwj-6GfAoxFtuU",
+      "previewHash": "X4sCbl06u7QmAaSb02ArUv9oVSDkIT9RKcIjz1ZKj3g",
+      "local": {
+        "vb": "../mesh/短剑.vb",
+        "gltf": "../mesh/短剑.gltf",
+        "voxa": "source/lBkNwzDteqEtq4J75DBzrmab4-lc-Vwj-6GfAoxFtuU.voxa"
+      }
+    },
+    {
+      "modelId": 383058431783936,
+      "name": "圣诞花环",
+      "animated": false,
+      "modelFileHash": "qeOoDuAeOP_6871qpniMdcrKkNOGD9vVWqqV4JOcRkI",
+      "projectFileHash": "nwrU2C388VAsR2GTkgWgrNWcoJwIiUgphdy7wACe6uo",
+      "previewHash": "GJ9WPk-UI3QwViZzBU7jf-zfttjt3YXQ4XuzAtc5ydc",
+      "local": {
+        "vb": "../mesh/圣诞花环.vb",
+        "gltf": "../mesh/圣诞花环.gltf",
+        "voxa": "source/nwrU2C388VAsR2GTkgWgrNWcoJwIiUgphdy7wACe6uo.voxa"
+      }
+    },
+    {
+      "modelId": 383058427589668,
+      "name": "圣诞糖果棍",
+      "animated": false,
+      "modelFileHash": "aNmqyh1uYIIINDqgFrhJYCgO2z1Zwcm6_5ABUjsJgGI",
+      "projectFileHash": "lhPfKoMNBoqMOguaAKBeWrhszjj9bCyiYlhf67hMh_U",
+      "previewHash": "x1q4Hq5WZjDzE2CUAVs-frxNhKlfFS_1P-vgILmt3w8",
+      "local": {
+        "vb": "../mesh/圣诞糖果棍.vb",
+        "gltf": "../mesh/圣诞糖果棍.gltf",
+        "voxa": "source/lhPfKoMNBoqMOguaAKBeWrhszjj9bCyiYlhf67hMh_U.voxa"
+      }
+    },
+    {
+      "modelId": 383034515862943,
+      "name": "剪刀",
+      "animated": false,
+      "modelFileHash": "GkGhJ_0rWI2fDjSR3huuY5YD0j5F8ZlD8yF5YiQ5nHo",
+      "projectFileHash": "2F0P6zJW3Jql1Vtnh8J4Up-kh008m7kXinAd49dCJ7g",
+      "previewHash": "HcI6_S6tNjV0dBudy5w6T9dHIcm65Gy7lMHBIcRaOzk",
+      "local": {
+        "vb": "../mesh/剪刀.vb",
+        "gltf": "../mesh/剪刀.gltf",
+        "voxa": "source/2F0P6zJW3Jql1Vtnh8J4Up-kh008m7kXinAd49dCJ7g.voxa"
+      }
+    },
+    {
+      "modelId": 383005373838486,
+      "name": "冠军达科斯披风",
+      "animated": false,
+      "modelFileHash": "41XpyV9M4e-ELXM_kzqoIpG9EyMe6oYaXLrbmUh_8_8",
+      "projectFileHash": "U01kMijorwwHbyCnVssKybvtKgo53M6TUkOVZo2adLk",
+      "previewHash": "KIJ35nmnI1_j5GOvInvFYXmuLm74x4-FDtbJbrFjKHI",
+      "local": {
+        "vb": "../mesh/冠军达科斯披风.vb",
+        "gltf": "../mesh/冠军达科斯披风.gltf",
+        "voxa": "source/U01kMijorwwHbyCnVssKybvtKgo53M6TUkOVZo2adLk.voxa"
+      }
+    },
+    {
+      "modelId": 383005373838483,
+      "name": "Migrator迁移者披风",
+      "animated": false,
+      "modelFileHash": "SrUQ7e_x8Pn-CF0JcPXn6eX3dcQplivF11VgkI8GGNQ",
+      "projectFileHash": "zjcCEet6xB9eKTRXONo3lVjcZFn1UkbgbeYw2K9MuY8",
+      "previewHash": "tfwICQN7wV0Wra5KHNwtikUztkQ50E88jfRJCK7El2A",
+      "local": {
+        "vb": "../mesh/Migrator迁移者披风.vb",
+        "gltf": "../mesh/Migrator迁移者披风.gltf",
+        "voxa": "source/zjcCEet6xB9eKTRXONo3lVjcZFn1UkbgbeYw2K9MuY8.voxa"
+      }
+    },
+    {
+      "modelId": 382990463087787,
+      "name": "钻石块",
+      "animated": false,
+      "modelFileHash": "yRrVdAWYj9mYMIEb0ps8duH23UQTOL-iy9MXlRrHMzE",
+      "projectFileHash": "W19i1mng1ZLd9RvytVTLa2i-vNp62j7_6_u362tbal8",
+      "previewHash": "ic0BoRgbHhBBo-9e4avUVDetnMmN1v1GMEL2TEwm6i0",
+      "local": {
+        "vb": "../mesh/钻石块.vb",
+        "gltf": "../mesh/钻石块.gltf",
+        "voxa": "source/W19i1mng1ZLd9RvytVTLa2i-vNp62j7_6_u362tbal8.voxa"
+      }
+    },
+    {
+      "modelId": 382985228596119,
+      "name": "绿宝石块",
+      "animated": false,
+      "modelFileHash": "9TkCd5tqqa6PkM75YF9lFV2rxAEjws7d1xm7HsmivtU",
+      "projectFileHash": "7Z9Uq5t77WzUfaaIOO2QhIDnMsdgO_u9LG171VFuDwU",
+      "previewHash": "Jj0oZSso3f2YxndW-qBovAOIO_ai0pYNwi7DnIPGJo0",
+      "local": {
+        "vb": "../mesh/绿宝石块.vb",
+        "gltf": "../mesh/绿宝石块.gltf",
+        "voxa": "source/7Z9Uq5t77WzUfaaIOO2QhIDnMsdgO_u9LG171VFuDwU.voxa"
+      }
+    },
+    {
+      "modelId": 382986453333137,
+      "name": "排行榜",
+      "animated": false,
+      "modelFileHash": "tCW4lrmunH6JIL_RjuS7mYx1t5EkqvLIeP6JRJfhTz0",
+      "projectFileHash": "E0BbYSta6JGuQmO5qBHV9Hs9QwdPUUlxvrnc5j3x__g",
+      "previewHash": "nh0UD4CakKnh_1vtH6-YoYSG6X6aedTxzO1tWHfLq7E",
+      "local": {
+        "vb": "../mesh/排行榜.vb",
+        "gltf": "../mesh/排行榜.gltf",
+        "voxa": "source/E0BbYSta6JGuQmO5qBHV9Hs9QwdPUUlxvrnc5j3x__g.voxa"
+      }
+    },
+    {
+      "modelId": 382975044825952,
+      "name": "村民",
+      "animated": false,
+      "modelFileHash": "bCKdsLh1dc05BYXlmTAHSr5fTkEaX8zrzumnE0HIm9A",
+      "projectFileHash": "gHUThZnncm0l-ZZKt7qbZ-bsaBpe3l3YpZTUN62dkSI",
+      "previewHash": "CCQ46_03Vr4wxmLxm60XE6p_va6_bUgErXZpP0FH7Lk",
+      "local": {
+        "vb": "../mesh/村民.vb",
+        "gltf": "../mesh/村民.gltf",
+        "voxa": "source/gHUThZnncm0l-ZZKt7qbZ-bsaBpe3l3YpZTUN62dkSI.voxa"
+      }
+    },
+    {
+      "modelId": 382974751224438,
+      "name": "Dream",
+      "animated": false,
+      "modelFileHash": "9l_ssFmeDzabeZi7Xkw6suUoodRRaZZfqFJOH-kSUaA",
+      "projectFileHash": "oEONNZpSuFNu7v1VXDHIFXZ4zndEeJtr8zy2iLvURgc",
+      "previewHash": "JB_PyLCXW5Qrwe76qBYkeXMSEtrXQM8vmZYf7TWNyrU",
+      "local": {
+        "vb": "../mesh/Dream.vb",
+        "gltf": "../mesh/Dream.gltf",
+        "voxa": "source/oEONNZpSuFNu7v1VXDHIFXZ4zndEeJtr8zy2iLvURgc.voxa"
+      }
+    },
+    {
+      "modelId": 382980111545703,
+      "name": "末影人",
+      "animated": false,
+      "modelFileHash": "Xwk7f1XnWlwTxMI5J8ymHj7WgIbB7oNuY-BdoEzvyig",
+      "projectFileHash": "Ao7moIYodZ20QgAYBGEDhQu8XwtgO8TTKAiZwHEcQwU",
+      "previewHash": "cpcQmaxpbypmKziCwI7YdS8b3DaHqemiBAdDM2tLBOE",
+      "local": {
+        "vb": "../mesh/末影人.vb",
+        "gltf": "../mesh/末影人.gltf",
+        "voxa": "source/Ao7moIYodZ20QgAYBGEDhQu8XwtgO8TTKAiZwHEcQwU.voxa"
+      }
+    },
+    {
+      "modelId": 382961199428302,
+      "name": "指南针",
+      "animated": false,
+      "modelFileHash": "cdGDYZkKNPpnMqVJUC0ZYzjIkM4HrQEefHzySaHVx_8",
+      "projectFileHash": "fuGCKvp_3n75TkaUATbCQ_y2aY-6zpb4IyfzXQYBucc",
+      "previewHash": "FF1-9be2wKMVihojNa-wOpYz16Y2TAHbwPcI5ON5j6k",
+      "local": {
+        "vb": "../mesh/指南针.vb",
+        "gltf": "../mesh/指南针.gltf",
+        "voxa": "source/fuGCKvp_3n75TkaUATbCQ_y2aY-6zpb4IyfzXQYBucc.voxa"
+      }
+    },
+    {
+      "modelId": 313323237206976,
+      "name": "末影箱",
+      "animated": false,
+      "modelFileHash": "QnI_a-imPvZUk30g_tIe5BYkpe24XuVhfaqyRMkH88U",
+      "projectFileHash": "70Jv8Eqd5QU7LXfyU9iUVr8VJrY94D3v72CpvQ2OqmA",
+      "previewHash": "JOVqv6IrgclAmhxbHLE_EXkI_ps_DsCzW-9h9G09tY4",
+      "local": {
+        "vb": "../mesh/末影箱.vb",
+        "gltf": "../mesh/末影箱.gltf",
+        "voxa": "source/70Jv8Eqd5QU7LXfyU9iUVr8VJrY94D3v72CpvQ2OqmA.voxa"
+      }
+    },
+    {
+      "modelId": 313321341381462,
+      "name": "迅捷药水",
+      "animated": false,
+      "modelFileHash": "5j7xkjBj4cD_FBFcKaLKi1rh9uaJYVFi9hYewlIC-wY",
+      "projectFileHash": "CnbWKcC4cxUfT15TL5Z5HLqc4ksVtocrUWVzRXpisao",
+      "previewHash": "PtJrbNT9MSTLl-RLi4nlBAsleDNssxSIWQeR2m3wMAw",
+      "local": {
+        "vb": "../mesh/迅捷药水.vb",
+        "gltf": "../mesh/迅捷药水.gltf",
+        "voxa": "source/CnbWKcC4cxUfT15TL5Z5HLqc4ksVtocrUWVzRXpisao.voxa"
+      }
+    },
+    {
+      "modelId": 313314412391065,
+      "name": "搭路蛋",
+      "animated": false,
+      "modelFileHash": "eQVRIFO-iA5gK842YLs2-qkOOs8lXhJa0uDAMOVO-xg",
+      "projectFileHash": "FvX_9IMr76hQuwHyeOu_93Du1TmsPOCLI4ZvZj80sFo",
+      "previewHash": "dVwpBH9KawESmj4_YUjXFnQx90y-jnkE3FTw2kZYwrE",
+      "local": {
+        "vb": "../mesh/搭路蛋.vb",
+        "gltf": "../mesh/搭路蛋.gltf",
+        "voxa": "source/FvX_9IMr76hQuwHyeOu_93Du1TmsPOCLI4ZvZj80sFo.voxa"
+      }
+    },
+    {
+      "modelId": 313312042609612,
+      "name": "跳跃药水",
+      "animated": false,
+      "modelFileHash": "UNk1a8-UNtgaF1fb2h1EcDxktdVf2r0NSPyVd4RseA8",
+      "projectFileHash": "3sMnrJwZHE28aGxl6N8BVF4D15fKM8VEkh3CT5PJjLc",
+      "previewHash": "ymIZ78mLiN3Z26D01mc7qg62YD5H3bf6Ion6cfxl8ZA",
+      "local": {
+        "vb": "../mesh/跳跃药水.vb",
+        "gltf": "../mesh/跳跃药水.gltf",
+        "voxa": "source/3sMnrJwZHE28aGxl6N8BVF4D15fKM8VEkh3CT5PJjLc.voxa"
+      }
+    },
+    {
+      "modelId": 313308074797692,
+      "name": "箭",
+      "animated": false,
+      "modelFileHash": "kLOTvGGYvTN-Lh0D0GvXJ8W8ANrv5ug-ZR01k-8mYkI",
+      "projectFileHash": "w2IylIm6SyoYULg_WvWwON1yd9xvxhgRq5f1QBNRdG4",
+      "previewHash": "Yfndegfu5uLaeF-RItXypuePrNCgp91kd6mY5c6-lpc",
+      "local": {
+        "vb": "../mesh/箭.vb",
+        "gltf": "../mesh/箭.gltf",
+        "voxa": "source/w2IylIm6SyoYULg_WvWwON1yd9xvxhgRq5f1QBNRdG4.voxa"
+      }
+    },
+    {
+      "modelId": 302463622111983,
+      "name": "arrow",
+      "animated": false,
+      "modelFileHash": "d2BUCXBndFMSIlu0rWrT-7S4mNg2wsITFySu01EowAY",
+      "projectFileHash": "3pCVsEaqwRmoLtgO9pnpXeKE4At6rCBVtikgOKMlX5U",
+      "previewHash": "oi5YsIanMvdE77EJD2RnVqf5sqERez9ZBYmmC3HFnH4",
+      "local": {
+        "vb": "../mesh/arrow.vb",
+        "gltf": "../mesh/arrow.gltf",
+        "voxa": "source/3pCVsEaqwRmoLtgO9pnpXeKE4At6rCBVtikgOKMlX5U.voxa"
+      }
+    },
+    {
+      "modelId": 302463617917936,
+      "name": "弓",
+      "animated": false,
+      "modelFileHash": "yZbB8jLDT6VXBja2BHTcDg7WEQf8IGbmTIi5OM7W1rs",
+      "projectFileHash": "Y3bSOEa60QbEWu2_lV2wxaKsJNGHVfsfN4nwnispYDU",
+      "previewHash": "kEBXQ56TmQX_BDRJBo8TkRaEiKR7hQeuKEC1OCWmGYo",
+      "local": {
+        "vb": "../mesh/弓.vb",
+        "gltf": "../mesh/弓.gltf",
+        "voxa": "source/Y3bSOEa60QbEWu2_lV2wxaKsJNGHVfsfN4nwnispYDU.voxa"
+      }
+    },
+    {
+      "modelId": 302463420785598,
+      "name": "救援平台",
+      "animated": false,
+      "modelFileHash": "ZBm1Sd0N5yqSKVR2mbO4pCCKZw9hBxZrj662Nlr-djw",
+      "projectFileHash": "44sgnnArzDOlKi3QEzhVr9DEOvKO82d3P3Rd1jj9aIg",
+      "previewHash": "qq1c9Qi7JAuV1EGiRPIVOivjW9oQlS-0pB-C2vn2zJw",
+      "local": {
+        "vb": "../mesh/救援平台.vb",
+        "gltf": "../mesh/救援平台.gltf",
+        "voxa": "source/44sgnnArzDOlKi3QEzhVr9DEOvKO82d3P3Rd1jj9aIg.voxa"
+      }
+    },
+    {
+      "modelId": 302463420785472,
+      "name": "力量药水",
+      "animated": false,
+      "modelFileHash": "KUPsQOTQHCgLlwegu5oYO7YvhGiK3tx1ynwcbUgUDSI",
+      "projectFileHash": "QZqvH2vJMG--aKWitocgJXNMbca8Uv1yAWKVkxa-MVU",
+      "previewHash": "Aj3SFOtgSLMIE-pwMa6VhMnqrBJNEK7aov47yzKu5bM",
+      "local": {
+        "vb": "../mesh/力量药水.vb",
+        "gltf": "../mesh/力量药水.gltf",
+        "voxa": "source/QZqvH2vJMG--aKWitocgJXNMbca8Uv1yAWKVkxa-MVU.voxa"
+      }
+    },
+    {
+      "modelId": 313307839916989,
+      "name": "隐身药水",
+      "animated": false,
+      "modelFileHash": "v-erqK-Crf5RjCI3RigSyt0TQ9i7YbF4HMs2JOPUtko",
+      "projectFileHash": "qgvxOtxVTnY0lMI8kUpfRuHTSiE2yOd7g2q1-XjhYNI",
+      "previewHash": "4uvvfzNjUP7O6e0lcBSf8oaKIpIbnaLzZcfq_ckcAJo",
+      "local": {
+        "vb": "../mesh/隐身药水.vb",
+        "gltf": "../mesh/隐身药水.gltf",
+        "voxa": "source/qgvxOtxVTnY0lMI8kUpfRuHTSiE2yOd7g2q1-XjhYNI.voxa"
+      }
+    },
+    {
+      "modelId": 313307609230211,
+      "name": "桶",
+      "animated": false,
+      "modelFileHash": "lEF1tYX52DY1FH1YkWsFMEHWac1ISnXQG4j8FrCpjL4",
+      "projectFileHash": "y7XO3SMcU_ZkoqBcZTwg-9j7UWh5wpx1zWQkyD9Jymw",
+      "previewHash": "6XaiXAlRensBRx_dCNtPF8YA0xxzMbVLzLHMtHCwedQ",
+      "local": {
+        "vb": "../mesh/桶.vb",
+        "gltf": "../mesh/桶.gltf",
+        "voxa": "source/y7XO3SMcU_ZkoqBcZTwg-9j7UWh5wpx1zWQkyD9Jymw.voxa"
+      }
+    },
+    {
+      "modelId": 313307609230209,
+      "name": "水桶",
+      "animated": false,
+      "modelFileHash": "6reV7uQw189HOeH7zFXY96nuKj5x0HQ92PoMdbU1WJY",
+      "projectFileHash": "poVnhXb-z9BBi7vQ_IvPPteyO4tjPJKuO2NCMZN6VH4",
+      "previewHash": "IAXQtlRa_Tlnx6UEMaXHsZoly9U0w2J35QSO5KTAczc",
+      "local": {
+        "vb": "../mesh/水桶.vb",
+        "gltf": "../mesh/水桶.gltf",
+        "voxa": "source/poVnhXb-z9BBi7vQ_IvPPteyO4tjPJKuO2NCMZN6VH4.voxa"
+      }
+    },
+    {
+      "modelId": 302463131378510,
+      "name": "TNT",
+      "animated": false,
+      "modelFileHash": "N_52CZ66vbctbdJgyDob8uP7gVGvC0eEIT-zKVmJLlM",
+      "projectFileHash": "6RsU1ltxhD3tI8PtjBh1KOkLTKioFz4vNz-N6x_FMwc",
+      "previewHash": "EusalQYT_X1b_nRxWxOuOagLBn0Ur0qErsT0SBq664A",
+      "local": {
+        "vb": "../mesh/TNT.vb",
+        "gltf": "../mesh/TNT.gltf",
+        "voxa": "source/6RsU1ltxhD3tI8PtjBh1KOkLTKioFz4vNz-N6x_FMwc.voxa"
+      }
+    },
+    {
+      "modelId": 313307554704318,
+      "name": "击退棒",
+      "animated": false,
+      "modelFileHash": "Ky25aHM0zUAfm83GI5lfn58xcgROr5lutlJJakRR4NQ",
+      "projectFileHash": "RT5bBB8GCYVQsAFcBseBhvi3BrF24V2nVSxcfNkNVLc",
+      "previewHash": "_ocBh3fA5nN5t9rmDPWPTeIdsqIjFY7PAArlcZIqoq0",
+      "local": {
+        "vb": "../mesh/击退棒.vb",
+        "gltf": "../mesh/击退棒.gltf",
+        "voxa": "source/RT5bBB8GCYVQsAFcBseBhvi3BrF24V2nVSxcfNkNVLc.voxa"
+      }
+    },
+    {
+      "modelId": 302462988772225,
+      "name": "绿宝石",
+      "animated": false,
+      "modelFileHash": "C6xTGcDco2GeyVTa5lKYqZdihCKzj6yUMQXXkPhKIMA",
+      "projectFileHash": "_GB7ejcbdaG6idDq972JSsbcKXrzFglLPeh-wer3NO0",
+      "previewHash": "gayfKyetdoQ2hnNWqApbP2GBy7h5n3a8i0tvU_tk5C8",
+      "local": {
+        "vb": "../mesh/绿宝石.vb",
+        "gltf": "../mesh/绿宝石.gltf",
+        "voxa": "source/_GB7ejcbdaG6idDq972JSsbcKXrzFglLPeh-wer3NO0.voxa"
+      }
+    },
+    {
+      "modelId": 302462988772223,
+      "name": "钻石",
+      "animated": false,
+      "modelFileHash": "WMNdj81lB82-6NYmBcWXASJC2MvQCL7jCQflaRgMWDw",
+      "projectFileHash": "wERV51A5Uy7uSRCU5vtwZQp6ZXR0xKKPCxnUF42JEJA",
+      "previewHash": "QYdptL286aAb0HanjSpHjixbvtk_ecpcqLRXpb4vSmQ",
+      "local": {
+        "vb": "../mesh/钻石.vb",
+        "gltf": "../mesh/钻石.gltf",
+        "voxa": "source/wERV51A5Uy7uSRCU5vtwZQp6ZXR0xKKPCxnUF42JEJA.voxa"
+      }
+    },
+    {
+      "modelId": 313307424680822,
+      "name": "金锭",
+      "animated": false,
+      "modelFileHash": "muvdWlBHQdjKa1r25nBGYtVfKgCDjmiQV3cob7WYGFE",
+      "projectFileHash": "SoLlesOj7VGzm7P-c7_30pzOoEy4hrDO7D4CAuTqEnU",
+      "previewHash": "CSRfZKfT6_vt-gXZkrC1Jl3P2pEjyeJyHFRfCb8d1Sg",
+      "local": {
+        "vb": "../mesh/金锭.vb",
+        "gltf": "../mesh/金锭.gltf",
+        "voxa": "source/SoLlesOj7VGzm7P-c7_30pzOoEy4hrDO7D4CAuTqEnU.voxa"
+      }
+    },
+    {
+      "modelId": 302462988772218,
+      "name": "铁锭",
+      "animated": false,
+      "modelFileHash": "4ZBqhFKfFL1TgOaswmJelaspEkO3tfSmQaLVfWXTvYA",
+      "projectFileHash": "tM_J1u04k-Q_SJFzz5pMYPlA9KnrkhUapgoYKbfiQ3Y",
+      "previewHash": "K5K7-uqxWEZq3-baxVTTw_FEh90DxvtjiLXdWPyBJ7Y",
+      "local": {
+        "vb": "../mesh/铁锭.vb",
+        "gltf": "../mesh/铁锭.gltf",
+        "voxa": "source/tM_J1u04k-Q_SJFzz5pMYPlA9KnrkhUapgoYKbfiQ3Y.voxa"
+      }
+    },
+    {
+      "modelId": 313307361766035,
+      "name": "末影珍珠",
+      "animated": false,
+      "modelFileHash": "f4dTq3sO4nK8tr44X04taipTb9n9qpqtxad26DFX_5I",
+      "projectFileHash": "tts2_ShIAQwzZwpVv6aAt5oAqD32pTm1Ku8IKsJw-wM",
+      "previewHash": "LAatTxduJxAuE8H5GDdPMET8h2vYbyJMHu-YpMzb_Oo",
+      "local": {
+        "vb": "../mesh/末影珍珠.vb",
+        "gltf": "../mesh/末影珍珠.gltf",
+        "voxa": "source/tts2_ShIAQwzZwpVv6aAt5oAqD32pTm1Ku8IKsJw-wM.voxa"
+      }
+    },
+    {
+      "modelId": 302462896497370,
+      "name": "火焰弹",
+      "animated": false,
+      "modelFileHash": "E0YF0jVHWQhgvSfPuDpdl8GHPo_cUCvZtkUVx6tn5cA",
+      "projectFileHash": "K-4_6Cbwwh2nkE0rlmiLf-S8npNgxCFA50Xc26XOQaE",
+      "previewHash": "c7oDBwWutliRoCU7CeLxahXty_ndHHfCDqEMaXqhYoU",
+      "local": {
+        "vb": "../mesh/火焰弹.vb",
+        "gltf": "../mesh/火焰弹.gltf",
+        "voxa": "source/K-4_6Cbwwh2nkE0rlmiLf-S8npNgxCFA50Xc26XOQaE.voxa"
+      }
+    },
+    {
+      "modelId": 313307307240365,
+      "name": "金苹果",
+      "animated": false,
+      "modelFileHash": "OH7FRLOf3xxFp6h6dXzoID21frEWFLqQGAUk8x1B60M",
+      "projectFileHash": "l2rANewZCOKnG4To8W89VG9WWYH3boGU46uWu-59ClA",
+      "previewHash": "RrM5WTx3O4s9QfbPeIV5QHF649Ie5c9rEqP3rHTm7pQ",
+      "local": {
+        "vb": "../mesh/金苹果.vb",
+        "gltf": "../mesh/金苹果.gltf",
+        "voxa": "source/l2rANewZCOKnG4To8W89VG9WWYH3boGU46uWu-59ClA.voxa"
+      }
+    },
+    {
+      "modelId": 313306921364101,
+      "name": "木板",
+      "animated": false,
+      "modelFileHash": "tM48Ey-KmX5U2nq2nAKABzCHXPgr_c8nXUODzpUHudg",
+      "projectFileHash": "sSGRS39zfY4SBvsZP9019RJFRi3DIabmggjSz20fp-c",
+      "previewHash": "0q5ORJf3OKNKpd4mPtRqX2miQZUd07oJ6Y3l2-EXL2M",
+      "local": {
+        "vb": "../mesh/木板.vb",
+        "gltf": "../mesh/木板.gltf",
+        "voxa": "source/sSGRS39zfY4SBvsZP9019RJFRi3DIabmggjSz20fp-c.voxa"
+      }
+    },
+    {
+      "modelId": 313306908781280,
+      "name": "末地石",
+      "animated": true,
+      "modelFileHash": "ux2j9voQpmhSWrKxxaeZUZDtjJHwjWvyXiZR4xGkO8U",
+      "projectFileHash": "N7vQO7B5UPnBQCgl3xuTbRr6Es3l2QadQgLrEKrfU6M",
+      "previewHash": "RnhKzZ_oln0VrWu5HX-QEAXp1HKpx3ee4q9-DbiH8Fw",
+      "local": {
+        "vb": "../mesh/末地石.vb",
+        "gltf": "../mesh/末地石.gltf",
+        "voxa": "source/N7vQO7B5UPnBQCgl3xuTbRr6Es3l2QadQgLrEKrfU6M.voxa"
+      }
+    },
+    {
+      "modelId": 313306908781279,
+      "name": "黑曜石",
+      "animated": true,
+      "modelFileHash": "oLfwutWWNV2th_MR_kGU5ddl7yRI5cDOLU90tgHl9Ls",
+      "projectFileHash": "0Et3yRr1LMmd5ZSRskOholS1KRe04LtgpzvGE0PgHFg",
+      "previewHash": "6MaTUrwfZ-5SkPOzeKGLEeathpx39zygzYghuekALig",
+      "local": {
+        "vb": "../mesh/黑曜石.vb",
+        "gltf": "../mesh/黑曜石.gltf",
+        "voxa": "source/0Et3yRr1LMmd5ZSRskOholS1KRe04LtgpzvGE0PgHFg.voxa"
+      }
+    },
+    {
+      "modelId": 313306908781211,
+      "name": "沙石",
+      "animated": true,
+      "modelFileHash": "gvqdDzhyhFcLhjcob5VsdT9NeIN1JCF5yGxNhnKdVlw",
+      "projectFileHash": "oS9iaLaDUn8BkBose1BXQHpF6Fo7Tuj7qkLWdvBvHzE",
+      "previewHash": "AHBH7oRrJOarTJ40w_qWGbpikt2BX-i84ttuxDSYBUA",
+      "local": {
+        "vb": "../mesh/沙石.vb",
+        "gltf": "../mesh/沙石.gltf",
+        "voxa": "source/oS9iaLaDUn8BkBose1BXQHpF6Fo7Tuj7qkLWdvBvHzE.voxa"
+      }
+    },
+    {
+      "modelId": 302462250574722,
+      "name": "羊毛",
+      "animated": true,
+      "modelFileHash": "RwaE6daGkBAPPb9F3NrAiyGbU7-2TaPipwSRYJixy20",
+      "projectFileHash": "VbJHHCEyqh-e7MMTWVgz_8JUqCgGHJYX-O9HmUL7x-s",
+      "previewHash": "aT9oZa8dn3pUD8KqIAbs8b_22vFWWiHU6tfh6n6oEE0",
+      "local": {
+        "vb": "../mesh/羊毛.vb",
+        "gltf": "../mesh/羊毛.gltf",
+        "voxa": "source/VbJHHCEyqh-e7MMTWVgz_8JUqCgGHJYX-O9HmUL7x-s.voxa"
+      }
+    },
+    {
+      "modelId": 302462237991614,
+      "name": "钻石镐",
+      "animated": false,
+      "modelFileHash": "R5iLloMBhEzdveuSrF_QgflZG7gGI6brsWhK-xiMkkA",
+      "projectFileHash": "FGDxfM2v0fNiCXeyfeBQjeRVew6XCDPfyaWRMRCgT8s",
+      "previewHash": "Xs2uEGjHlBr_sC6SLRgVFQwptYpC05lQCWhEioLg4f4",
+      "local": {
+        "vb": "../mesh/钻石镐.vb",
+        "gltf": "../mesh/钻石镐.gltf",
+        "voxa": "source/FGDxfM2v0fNiCXeyfeBQjeRVew6XCDPfyaWRMRCgT8s.voxa"
+      }
+    },
+    {
+      "modelId": 302462237991580,
+      "name": "金镐",
+      "animated": false,
+      "modelFileHash": "AurRwY4zW5XVoNKiEWNKvzHQF27AMReJstI_ecC-_os",
+      "projectFileHash": "s6H0LPDz_8ZwoqRjQ45Fj1N5VaYlyq60TnRgnbwWm6g",
+      "previewHash": "cly-Z1EFOJ1YFprnU7um5vQBa4D0UMgCVW9I28tfHbM",
+      "local": {
+        "vb": "../mesh/金镐.vb",
+        "gltf": "../mesh/金镐.gltf",
+        "voxa": "source/s6H0LPDz_8ZwoqRjQ45Fj1N5VaYlyq60TnRgnbwWm6g.voxa"
+      }
+    },
+    {
+      "modelId": 313306669706170,
+      "name": "铁镐",
+      "animated": false,
+      "modelFileHash": "KTXAEDq-5ZKyyR9Ixp4OjxVLdom2NsSGap1qoKHgmNM",
+      "projectFileHash": "9FrsABT4m-TTcu9WaFEOaI3xC4xg9RPnEQEyzWszKkA",
+      "previewHash": "xJbfFZ4_o2jH9P-V2HsDH2flwEOF8HgcCMAcFSjAB5A",
+      "local": {
+        "vb": "../mesh/铁镐.vb",
+        "gltf": "../mesh/铁镐.gltf",
+        "voxa": "source/9FrsABT4m-TTcu9WaFEOaI3xC4xg9RPnEQEyzWszKkA.voxa"
+      }
+    },
+    {
+      "modelId": 313306669706164,
+      "name": "木镐",
+      "animated": false,
+      "modelFileHash": "hJbBwDBwAvlX2jaJ5LVkpScmzRnoyBWKQxYel0LTtlc",
+      "projectFileHash": "nglRECGZFUhHmaA0WZYy-IHC3IimyhHnHQwCMtj2f94",
+      "previewHash": "FLX9pX17BraJkY-RCaIeEwpTmXrfkmTXjcQSQ9MbzBs",
+      "local": {
+        "vb": "../mesh/木镐.vb",
+        "gltf": "../mesh/木镐.gltf",
+        "voxa": "source/nglRECGZFUhHmaA0WZYy-IHC3IimyhHnHQwCMtj2f94.voxa"
+      }
+    },
+    {
+      "modelId": 313306669705936,
+      "name": "铁斧",
+      "animated": false,
+      "modelFileHash": "6muis5cVhDa2BJmPMGAioFx3wJGO34F2F4o67Oh4NxY",
+      "projectFileHash": "j8EzLJrFQmJVouSSUP3jFNy7pkH8dHvEvqY6GDUEDeg",
+      "previewHash": "jZc8u8pWh97bxUDh4aCRIzQVYYrjVN1QLnEWThtCQTw",
+      "local": {
+        "vb": "../mesh/铁斧.vb",
+        "gltf": "../mesh/铁斧.gltf",
+        "voxa": "source/j8EzLJrFQmJVouSSUP3jFNy7pkH8dHvEvqY6GDUEDeg.voxa"
+      }
+    },
+    {
+      "modelId": 313306669705906,
+      "name": "钻石斧",
+      "animated": false,
+      "modelFileHash": "umijGrb2xD3bFb6kh-NYf8DlPCrwdCXNbIdbum_d5vg",
+      "projectFileHash": "2-Hk6FwAEeQpVgdjgCGk80veIBOsT9n5w7-Pb1uNP70",
+      "previewHash": "uHA9Xm8dWPJufFkAeYuJ-h07K-HIo3nHThAlPntqaQU",
+      "local": {
+        "vb": "../mesh/钻石斧.vb",
+        "gltf": "../mesh/钻石斧.gltf",
+        "voxa": "source/2-Hk6FwAEeQpVgdjgCGk80veIBOsT9n5w7-Pb1uNP70.voxa"
+      }
+    },
+    {
+      "modelId": 313306669705904,
+      "name": "石斧",
+      "animated": false,
+      "modelFileHash": "4Ti_1NqfLRjbZeObBcfy-d0acSAFjkTEj0UWUBI_fcU",
+      "projectFileHash": "jFYN2aUUGw5a-1xAGM6Azrml1UCLuhqniV_vlhHbm9c",
+      "previewHash": "K1NDRqZgH8C9WbqCR0ymswGvRG1KLjeLGT4wfOEuFTY",
+      "local": {
+        "vb": "../mesh/石斧.vb",
+        "gltf": "../mesh/石斧.gltf",
+        "voxa": "source/jFYN2aUUGw5a-1xAGM6Azrml1UCLuhqniV_vlhHbm9c.voxa"
+      }
+    },
+    {
+      "modelId": 313306669705819,
+      "name": "木斧",
+      "animated": false,
+      "modelFileHash": "_F6-7UTynuHn4W_bSDpTc4-e71wq3qRFgheaQhdJoE0",
+      "projectFileHash": "i3SP1kJSqYcgNXVxyg-gaEQGlLngTrabYBa9VV7qH4U",
+      "previewHash": "PhFODmBDnwdSD7WR468hVUoQJxvNOJ8-vwmWrhx-Ukk",
+      "local": {
+        "vb": "../mesh/木斧.vb",
+        "gltf": "../mesh/木斧.gltf",
+        "voxa": "source/i3SP1kJSqYcgNXVxyg-gaEQGlLngTrabYBa9VV7qH4U.voxa"
+      }
+    },
+    {
+      "modelId": 302462229603236,
+      "name": "铁剑",
+      "animated": false,
+      "modelFileHash": "DwzAxUWxVcG52AN9evxesspbiZJQ_MX3IEu-UX3Iylk",
+      "projectFileHash": "laMYFHgKwZLNtlorUD2yv4d9yxrcaN-Buh5STAyytF4",
+      "previewHash": "yDA_ApCN1F3C89Pzq7Ui4cancghx0dVAuvvi-JeQWeI",
+      "local": {
+        "vb": "../mesh/铁剑.vb",
+        "gltf": "../mesh/铁剑.gltf",
+        "voxa": "source/laMYFHgKwZLNtlorUD2yv4d9yxrcaN-Buh5STAyytF4.voxa"
+      }
+    },
+    {
+      "modelId": 313306665511495,
+      "name": "钻石剑",
+      "animated": false,
+      "modelFileHash": "zIK_AMEIqKEKJNvYQkIH2aHN24D-CGFUqpqJTn-P8JE",
+      "projectFileHash": "P7bHFzf3qjO4CKD5RLt_HHDJDVm8jCaey5L41AIBEk4",
+      "previewHash": "X93LAJ_F15ylYhfV5crUdRTfhfP5-SdNnk4kItP_cZ4",
+      "local": {
+        "vb": "../mesh/钻石剑.vb",
+        "gltf": "../mesh/钻石剑.gltf",
+        "voxa": "source/P7bHFzf3qjO4CKD5RLt_HHDJDVm8jCaey5L41AIBEk4.voxa"
+      }
+    },
+    {
+      "modelId": 302462229602852,
+      "name": "石剑",
+      "animated": false,
+      "modelFileHash": "6Cp15T4FdfVpBxQBlLz-6rV2NEZqXRk4mC2k952kcCE",
+      "projectFileHash": "ede65ETmHMgR0yMtwDJe8pfhVsMTrAdU94PpAi52Bcs",
+      "previewHash": "GJz43HeOb6ifrce-Nr6WU6ZRkLjRDL89LP_gwDSCEd0",
+      "local": {
+        "vb": "../mesh/石剑.vb",
+        "gltf": "../mesh/石剑.gltf",
+        "voxa": "source/ede65ETmHMgR0yMtwDJe8pfhVsMTrAdU94PpAi52Bcs.voxa"
+      }
+    },
+    {
+      "modelId": 302462229602843,
+      "name": "木剑",
+      "animated": false,
+      "modelFileHash": "FvjDharJLzLvcaUmqLF-PaIEtgvof6ublUX7nJctDuI",
+      "projectFileHash": "7GDG1Uay-QYgtg9LvyzBCg5s8wHKXbxscOLUJtv4rgs",
+      "previewHash": "EBPcjn-6LUDQIYy5m1pC7lgr9Yo7zsVuT_1e0bcrFkA",
+      "local": {
+        "vb": "../mesh/木剑.vb",
+        "gltf": "../mesh/木剑.gltf",
+        "voxa": "source/7GDG1Uay-QYgtg9LvyzBCg5s8wHKXbxscOLUJtv4rgs.voxa"
+      }
+    },
+    {
+      "modelId": 313306602597311,
+      "name": "钻石靴子",
+      "animated": false,
+      "modelFileHash": "lvrYGzmz1PP3PeTLj_4-kWvTuZqd4S9dgleukCOT6wo",
+      "projectFileHash": "IyzMxsueht-VzLIMDSsBJh_zsro6ZO2BFhdd60eZq_4",
+      "previewHash": "9QDEDUPKnCRbZEefVhBO6YKbE65E72hI_lFGcJdaVxo",
+      "local": {
+        "vb": "../mesh/钻石靴子.vb",
+        "gltf": "../mesh/钻石靴子.gltf",
+        "voxa": "source/IyzMxsueht-VzLIMDSsBJh_zsro6ZO2BFhdd60eZq_4.voxa"
+      }
+    },
+    {
+      "modelId": 313306602597310,
+      "name": "铁靴子",
+      "animated": false,
+      "modelFileHash": "Ebbm_kM2BoDZZz5vMzi3rwljbIhFLJ4JT3mMOp-gWbY",
+      "projectFileHash": "J2g15YfFp-9_aFCMhat25lHG9pFyz3ektGqNQUVeyRY",
+      "previewHash": "dUsz_IdQJwTLV93OhtU9f1Lihi69Fyij14iprdJ3fDM",
+      "local": {
+        "vb": "../mesh/铁靴子.vb",
+        "gltf": "../mesh/铁靴子.gltf",
+        "voxa": "source/J2g15YfFp-9_aFCMhat25lHG9pFyz3ektGqNQUVeyRY.voxa"
+      }
+    },
+    {
+      "modelId": 302462166688709,
+      "name": "锁链靴子",
+      "animated": false,
+      "modelFileHash": "Ze6GGCqANyKsyiX_5o8P5q9zvArTlPHlXXDO9Tk2Qyk",
+      "projectFileHash": "_FxY7gwIX7YPcib2EPaMJwl1uZ_qT7vH7Qb18mmMVAo",
+      "previewHash": "mmYJyYpK3bXKU1_Mjaxzi5EzBYNM3gprSHfRzqtPExQ",
+      "local": {
+        "vb": "../mesh/锁链靴子.vb",
+        "gltf": "../mesh/锁链靴子.gltf",
+        "voxa": "source/_FxY7gwIX7YPcib2EPaMJwl1uZ_qT7vH7Qb18mmMVAo.voxa"
+      }
+    },
+    {
+      "modelId": 313306313190392,
+      "name": "箱子",
+      "animated": false,
+      "modelFileHash": "Y0bU2-n9Htxc4K3XsemEzu-6tPwrMRQR8meR4mq9ohk",
+      "projectFileHash": "urUCp0aP1x-GOfpbigYWgMlOr3hrnsD6ZZLwcSlgVtA",
+      "previewHash": "PeRqoYI8UTV_WwYpG3jbwB_8kG7BJJr1wIWpqsr_3mY",
+      "local": {
+        "vb": "../mesh/箱子.vb",
+        "gltf": "../mesh/箱子.gltf",
+        "voxa": "source/urUCp0aP1x-GOfpbigYWgMlOr3hrnsD6ZZLwcSlgVtA.voxa"
+      }
+    },
+    {
+      "modelId": 302461751452302,
+      "name": "yellowbed",
+      "animated": false,
+      "modelFileHash": "vaXZ52v_J9mcwNf8K0iUvjAtJf33EmBtW7fNJwWX8xo",
+      "projectFileHash": "zi4KsDGZpt6yeD6rxJBygN2xHTvV52E51viGFbHl7P4",
+      "previewHash": "vIDc60L2yVfM7c7tGKwM288UpSIYvcEpgORA0hSuJ30",
+      "local": {
+        "vb": "../mesh/yellowbed.vb",
+        "gltf": "../mesh/yellowbed.gltf",
+        "voxa": "source/zi4KsDGZpt6yeD6rxJBygN2xHTvV52E51viGFbHl7P4.voxa"
+      }
+    },
+    {
+      "modelId": 302461751452276,
+      "name": "bluebed",
+      "animated": false,
+      "modelFileHash": "D-FGcbdtQHzdyPfylBtaSpuZpwoJCNmN6pd05Kee3N4",
+      "projectFileHash": "GK9VaQopdSwzS7dn2uLZpL1mA8XC8lNurUkUf2qcxtc",
+      "previewHash": "U2eoeR8bNNFou6u_fd8_9tkzEF8vOhhW5GHqrWPgq58",
+      "local": {
+        "vb": "../mesh/bluebed.vb",
+        "gltf": "../mesh/bluebed.gltf",
+        "voxa": "source/GK9VaQopdSwzS7dn2uLZpL1mA8XC8lNurUkUf2qcxtc.voxa"
+      }
+    },
+    {
+      "modelId": 302461747258341,
+      "name": "greenbed",
+      "animated": false,
+      "modelFileHash": "AfaJ_JDbfOrV7vjVYkfAOOeFamgRjss3XsrhVWPdhv0",
+      "projectFileHash": "1uKmt2wlMtou505AgggWHNmumpvs1mMK86b2TgYb6hI",
+      "previewHash": "MoJuUVP99Wi3VzmaONy1wHnVUxpjwKCkzM4fX3yknl8",
+      "local": {
+        "vb": "../mesh/greenbed.vb",
+        "gltf": "../mesh/greenbed.gltf",
+        "voxa": "source/1uKmt2wlMtou505AgggWHNmumpvs1mMK86b2TgYb6hI.voxa"
+      }
+    },
+    {
+      "modelId": 313306174778302,
+      "name": "redbed",
+      "animated": false,
+      "modelFileHash": "rXe3NjsJ0Zxp3OJ7pcje8H1907-k7DZG8bltUt0XYdc",
+      "projectFileHash": "-neQ5VQ1VcynNbgra5JZAe7jWs_137gF1nPblEq9Row",
+      "previewHash": "S5Xv7Isxur01cG_Y-bGJeQAN2SsAdy76ZOpDFDgM9o0",
+      "local": {
+        "vb": "../mesh/redbed.vb",
+        "gltf": "../mesh/redbed.gltf",
+        "voxa": "source/-neQ5VQ1VcynNbgra5JZAe7jWs_137gF1nPblEq9Row.voxa"
+      }
+    },
+    {
+      "modelId": 302461629817507,
+      "name": "红色皮革靴子",
+      "animated": false,
+      "modelFileHash": "GLDxLZ5UqLnH0nD0wF7ZAh-YM8HmOsW4JDTjGPrDYbU",
+      "projectFileHash": "pN5ONjgF4HLJJsj1Pvjv-ooULR8-joMpJv31lkL6Vqs",
+      "previewHash": "LtL22WUnLGlMdSG14XDf3PmQWBSQIC2qBaq7ZxI753Q",
+      "local": {
+        "vb": "../mesh/红色皮革靴子.vb",
+        "gltf": "../mesh/红色皮革靴子.gltf",
+        "voxa": "source/pN5ONjgF4HLJJsj1Pvjv-ooULR8-joMpJv31lkL6Vqs.voxa"
+      }
+    },
+    {
+      "modelId": 302461629817506,
+      "name": "红色皮革头盔",
+      "animated": false,
+      "modelFileHash": "uTGtgCHpH8ayy6qAHmS0VM_MzV9b_NrWmJMxgmTZwZ8",
+      "projectFileHash": "EgrB-8P-eWc0onnKMRQe4k1I9ggs9A8M4ktEbbUyIhU",
+      "previewHash": "KQYJbbjvyzCyi2TO8hg_B6Jd0l_0YcbuXgWI5pNlA2c",
+      "local": {
+        "vb": "../mesh/红色皮革头盔.vb",
+        "gltf": "../mesh/红色皮革头盔.gltf",
+        "voxa": "source/EgrB-8P-eWc0onnKMRQe4k1I9ggs9A8M4ktEbbUyIhU.voxa"
+      }
+    },
+    {
+      "modelId": 302461629817505,
+      "name": "红色皮革胸甲",
+      "animated": false,
+      "modelFileHash": "XesVUMRzxjNngUXGAtkSR61RNc-O-Dz32MzMNGfqxUo",
+      "projectFileHash": "sb2PmlFB0cbVZiMfg0x5O_V5ERmTWI8ZgkennKY4rec",
+      "previewHash": "_1bbBIRk417Y91X8jTf5_gtVmxXnRbuQQJFp5krKo2M",
+      "local": {
+        "vb": "../mesh/红色皮革胸甲.vb",
+        "gltf": "../mesh/红色皮革胸甲.gltf",
+        "voxa": "source/sb2PmlFB0cbVZiMfg0x5O_V5ERmTWI8ZgkennKY4rec.voxa"
+      }
+    },
+    {
+      "modelId": 302461629817504,
+      "name": "红色皮革护肩",
+      "animated": false,
+      "modelFileHash": "hX2Utc1gPgx94e4Fzz3sF6EgCJCFFIsgCP-DA1aAV3k",
+      "projectFileHash": "H6Ds7qp6OgHc0Dr5zc0PxZ58iQ9vuQnSPvn7-RwzG8U",
+      "previewHash": "bY3UIyTSnxng8wVW-6u2GZaiDBgxo84AfaZxBfRmm8A",
+      "local": {
+        "vb": "../mesh/红色皮革护肩.vb",
+        "gltf": "../mesh/红色皮革护肩.gltf",
+        "voxa": "source/H6Ds7qp6OgHc0Dr5zc0PxZ58iQ9vuQnSPvn7-RwzG8U.voxa"
+      }
+    },
+    {
+      "modelId": 302461629817503,
+      "name": "蓝色皮革护肩",
+      "animated": false,
+      "modelFileHash": "vWIzteaTWwH24KPh92xLoujSffjOA_ly1WFMWLhMQQs",
+      "projectFileHash": "JQmaq8YQsnY-OI1hJFBYzmgMrW7TZJFI7ltqUKns98k",
+      "previewHash": "3G_H2t-ruNlWlIFyqDmASSuiy5DcgJvTPxsIDrimQ6I",
+      "local": {
+        "vb": "../mesh/蓝色皮革护肩.vb",
+        "gltf": "../mesh/蓝色皮革护肩.gltf",
+        "voxa": "source/JQmaq8YQsnY-OI1hJFBYzmgMrW7TZJFI7ltqUKns98k.voxa"
+      }
+    },
+    {
+      "modelId": 302461629817502,
+      "name": "蓝色皮革头盔",
+      "animated": false,
+      "modelFileHash": "62StI27GRoFJ7XvE_8R8CablwYvGZBzlDtt8t-Ci_Fs",
+      "projectFileHash": "zyLtoj8vg9NjfmDRUw6DYerB4CBL5Oa4ZBmLQ9LaKhE",
+      "previewHash": "WZI-jGffC72kS2dYs6bccC8HeiE-gEv1if-DujREy9c",
+      "local": {
+        "vb": "../mesh/蓝色皮革头盔.vb",
+        "gltf": "../mesh/蓝色皮革头盔.gltf",
+        "voxa": "source/zyLtoj8vg9NjfmDRUw6DYerB4CBL5Oa4ZBmLQ9LaKhE.voxa"
+      }
+    },
+    {
+      "modelId": 302461629817501,
+      "name": "蓝色皮革胸甲",
+      "animated": false,
+      "modelFileHash": "fYZUGv6oNahKX7B9kJ7jfukpGTw0D-C_qY0Nogcpt4s",
+      "projectFileHash": "bUNcliN34Q3rmrQ9zjyRroDG_voxgXqfFdFudzgrYD4",
+      "previewHash": "VYrqM1Gp_EJum8JZo4PVM_vi0Gy9KiQWklPdTSag5Fw",
+      "local": {
+        "vb": "../mesh/蓝色皮革胸甲.vb",
+        "gltf": "../mesh/蓝色皮革胸甲.gltf",
+        "voxa": "source/bUNcliN34Q3rmrQ9zjyRroDG_voxgXqfFdFudzgrYD4.voxa"
+      }
+    },
+    {
+      "modelId": 302461629817500,
+      "name": "蓝色皮革靴子",
+      "animated": false,
+      "modelFileHash": "VUU8H9C8sQG1zO98zG81BDLoew5ZjQI6j4oGgTQl2tI",
+      "projectFileHash": "wSrlgB-5wf2971swCBWnFcFr5gSx6lOgWk9OIZEiF8E",
+      "previewHash": "abGSAk66lDqx1Ejqcneg83dtgJioLgd9eIV6C1HrqJE",
+      "local": {
+        "vb": "../mesh/蓝色皮革靴子.vb",
+        "gltf": "../mesh/蓝色皮革靴子.gltf",
+        "voxa": "source/wSrlgB-5wf2971swCBWnFcFr5gSx6lOgWk9OIZEiF8E.voxa"
+      }
+    },
+    {
+      "modelId": 313306057337491,
+      "name": "绿色皮革护肩",
+      "animated": false,
+      "modelFileHash": "eZ1kQd53RPUonogY6XVKaoxYDXw4b7B6hc12drX3C1A",
+      "projectFileHash": "RD5u4xHxNRJjceCQ25vpjHZw5Y3ukMxBnMO987flMaM",
+      "previewHash": "bMuD4vd4UvKBZ2AYQGXChMb5nrs0c3vehjiGNx_LjpE",
+      "local": {
+        "vb": "../mesh/绿色皮革护肩.vb",
+        "gltf": "../mesh/绿色皮革护肩.gltf",
+        "voxa": "source/RD5u4xHxNRJjceCQ25vpjHZw5Y3ukMxBnMO987flMaM.voxa"
+      }
+    },
+    {
+      "modelId": 313306057337490,
+      "name": "绿色皮革靴子",
+      "animated": false,
+      "modelFileHash": "wwf4sAEUgoBOiK_cr88Anzg_JXZR-W7FhsRsa8YcCEQ",
+      "projectFileHash": "JmrISkQmk2pszF9_zDb39u0xJEBJGchprSlz5WbYInA",
+      "previewHash": "l9Di2c-yagOL-PbKahJ13mbGJLlSMi5OZ95kJjYtzbA",
+      "local": {
+        "vb": "../mesh/绿色皮革靴子.vb",
+        "gltf": "../mesh/绿色皮革靴子.gltf",
+        "voxa": "source/JmrISkQmk2pszF9_zDb39u0xJEBJGchprSlz5WbYInA.voxa"
+      }
+    },
+    {
+      "modelId": 302461629817496,
+      "name": "绿色皮革头盔",
+      "animated": false,
+      "modelFileHash": "e7JqGaXT8L4h6vjaucEpZz6o9glpCga43WXCTH8esS0",
+      "projectFileHash": "_58eqWF2qr5LHeiJAV-qDHpaBojnCAeatCAgI5S8SnU",
+      "previewHash": "tpcyUuS7xryFLhhJIYPT56Zt1tw7GTM8-vFY3gvGoJ8",
+      "local": {
+        "vb": "../mesh/绿色皮革头盔.vb",
+        "gltf": "../mesh/绿色皮革头盔.gltf",
+        "voxa": "source/_58eqWF2qr5LHeiJAV-qDHpaBojnCAeatCAgI5S8SnU.voxa"
+      }
+    },
+    {
+      "modelId": 313306057337487,
+      "name": "绿色皮革胸甲",
+      "animated": false,
+      "modelFileHash": "F_UDEA_MuiFBSAd4gyyLjtrqUkAHNoMIv_6BaHetY2s",
+      "projectFileHash": "ENuiSxAXXdq1JWMFrwCRyW7l3OgUro2bZN8Ck8Gk5ns",
+      "previewHash": "Rnm8tRhdVjC1D1G9FeGr5qEryQepW2Pq76q9rC0s1rQ",
+      "local": {
+        "vb": "../mesh/绿色皮革胸甲.vb",
+        "gltf": "../mesh/绿色皮革胸甲.gltf",
+        "voxa": "source/ENuiSxAXXdq1JWMFrwCRyW7l3OgUro2bZN8Ck8Gk5ns.voxa"
+      }
+    },
+    {
+      "modelId": 313306057337486,
+      "name": "黄色皮革护肩",
+      "animated": false,
+      "modelFileHash": "GJUaPThaGQjqp4Jfpx8mM04-pqIhL2CV0Wt4HjnBOpg",
+      "projectFileHash": "sWfP4wJcKSXqac26xd45FWgWu-34jUInox0fcRPunIY",
+      "previewHash": "cuh9Lzy4dU8qM18EuyNG95OgHoP6PTV2iK_z3Z0nY44",
+      "local": {
+        "vb": "../mesh/黄色皮革护肩.vb",
+        "gltf": "../mesh/黄色皮革护肩.gltf",
+        "voxa": "source/sWfP4wJcKSXqac26xd45FWgWu-34jUInox0fcRPunIY.voxa"
+      }
+    },
+    {
+      "modelId": 313306057337485,
+      "name": "黄色皮革靴子",
+      "animated": false,
+      "modelFileHash": "btl6JkiVI3ytDRlk9tPBNlL5I4g4TyOcHBAHZF0mVfg",
+      "projectFileHash": "qb83LQewRUx23Hwy-9vO3TP_vSkjGjeLRulb3ZgQpmQ",
+      "previewHash": "aHgQ-VspvwVdBXfX3pTC2ohU-mm8moHLtQi19SGdtsE",
+      "local": {
+        "vb": "../mesh/黄色皮革靴子.vb",
+        "gltf": "../mesh/黄色皮革靴子.gltf",
+        "voxa": "source/qb83LQewRUx23Hwy-9vO3TP_vSkjGjeLRulb3ZgQpmQ.voxa"
+      }
+    },
+    {
+      "modelId": 313306057337484,
+      "name": "黄色皮革头盔",
+      "animated": false,
+      "modelFileHash": "N7g2lrGHjPbrZXj8SHe1kZQGD50X5ut8B9v5YE-HSWA",
+      "projectFileHash": "ciPQJFZFJYsFRupvpZ7tL15XH-1vh-L99m_tOqZWec4",
+      "previewHash": "LT6kzHZ03sOjGBOd7m9TBNXb_1rEZ8cjG2a3tP85Iu8",
+      "local": {
+        "vb": "../mesh/黄色皮革头盔.vb",
+        "gltf": "../mesh/黄色皮革头盔.gltf",
+        "voxa": "source/ciPQJFZFJYsFRupvpZ7tL15XH-1vh-L99m_tOqZWec4.voxa"
+      }
+    },
+    {
+      "modelId": 313306057337483,
+      "name": "黄色皮革胸甲",
+      "animated": false,
+      "modelFileHash": "Zw-UzH8BTFmaIQLKl2Oc4Dwtn3G9yPPIvaKUHHzSw6I",
+      "projectFileHash": "02ELMt1-87T7FgpDfn_TLAZg4GRN5hjTPnS7CMG6Tzw",
+      "previewHash": "j1L-JQgsKXKaK83BfJfvuSox7_0Yx6SK87fnylGmASs",
+      "local": {
+        "vb": "../mesh/黄色皮革胸甲.vb",
+        "gltf": "../mesh/黄色皮革胸甲.gltf",
+        "voxa": "source/02ELMt1-87T7FgpDfn_TLAZg4GRN5hjTPnS7CMG6Tzw.voxa"
+      }
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "format": "dao3-standard-export/v1",
+  "source": "D:\\Projects\\Gaming\\NEA-Revive\\reference\\起床战争·S2赛季_100207687_QmanVp7Yi5y2BBki8xKSc9cKFg4SscjfHBVKQSjiEFACrN\\起床战争·S2赛季_100207687_QmanVp7Yi5y2BBki8xKSc9cKFg4SscjfHBVKQSjiEFACrN",
+  "importedAt": "2026-08-24T07:58:00.423Z",
+  "terrainBoxes": 1821,
+  "entities": 6,
+  "serverModules": 8,
+  "clientModules": 2,
+  "recoveredScripts": [
+    "reward.js",
+    "GroupStorage.js"
+  ],
+  "assets": 467
+}

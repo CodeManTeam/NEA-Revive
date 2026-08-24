@@ -129,6 +129,8 @@ export class ScriptRuntime {
   #worldPhysicsSnapshot;
   #initialWorldPhysics;
   #worldMaterials;
+  gameEntityPrototype = null;
+  gamePlayerPrototype = null;
   #seed = 0;
   #now;
   #prevTickMS;
@@ -934,6 +936,12 @@ export class ScriptRuntime {
       },
     });
     const runtime = this;
+    class RuntimeGameEntity {}
+    class RuntimeGamePlayer extends RuntimeGameEntity {}
+    this.gameEntityPrototype = RuntimeGameEntity.prototype;
+    this.gamePlayerPrototype = RuntimeGamePlayer.prototype;
+    for (const entity of this.#entities.values()) Object.setPrototypeOf(entity, this.gameEntityPrototype);
+    for (const player of this.#players.values()) Object.setPrototypeOf(player, this.gamePlayerPrototype);
     const voxels = createCapabilityFacade(this.voxels, () => this.#require("server.world.voxels"));
     const gui = createCapabilityFacade(this.gui, () => this.#require("server.gui"), GUI_CAPABILITY_MEMBERS);
     const storage = createCapabilityFacade(this.storage, () => this.#require("server.storage"));
@@ -969,7 +977,8 @@ export class ScriptRuntime {
       GameButtonType,
       GameCameraMode,
       GameWorld,
-      GameEntity: class GameEntity {},
+      GameEntity: RuntimeGameEntity,
+      GamePlayer: RuntimeGamePlayer,
       GameSoundEffect,
       GameBodyPart,
       Vec3: Object.freeze({ create: value => Vector3.from(value) }),
@@ -1612,7 +1621,7 @@ function quaternionFrom(value) {
 export function createRuntimeEntity(input, runtime = null) {
   const tags = new Set(input.tags ?? []);
   const position = Vector3.from(input.position ?? [0, 0, 0]);
-  return {
+  const entity = {
     _id: String(input.id),
     _kind: input.kind ?? "entity",
     _name: input.name ?? input.source?.name ?? String(input.id),
@@ -1797,6 +1806,8 @@ export function createRuntimeEntity(input, runtime = null) {
       return Object.freeze({ id: this.id, name: this.name, kind: this.kind, position: this.position.toArray(), tags: [...this._tags].sort(), destroyed: this.destroyed, enableInteract: this.enableInteract, interactHint: this.interactHint, enableDamage: this.enableDamage, showHealthBar: this.showHealthBar, hp: this.hp, maxHp: this.maxHp, ...(this.dead ? { dead: true } : {}), ...(hasParticleState(this) ? { particles: particleSnapshot(this) } : {}) });
     },
   };
+  if (runtime?.gameEntityPrototype) Object.setPrototypeOf(entity, runtime.gameEntityPrototype);
+  return entity;
 }
 
 export function isLiveChatEntity(entity) {
@@ -2115,6 +2126,7 @@ function createRuntimePlayer(runtime, input) {
       });
     },
   };
+  if (runtime.gamePlayerPrototype) Object.setPrototypeOf(player, runtime.gamePlayerPrototype);
   return player;
 }
 

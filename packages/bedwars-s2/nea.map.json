@@ -1,0 +1,2407 @@
+{
+  "formatVersion": "nea-map/v1",
+  "id": "bedwars-s2",
+  "display": {
+    "name": "起床战争·S2赛季_100207687",
+    "description": "Imported DAO3 standard project export"
+  },
+  "runtime": {
+    "apiVersion": "0.1.0",
+    "tickRate": 20,
+    "clientContract": "dao3-client-runtime/v1",
+    "serverContract": "nea-server-runtime/v1",
+    "compatibilityLevel": "experimental",
+    "groupId": "storage"
+  },
+  "world": {
+    "shape": [
+      128,
+      128,
+      128
+    ],
+    "spawn": [
+      63.5,
+      59,
+      63.5
+    ],
+    "entityLimit": 4000,
+    "terrain": "world/terrain.json",
+    "entities": "world/entities.json",
+    "environment": null,
+    "physics": "world/physics.json"
+  },
+  "assets": [
+    {
+      "name": "mesh/arrow.gltf",
+      "path": "assets/mesh/arrow.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/arrow.vb",
+      "path": "assets/mesh/arrow.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/arrow.vox",
+      "path": "assets/mesh/arrow.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/bluebed.gltf",
+      "path": "assets/mesh/bluebed.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/bluebed.vb",
+      "path": "assets/mesh/bluebed.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/bluebed.vox",
+      "path": "assets/mesh/bluebed.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/Dream.gltf",
+      "path": "assets/mesh/Dream.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/Dream.vb",
+      "path": "assets/mesh/Dream.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/Dream.vox",
+      "path": "assets/mesh/Dream.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/greenbed.gltf",
+      "path": "assets/mesh/greenbed.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/greenbed.vb",
+      "path": "assets/mesh/greenbed.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/greenbed.vox",
+      "path": "assets/mesh/greenbed.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/mc苦力怕披风（未完）.gltf",
+      "path": "assets/mesh/mc苦力怕披风（未完）.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/mc苦力怕披风（未完）.vb",
+      "path": "assets/mesh/mc苦力怕披风（未完）.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/mc苦力怕披风（未完）.vox",
+      "path": "assets/mesh/mc苦力怕披风（未完）.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/Migrator迁移者披风.gltf",
+      "path": "assets/mesh/Migrator迁移者披风.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/Migrator迁移者披风.vb",
+      "path": "assets/mesh/Migrator迁移者披风.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/Migrator迁移者披风.vox",
+      "path": "assets/mesh/Migrator迁移者披风.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/model-list.json",
+      "path": "assets/mesh/model-list.json",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/arrow.jpg",
+      "path": "assets/mesh/preview/arrow.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/bluebed.jpg",
+      "path": "assets/mesh/preview/bluebed.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/Dream.jpg",
+      "path": "assets/mesh/preview/Dream.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/greenbed.jpg",
+      "path": "assets/mesh/preview/greenbed.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/mc苦力怕披风（未完）.jpg",
+      "path": "assets/mesh/preview/mc苦力怕披风（未完）.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/Migrator迁移者披风.jpg",
+      "path": "assets/mesh/preview/Migrator迁移者披风.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/redbed.jpg",
+      "path": "assets/mesh/preview/redbed.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/TNT.jpg",
+      "path": "assets/mesh/preview/TNT.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/yellowbed.jpg",
+      "path": "assets/mesh/preview/yellowbed.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/三叉戟.jpg",
+      "path": "assets/mesh/preview/三叉戟.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/世界崩解之镐.jpg",
+      "path": "assets/mesh/preview/世界崩解之镐.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/冠军达科斯披风.jpg",
+      "path": "assets/mesh/preview/冠军达科斯披风.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/击退棒.jpg",
+      "path": "assets/mesh/preview/击退棒.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/剪刀.jpg",
+      "path": "assets/mesh/preview/剪刀.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/力量药水.jpg",
+      "path": "assets/mesh/preview/力量药水.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/圣诞糖果棍.jpg",
+      "path": "assets/mesh/preview/圣诞糖果棍.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/圣诞花环.jpg",
+      "path": "assets/mesh/preview/圣诞花环.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/小河豚.jpg",
+      "path": "assets/mesh/preview/小河豚.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/屏障.jpg",
+      "path": "assets/mesh/preview/屏障.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/弓.jpg",
+      "path": "assets/mesh/preview/弓.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/我的世界_Mojang披风.jpg",
+      "path": "assets/mesh/preview/我的世界_Mojang披风.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/我的世界_末影人披风.jpg",
+      "path": "assets/mesh/preview/我的世界_末影人披风.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/抛竿.jpg",
+      "path": "assets/mesh/preview/抛竿.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/指南针.jpg",
+      "path": "assets/mesh/preview/指南针.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/排行榜.jpg",
+      "path": "assets/mesh/preview/排行榜.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/搭路蛋.jpg",
+      "path": "assets/mesh/preview/搭路蛋.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/救援平台.jpg",
+      "path": "assets/mesh/preview/救援平台.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/时钟.jpg",
+      "path": "assets/mesh/preview/时钟.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/木剑.jpg",
+      "path": "assets/mesh/preview/木剑.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/木斧.jpg",
+      "path": "assets/mesh/preview/木斧.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/木板.jpg",
+      "path": "assets/mesh/preview/木板.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/木镐.jpg",
+      "path": "assets/mesh/preview/木镐.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/末地石.jpg",
+      "path": "assets/mesh/preview/末地石.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/末影人.jpg",
+      "path": "assets/mesh/preview/末影人.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/末影珍珠.jpg",
+      "path": "assets/mesh/preview/末影珍珠.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/末影箱.jpg",
+      "path": "assets/mesh/preview/末影箱.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/末影龙翅膀.jpg",
+      "path": "assets/mesh/preview/末影龙翅膀.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/村民.jpg",
+      "path": "assets/mesh/preview/村民.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/桶.jpg",
+      "path": "assets/mesh/preview/桶.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/水桶.jpg",
+      "path": "assets/mesh/preview/水桶.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/沙石.jpg",
+      "path": "assets/mesh/preview/沙石.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/浮漂.jpg",
+      "path": "assets/mesh/preview/浮漂.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/海龟.jpg",
+      "path": "assets/mesh/preview/海龟.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/火焰弹.jpg",
+      "path": "assets/mesh/preview/火焰弹.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/猪.jpg",
+      "path": "assets/mesh/preview/猪.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/短剑.jpg",
+      "path": "assets/mesh/preview/短剑.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/石剑.jpg",
+      "path": "assets/mesh/preview/石剑.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/石斧.jpg",
+      "path": "assets/mesh/preview/石斧.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/箭.jpg",
+      "path": "assets/mesh/preview/箭.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/箱子.jpg",
+      "path": "assets/mesh/preview/箱子.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/红色皮革头盔.jpg",
+      "path": "assets/mesh/preview/红色皮革头盔.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/红色皮革护肩.jpg",
+      "path": "assets/mesh/preview/红色皮革护肩.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/红色皮革胸甲.jpg",
+      "path": "assets/mesh/preview/红色皮革胸甲.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/红色皮革靴子.jpg",
+      "path": "assets/mesh/preview/红色皮革靴子.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/绿宝石.jpg",
+      "path": "assets/mesh/preview/绿宝石.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/绿宝石块.jpg",
+      "path": "assets/mesh/preview/绿宝石块.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/绿色皮革头盔.jpg",
+      "path": "assets/mesh/preview/绿色皮革头盔.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/绿色皮革护肩.jpg",
+      "path": "assets/mesh/preview/绿色皮革护肩.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/绿色皮革胸甲.jpg",
+      "path": "assets/mesh/preview/绿色皮革胸甲.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/绿色皮革靴子.jpg",
+      "path": "assets/mesh/preview/绿色皮革靴子.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/羊毛.jpg",
+      "path": "assets/mesh/preview/羊毛.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/美西螈.jpg",
+      "path": "assets/mesh/preview/美西螈.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/胡萝卜鱼竿.jpg",
+      "path": "assets/mesh/preview/胡萝卜鱼竿.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/蓝色皮革头盔.jpg",
+      "path": "assets/mesh/preview/蓝色皮革头盔.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/蓝色皮革护肩.jpg",
+      "path": "assets/mesh/preview/蓝色皮革护肩.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/蓝色皮革胸甲.jpg",
+      "path": "assets/mesh/preview/蓝色皮革胸甲.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/蓝色皮革靴子.jpg",
+      "path": "assets/mesh/preview/蓝色皮革靴子.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/跳跃药水.jpg",
+      "path": "assets/mesh/preview/跳跃药水.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/轻雪披风.jpg",
+      "path": "assets/mesh/preview/轻雪披风.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/迅捷药水.jpg",
+      "path": "assets/mesh/preview/迅捷药水.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/金苹果.jpg",
+      "path": "assets/mesh/preview/金苹果.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/金锭.jpg",
+      "path": "assets/mesh/preview/金锭.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/金镐.jpg",
+      "path": "assets/mesh/preview/金镐.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/钓鱼竿.jpg",
+      "path": "assets/mesh/preview/钓鱼竿.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/钻石.jpg",
+      "path": "assets/mesh/preview/钻石.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/钻石剑.jpg",
+      "path": "assets/mesh/preview/钻石剑.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/钻石块.jpg",
+      "path": "assets/mesh/preview/钻石块.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/钻石斧.jpg",
+      "path": "assets/mesh/preview/钻石斧.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/钻石镐.jpg",
+      "path": "assets/mesh/preview/钻石镐.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/钻石靴子.jpg",
+      "path": "assets/mesh/preview/钻石靴子.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/铁剑.jpg",
+      "path": "assets/mesh/preview/铁剑.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/铁斧.jpg",
+      "path": "assets/mesh/preview/铁斧.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/铁锭.jpg",
+      "path": "assets/mesh/preview/铁锭.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/铁镐.jpg",
+      "path": "assets/mesh/preview/铁镐.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/铁靴子.jpg",
+      "path": "assets/mesh/preview/铁靴子.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/锁链靴子.jpg",
+      "path": "assets/mesh/preview/锁链靴子.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/隐身药水.jpg",
+      "path": "assets/mesh/preview/隐身药水.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/雪傀儡.jpg",
+      "path": "assets/mesh/preview/雪傀儡.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/黄色皮革头盔.jpg",
+      "path": "assets/mesh/preview/黄色皮革头盔.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/黄色皮革护肩.jpg",
+      "path": "assets/mesh/preview/黄色皮革护肩.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/黄色皮革胸甲.jpg",
+      "path": "assets/mesh/preview/黄色皮革胸甲.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/黄色皮革靴子.jpg",
+      "path": "assets/mesh/preview/黄色皮革靴子.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/preview/黑曜石.jpg",
+      "path": "assets/mesh/preview/黑曜石.jpg",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/redbed.gltf",
+      "path": "assets/mesh/redbed.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/redbed.vb",
+      "path": "assets/mesh/redbed.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/redbed.vox",
+      "path": "assets/mesh/redbed.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/TNT.gltf",
+      "path": "assets/mesh/TNT.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/TNT.vb",
+      "path": "assets/mesh/TNT.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/TNT.vox",
+      "path": "assets/mesh/TNT.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/yellowbed.gltf",
+      "path": "assets/mesh/yellowbed.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/yellowbed.vb",
+      "path": "assets/mesh/yellowbed.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/yellowbed.vox",
+      "path": "assets/mesh/yellowbed.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/三叉戟.gltf",
+      "path": "assets/mesh/三叉戟.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/三叉戟.vb",
+      "path": "assets/mesh/三叉戟.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/三叉戟.vox",
+      "path": "assets/mesh/三叉戟.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/世界崩解之镐.gltf",
+      "path": "assets/mesh/世界崩解之镐.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/世界崩解之镐.vb",
+      "path": "assets/mesh/世界崩解之镐.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/世界崩解之镐.vox",
+      "path": "assets/mesh/世界崩解之镐.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/冠军达科斯披风.gltf",
+      "path": "assets/mesh/冠军达科斯披风.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/冠军达科斯披风.vb",
+      "path": "assets/mesh/冠军达科斯披风.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/冠军达科斯披风.vox",
+      "path": "assets/mesh/冠军达科斯披风.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/击退棒.gltf",
+      "path": "assets/mesh/击退棒.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/击退棒.vb",
+      "path": "assets/mesh/击退棒.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/击退棒.vox",
+      "path": "assets/mesh/击退棒.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/剪刀.gltf",
+      "path": "assets/mesh/剪刀.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/剪刀.vb",
+      "path": "assets/mesh/剪刀.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/剪刀.vox",
+      "path": "assets/mesh/剪刀.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/力量药水.gltf",
+      "path": "assets/mesh/力量药水.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/力量药水.vb",
+      "path": "assets/mesh/力量药水.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/力量药水.vox",
+      "path": "assets/mesh/力量药水.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/圣诞糖果棍.gltf",
+      "path": "assets/mesh/圣诞糖果棍.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/圣诞糖果棍.vb",
+      "path": "assets/mesh/圣诞糖果棍.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/圣诞糖果棍.vox",
+      "path": "assets/mesh/圣诞糖果棍.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/圣诞花环.gltf",
+      "path": "assets/mesh/圣诞花环.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/圣诞花环.vb",
+      "path": "assets/mesh/圣诞花环.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/圣诞花环.vox",
+      "path": "assets/mesh/圣诞花环.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/小河豚.gltf",
+      "path": "assets/mesh/小河豚.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/小河豚.vb",
+      "path": "assets/mesh/小河豚.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/小河豚.vox",
+      "path": "assets/mesh/小河豚.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/屏障.gltf",
+      "path": "assets/mesh/屏障.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/屏障.vb",
+      "path": "assets/mesh/屏障.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/屏障.vox",
+      "path": "assets/mesh/屏障.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/弓.gltf",
+      "path": "assets/mesh/弓.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/弓.vb",
+      "path": "assets/mesh/弓.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/弓.vox",
+      "path": "assets/mesh/弓.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/我的世界_末影人披风.gltf",
+      "path": "assets/mesh/我的世界_末影人披风.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/我的世界_末影人披风.vb",
+      "path": "assets/mesh/我的世界_末影人披风.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/我的世界_末影人披风.vox",
+      "path": "assets/mesh/我的世界_末影人披风.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/救援平台.gltf",
+      "path": "assets/mesh/救援平台.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/救援平台.vb",
+      "path": "assets/mesh/救援平台.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/救援平台.vox",
+      "path": "assets/mesh/救援平台.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/时钟.gltf",
+      "path": "assets/mesh/时钟.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/时钟.vb",
+      "path": "assets/mesh/时钟.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/时钟.vox",
+      "path": "assets/mesh/时钟.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/木剑.gltf",
+      "path": "assets/mesh/木剑.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/木剑.vb",
+      "path": "assets/mesh/木剑.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/木剑.vox",
+      "path": "assets/mesh/木剑.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/木斧.gltf",
+      "path": "assets/mesh/木斧.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/木斧.vb",
+      "path": "assets/mesh/木斧.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/木斧.vox",
+      "path": "assets/mesh/木斧.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/木板.gltf",
+      "path": "assets/mesh/木板.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/木板.vb",
+      "path": "assets/mesh/木板.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/木板.vox",
+      "path": "assets/mesh/木板.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/木镐.gltf",
+      "path": "assets/mesh/木镐.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/木镐.vb",
+      "path": "assets/mesh/木镐.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/木镐.vox",
+      "path": "assets/mesh/木镐.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末地石.gltf",
+      "path": "assets/mesh/末地石.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末地石.vb",
+      "path": "assets/mesh/末地石.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末地石.vox",
+      "path": "assets/mesh/末地石.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末影人.gltf",
+      "path": "assets/mesh/末影人.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末影人.vb",
+      "path": "assets/mesh/末影人.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末影人.vox",
+      "path": "assets/mesh/末影人.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末影珍珠.gltf",
+      "path": "assets/mesh/末影珍珠.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末影珍珠.vb",
+      "path": "assets/mesh/末影珍珠.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末影珍珠.vox",
+      "path": "assets/mesh/末影珍珠.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末影箱.gltf",
+      "path": "assets/mesh/末影箱.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末影箱.vb",
+      "path": "assets/mesh/末影箱.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末影箱.vox",
+      "path": "assets/mesh/末影箱.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末影龙翅膀.gltf",
+      "path": "assets/mesh/末影龙翅膀.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末影龙翅膀.vb",
+      "path": "assets/mesh/末影龙翅膀.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/末影龙翅膀.vox",
+      "path": "assets/mesh/末影龙翅膀.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/村民.gltf",
+      "path": "assets/mesh/村民.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/村民.vb",
+      "path": "assets/mesh/村民.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/村民.vox",
+      "path": "assets/mesh/村民.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/桶.gltf",
+      "path": "assets/mesh/桶.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/桶.vb",
+      "path": "assets/mesh/桶.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/桶.vox",
+      "path": "assets/mesh/桶.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/水桶.gltf",
+      "path": "assets/mesh/水桶.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/水桶.vb",
+      "path": "assets/mesh/水桶.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/水桶.vox",
+      "path": "assets/mesh/水桶.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/沙石.gltf",
+      "path": "assets/mesh/沙石.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/沙石.vb",
+      "path": "assets/mesh/沙石.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/沙石.vox",
+      "path": "assets/mesh/沙石.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/浮漂.gltf",
+      "path": "assets/mesh/浮漂.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/浮漂.vb",
+      "path": "assets/mesh/浮漂.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/浮漂.vox",
+      "path": "assets/mesh/浮漂.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/火焰弹.gltf",
+      "path": "assets/mesh/火焰弹.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/火焰弹.vb",
+      "path": "assets/mesh/火焰弹.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/火焰弹.vox",
+      "path": "assets/mesh/火焰弹.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/猪.gltf",
+      "path": "assets/mesh/猪.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/猪.vb",
+      "path": "assets/mesh/猪.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/猪.vox",
+      "path": "assets/mesh/猪.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/短剑.gltf",
+      "path": "assets/mesh/短剑.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/短剑.vb",
+      "path": "assets/mesh/短剑.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/短剑.vox",
+      "path": "assets/mesh/短剑.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/石剑.gltf",
+      "path": "assets/mesh/石剑.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/石剑.vb",
+      "path": "assets/mesh/石剑.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/石剑.vox",
+      "path": "assets/mesh/石剑.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/石斧.gltf",
+      "path": "assets/mesh/石斧.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/石斧.vb",
+      "path": "assets/mesh/石斧.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/石斧.vox",
+      "path": "assets/mesh/石斧.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/箭.gltf",
+      "path": "assets/mesh/箭.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/箭.vb",
+      "path": "assets/mesh/箭.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/箭.vox",
+      "path": "assets/mesh/箭.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/箱子.gltf",
+      "path": "assets/mesh/箱子.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/箱子.vb",
+      "path": "assets/mesh/箱子.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/箱子.vox",
+      "path": "assets/mesh/箱子.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/红色皮革头盔.gltf",
+      "path": "assets/mesh/红色皮革头盔.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/红色皮革头盔.vb",
+      "path": "assets/mesh/红色皮革头盔.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/红色皮革头盔.vox",
+      "path": "assets/mesh/红色皮革头盔.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/红色皮革护肩.gltf",
+      "path": "assets/mesh/红色皮革护肩.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/红色皮革护肩.vb",
+      "path": "assets/mesh/红色皮革护肩.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/红色皮革护肩.vox",
+      "path": "assets/mesh/红色皮革护肩.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/红色皮革胸甲.gltf",
+      "path": "assets/mesh/红色皮革胸甲.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/红色皮革胸甲.vb",
+      "path": "assets/mesh/红色皮革胸甲.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/红色皮革胸甲.vox",
+      "path": "assets/mesh/红色皮革胸甲.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/红色皮革靴子.gltf",
+      "path": "assets/mesh/红色皮革靴子.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/红色皮革靴子.vb",
+      "path": "assets/mesh/红色皮革靴子.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/红色皮革靴子.vox",
+      "path": "assets/mesh/红色皮革靴子.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/绿宝石.gltf",
+      "path": "assets/mesh/绿宝石.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/绿宝石.vb",
+      "path": "assets/mesh/绿宝石.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/绿宝石.vox",
+      "path": "assets/mesh/绿宝石.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/绿宝石块.gltf",
+      "path": "assets/mesh/绿宝石块.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/绿宝石块.vb",
+      "path": "assets/mesh/绿宝石块.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/绿宝石块.vox",
+      "path": "assets/mesh/绿宝石块.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/绿色皮革头盔.gltf",
+      "path": "assets/mesh/绿色皮革头盔.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/绿色皮革头盔.vb",
+      "path": "assets/mesh/绿色皮革头盔.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/绿色皮革头盔.vox",
+      "path": "assets/mesh/绿色皮革头盔.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/绿色皮革护肩.gltf",
+      "path": "assets/mesh/绿色皮革护肩.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/绿色皮革护肩.vb",
+      "path": "assets/mesh/绿色皮革护肩.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/绿色皮革护肩.vox",
+      "path": "assets/mesh/绿色皮革护肩.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/绿色皮革胸甲.gltf",
+      "path": "assets/mesh/绿色皮革胸甲.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/绿色皮革胸甲.vb",
+      "path": "assets/mesh/绿色皮革胸甲.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/绿色皮革胸甲.vox",
+      "path": "assets/mesh/绿色皮革胸甲.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/绿色皮革靴子.gltf",
+      "path": "assets/mesh/绿色皮革靴子.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/绿色皮革靴子.vb",
+      "path": "assets/mesh/绿色皮革靴子.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/绿色皮革靴子.vox",
+      "path": "assets/mesh/绿色皮革靴子.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/羊毛.gltf",
+      "path": "assets/mesh/羊毛.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/羊毛.vb",
+      "path": "assets/mesh/羊毛.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/羊毛.vox",
+      "path": "assets/mesh/羊毛.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/胡萝卜鱼竿.gltf",
+      "path": "assets/mesh/胡萝卜鱼竿.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/胡萝卜鱼竿.vb",
+      "path": "assets/mesh/胡萝卜鱼竿.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/胡萝卜鱼竿.vox",
+      "path": "assets/mesh/胡萝卜鱼竿.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/蓝色皮革头盔.gltf",
+      "path": "assets/mesh/蓝色皮革头盔.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/蓝色皮革头盔.vb",
+      "path": "assets/mesh/蓝色皮革头盔.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/蓝色皮革头盔.vox",
+      "path": "assets/mesh/蓝色皮革头盔.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/蓝色皮革护肩.gltf",
+      "path": "assets/mesh/蓝色皮革护肩.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/蓝色皮革护肩.vb",
+      "path": "assets/mesh/蓝色皮革护肩.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/蓝色皮革护肩.vox",
+      "path": "assets/mesh/蓝色皮革护肩.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/蓝色皮革胸甲.gltf",
+      "path": "assets/mesh/蓝色皮革胸甲.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/蓝色皮革胸甲.vb",
+      "path": "assets/mesh/蓝色皮革胸甲.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/蓝色皮革胸甲.vox",
+      "path": "assets/mesh/蓝色皮革胸甲.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/蓝色皮革靴子.gltf",
+      "path": "assets/mesh/蓝色皮革靴子.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/蓝色皮革靴子.vb",
+      "path": "assets/mesh/蓝色皮革靴子.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/蓝色皮革靴子.vox",
+      "path": "assets/mesh/蓝色皮革靴子.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/跳跃药水.gltf",
+      "path": "assets/mesh/跳跃药水.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/跳跃药水.vb",
+      "path": "assets/mesh/跳跃药水.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/跳跃药水.vox",
+      "path": "assets/mesh/跳跃药水.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/轻雪披风.gltf",
+      "path": "assets/mesh/轻雪披风.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/轻雪披风.vb",
+      "path": "assets/mesh/轻雪披风.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/轻雪披风.vox",
+      "path": "assets/mesh/轻雪披风.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/迅捷药水.gltf",
+      "path": "assets/mesh/迅捷药水.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/迅捷药水.vb",
+      "path": "assets/mesh/迅捷药水.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/迅捷药水.vox",
+      "path": "assets/mesh/迅捷药水.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/金苹果.gltf",
+      "path": "assets/mesh/金苹果.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/金苹果.vb",
+      "path": "assets/mesh/金苹果.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/金苹果.vox",
+      "path": "assets/mesh/金苹果.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/金锭.gltf",
+      "path": "assets/mesh/金锭.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/金锭.vb",
+      "path": "assets/mesh/金锭.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/金锭.vox",
+      "path": "assets/mesh/金锭.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/金镐.gltf",
+      "path": "assets/mesh/金镐.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/金镐.vb",
+      "path": "assets/mesh/金镐.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/金镐.vox",
+      "path": "assets/mesh/金镐.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/钓鱼竿.gltf",
+      "path": "assets/mesh/钓鱼竿.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/钓鱼竿.vb",
+      "path": "assets/mesh/钓鱼竿.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/钓鱼竿.vox",
+      "path": "assets/mesh/钓鱼竿.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/钻石.gltf",
+      "path": "assets/mesh/钻石.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/钻石.vb",
+      "path": "assets/mesh/钻石.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/钻石.vox",
+      "path": "assets/mesh/钻石.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/钻石剑.gltf",
+      "path": "assets/mesh/钻石剑.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/钻石剑.vb",
+      "path": "assets/mesh/钻石剑.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/钻石剑.vox",
+      "path": "assets/mesh/钻石剑.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/钻石斧.gltf",
+      "path": "assets/mesh/钻石斧.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/钻石斧.vb",
+      "path": "assets/mesh/钻石斧.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/钻石斧.vox",
+      "path": "assets/mesh/钻石斧.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/钻石镐.gltf",
+      "path": "assets/mesh/钻石镐.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/钻石镐.vb",
+      "path": "assets/mesh/钻石镐.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/钻石镐.vox",
+      "path": "assets/mesh/钻石镐.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/铁剑.gltf",
+      "path": "assets/mesh/铁剑.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/铁剑.vb",
+      "path": "assets/mesh/铁剑.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/铁剑.vox",
+      "path": "assets/mesh/铁剑.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/铁斧.gltf",
+      "path": "assets/mesh/铁斧.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/铁斧.vb",
+      "path": "assets/mesh/铁斧.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/铁斧.vox",
+      "path": "assets/mesh/铁斧.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/铁镐.gltf",
+      "path": "assets/mesh/铁镐.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/铁镐.vb",
+      "path": "assets/mesh/铁镐.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/铁镐.vox",
+      "path": "assets/mesh/铁镐.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/铁靴子.gltf",
+      "path": "assets/mesh/铁靴子.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/铁靴子.vb",
+      "path": "assets/mesh/铁靴子.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/铁靴子.vox",
+      "path": "assets/mesh/铁靴子.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/隐身药水.gltf",
+      "path": "assets/mesh/隐身药水.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/隐身药水.vb",
+      "path": "assets/mesh/隐身药水.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/隐身药水.vox",
+      "path": "assets/mesh/隐身药水.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/雪傀儡.gltf",
+      "path": "assets/mesh/雪傀儡.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/雪傀儡.vb",
+      "path": "assets/mesh/雪傀儡.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/雪傀儡.vox",
+      "path": "assets/mesh/雪傀儡.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/黄色皮革头盔.gltf",
+      "path": "assets/mesh/黄色皮革头盔.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/黄色皮革头盔.vb",
+      "path": "assets/mesh/黄色皮革头盔.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/黄色皮革头盔.vox",
+      "path": "assets/mesh/黄色皮革头盔.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/黄色皮革护肩.gltf",
+      "path": "assets/mesh/黄色皮革护肩.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/黄色皮革护肩.vb",
+      "path": "assets/mesh/黄色皮革护肩.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/黄色皮革护肩.vox",
+      "path": "assets/mesh/黄色皮革护肩.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/黄色皮革胸甲.gltf",
+      "path": "assets/mesh/黄色皮革胸甲.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/黄色皮革胸甲.vb",
+      "path": "assets/mesh/黄色皮革胸甲.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/黄色皮革胸甲.vox",
+      "path": "assets/mesh/黄色皮革胸甲.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/黄色皮革靴子.gltf",
+      "path": "assets/mesh/黄色皮革靴子.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/黄色皮革靴子.vb",
+      "path": "assets/mesh/黄色皮革靴子.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/黄色皮革靴子.vox",
+      "path": "assets/mesh/黄色皮革靴子.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/黑曜石.gltf",
+      "path": "assets/mesh/黑曜石.gltf",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/黑曜石.vb",
+      "path": "assets/mesh/黑曜石.vb",
+      "kind": "mesh"
+    },
+    {
+      "name": "mesh/黑曜石.vox",
+      "path": "assets/mesh/黑曜石.vox",
+      "kind": "mesh"
+    },
+    {
+      "name": "audio/audio_airhorn.mp3",
+      "path": "assets/audio/audio_airhorn.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_boo.mp3",
+      "path": "assets/audio/audio_boo.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_boost.mp3",
+      "path": "assets/audio/audio_boost.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_break_block.mp3",
+      "path": "assets/audio/audio_break_block.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_bubbles.mp3",
+      "path": "assets/audio/audio_bubbles.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_chat.mp3",
+      "path": "assets/audio/audio_chat.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_checkpoint.mp3",
+      "path": "assets/audio/audio_checkpoint.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_closeChest.mp3",
+      "path": "assets/audio/audio_closeChest.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_die.mp3",
+      "path": "assets/audio/audio_die.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_dive.mp3",
+      "path": "assets/audio/audio_dive.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_door_close.mp3",
+      "path": "assets/audio/audio_door_close.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_door_open.mp3",
+      "path": "assets/audio/audio_door_open.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_double_jump.mp3",
+      "path": "assets/audio/audio_double_jump.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_drama.mp3",
+      "path": "assets/audio/audio_drama.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_electric.mp3",
+      "path": "assets/audio/audio_electric.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_elephant.mp3",
+      "path": "assets/audio/audio_elephant.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_explode.mp3",
+      "path": "assets/audio/audio_explode.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_fillWater.mp3",
+      "path": "assets/audio/audio_fillWater.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_goal.mp3",
+      "path": "assets/audio/audio_goal.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_gunshot.mp3",
+      "path": "assets/audio/audio_gunshot.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_hit.mp3",
+      "path": "assets/audio/audio_hit.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_hurt.mp3",
+      "path": "assets/audio/audio_hurt.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_jump.mp3",
+      "path": "assets/audio/audio_jump.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_land.mp3",
+      "path": "assets/audio/audio_land.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_laugh.mp3",
+      "path": "assets/audio/audio_laugh.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_Minecraft-C418.mp3",
+      "path": "assets/audio/audio_Minecraft-C418.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_openChest.mp3",
+      "path": "assets/audio/audio_openChest.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_place_block.mp3",
+      "path": "assets/audio/audio_place_block.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_pourWater.mp3",
+      "path": "assets/audio/audio_pourWater.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_punch.mp3",
+      "path": "assets/audio/audio_punch.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_rain.mp3",
+      "path": "assets/audio/audio_rain.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_rooster.mp3",
+      "path": "assets/audio/audio_rooster.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_sad_trombone.mp3",
+      "path": "assets/audio/audio_sad_trombone.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_scream.mp3",
+      "path": "assets/audio/audio_scream.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_spawn.mp3",
+      "path": "assets/audio/audio_spawn.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_splash.mp3",
+      "path": "assets/audio/audio_splash.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_step.mp3",
+      "path": "assets/audio/audio_step.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_successful_hit.mp3",
+      "path": "assets/audio/audio_successful_hit.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_swim.mp3",
+      "path": "assets/audio/audio_swim.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_sword1.mp3",
+      "path": "assets/audio/audio_sword1.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_sword2.mp3",
+      "path": "assets/audio/audio_sword2.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_walk.mp3",
+      "path": "assets/audio/audio_walk.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_whistle.mp3",
+      "path": "assets/audio/audio_whistle.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "audio/audio_wolf.mp3",
+      "path": "assets/audio/audio_wolf.mp3",
+      "kind": "audio"
+    },
+    {
+      "name": "image/a.png",
+      "path": "assets/image/a.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/arrow.png",
+      "path": "assets/image/arrow.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/bow.png",
+      "path": "assets/image/bow.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/bow2.png",
+      "path": "assets/image/bow2.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/bucket.png",
+      "path": "assets/image/bucket.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/ChainmailBootsEnchanted.png",
+      "path": "assets/image/ChainmailBootsEnchanted.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/ChainmailLeggings.png",
+      "path": "assets/image/ChainmailLeggings.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/ChainmailLeggingsEnchanted.png",
+      "path": "assets/image/ChainmailLeggingsEnchanted.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/chest.png",
+      "path": "assets/image/chest.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/chestImage.png",
+      "path": "assets/image/chestImage.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/choosecase.png",
+      "path": "assets/image/choosecase.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/clock.png",
+      "path": "assets/image/clock.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/compass.png",
+      "path": "assets/image/compass.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/defencePlus.png",
+      "path": "assets/image/defencePlus.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/diamond.png",
+      "path": "assets/image/diamond.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/diamondAxe.png",
+      "path": "assets/image/diamondAxe.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/DiamondBoots.png",
+      "path": "assets/image/DiamondBoots.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/DiamondBootsEnchanted.png",
+      "path": "assets/image/DiamondBootsEnchanted.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/DiamondLeggings.png",
+      "path": "assets/image/DiamondLeggings.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/diamondPickaxe.png",
+      "path": "assets/image/diamondPickaxe.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/diamondSwordEnchanted.png",
+      "path": "assets/image/diamondSwordEnchanted.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/DM_20240824225100_001.png",
+      "path": "assets/image/DM_20240824225100_001.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/enderPearl.png",
+      "path": "assets/image/enderPearl.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/enderStone.png",
+      "path": "assets/image/enderStone.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/exp_bar.png",
+      "path": "assets/image/exp_bar.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/feather.png",
+      "path": "assets/image/feather.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/fishingRodCasting.png",
+      "path": "assets/image/fishingRodCasting.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/furnace.png",
+      "path": "assets/image/furnace.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/glass.png",
+      "path": "assets/image/glass.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/gold.png",
+      "path": "assets/image/gold.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/goldenApple.png",
+      "path": "assets/image/goldenApple.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/GoldenPickaxe.png",
+      "path": "assets/image/GoldenPickaxe.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/health_bar1.png",
+      "path": "assets/image/health_bar1.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/health_bar10.png",
+      "path": "assets/image/health_bar10.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/health_bar11.png",
+      "path": "assets/image/health_bar11.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/health_bar13.png",
+      "path": "assets/image/health_bar13.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/health_bar14.png",
+      "path": "assets/image/health_bar14.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/health_bar15.png",
+      "path": "assets/image/health_bar15.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/health_bar16.png",
+      "path": "assets/image/health_bar16.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/health_bar17.png",
+      "path": "assets/image/health_bar17.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/health_bar18.png",
+      "path": "assets/image/health_bar18.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/health_bar19.png",
+      "path": "assets/image/health_bar19.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/health_bar2.png",
+      "path": "assets/image/health_bar2.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/health_bar21.png",
+      "path": "assets/image/health_bar21.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/health_bar22.png",
+      "path": "assets/image/health_bar22.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/health_bar23.png",
+      "path": "assets/image/health_bar23.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/health_bar3.png",
+      "path": "assets/image/health_bar3.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/health_bar4.png",
+      "path": "assets/image/health_bar4.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/health_bar5.png",
+      "path": "assets/image/health_bar5.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/health_bar6.png",
+      "path": "assets/image/health_bar6.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/health_bar7.png",
+      "path": "assets/image/health_bar7.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/health_bar9.png",
+      "path": "assets/image/health_bar9.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/hunger_bar.png",
+      "path": "assets/image/hunger_bar.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/info.json",
+      "path": "assets/image/info.json",
+      "kind": "image"
+    },
+    {
+      "name": "image/inventoryImage.png",
+      "path": "assets/image/inventoryImage.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/invisiblePotion.png",
+      "path": "assets/image/invisiblePotion.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/IronBoots.png",
+      "path": "assets/image/IronBoots.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/IronBootsEnchanted.png",
+      "path": "assets/image/IronBootsEnchanted.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/IronPickaxe.png",
+      "path": "assets/image/IronPickaxe.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/ironSword.png",
+      "path": "assets/image/ironSword.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/ironSwordEnchanted.png",
+      "path": "assets/image/ironSwordEnchanted.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/LeatherBoots.png",
+      "path": "assets/image/LeatherBoots.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/LeatherBootsEnchanted.png",
+      "path": "assets/image/LeatherBootsEnchanted.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/LeatherCap.png",
+      "path": "assets/image/LeatherCap.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/LeatherCapEnchanted.png",
+      "path": "assets/image/LeatherCapEnchanted.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/LeatherPantsEnchanted.png",
+      "path": "assets/image/LeatherPantsEnchanted.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/LeatherTunic.png",
+      "path": "assets/image/LeatherTunic.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/LeatherTunicEnchanted.png",
+      "path": "assets/image/LeatherTunicEnchanted.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/milk.png",
+      "path": "assets/image/milk.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/plank.png",
+      "path": "assets/image/plank.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/plate.png",
+      "path": "assets/image/plate.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/sand.png",
+      "path": "assets/image/sand.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/scissors.png",
+      "path": "assets/image/scissors.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/shadow.png",
+      "path": "assets/image/shadow.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/speedPotion.png",
+      "path": "assets/image/speedPotion.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/stoneAxe.png",
+      "path": "assets/image/stoneAxe.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/stoneSwordEnchanted.png",
+      "path": "assets/image/stoneSwordEnchanted.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/tnt.png",
+      "path": "assets/image/tnt.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/woodenPickaxe.png",
+      "path": "assets/image/woodenPickaxe.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/woodenSword.png",
+      "path": "assets/image/woodenSword.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/woodenSwordEnchanted.png",
+      "path": "assets/image/woodenSwordEnchanted.png",
+      "kind": "image"
+    },
+    {
+      "name": "image/wool.png",
+      "path": "assets/image/wool.png",
+      "kind": "image"
+    },
+    {
+      "name": "images/previewImage.png",
+      "path": "assets/images/previewImage.png",
+      "kind": "image"
+    }
+  ],
+  "ui": "source/ui.json",
+  "scripts": {
+    "server": "scripts/index.js",
+    "client": "scripts/clientIndex.js",
+    "serverModules": [
+      "scripts/reward.js",
+      "scripts/GroupStorage.js",
+      "scripts/building.js",
+      "scripts/config.js",
+      "scripts/fishingConfig.js",
+      "scripts/function.js",
+      "scripts/index.js",
+      "scripts/worldedit-sxhry.js"
+    ],
+    "clientModules": [
+      "scripts/clientIndex.js",
+      "scripts/cilentConfig.js"
+    ],
+    "serverCapabilities": [
+      "server.world.events",
+      "server.world.chat",
+      "server.world.entities",
+      "server.world.voxels",
+      "server.world.config",
+      "server.gui",
+      "server.storage",
+      "server.player",
+      "server.player.write",
+      "server.remote-channel",
+      "server.http"
+    ],
+    "clientCapabilities": [
+      "client.core",
+      "client.ui",
+      "client.remote-channel"
+    ]
+  }
+}

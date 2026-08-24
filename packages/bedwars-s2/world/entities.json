@@ -1,0 +1,949 @@
+{
+  "entities": [
+    {
+      "id": "排行榜",
+      "kind": "prop",
+      "position": [
+        63.5,
+        60,
+        70
+      ],
+      "tags": [
+        "showName",
+        "source-node-45927415"
+      ],
+      "mesh": "mesh/排行榜.vb",
+      "source": {
+        "bounds": [
+          1,
+          35,
+          55
+        ],
+        "collision": true,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": true,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/排行榜.vb",
+        "meshId": 382986453333137,
+        "metalness": 0,
+        "name": "排行榜",
+        "orientation": [
+          0,
+          0.70703125,
+          0,
+          0.70703125
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          63.5,
+          60,
+          70
+        ],
+        "restitution": 0,
+        "scale": [
+          0.0625,
+          0.0625,
+          0.0625
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [
+          "showName"
+        ],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "海龟",
+      "kind": "prop",
+      "position": [
+        71.5,
+        68.28125,
+        63.5
+      ],
+      "tags": [
+        "showName",
+        "source-node-236876480"
+      ],
+      "mesh": "mesh/海龟.vb",
+      "source": {
+        "bounds": [
+          30,
+          9,
+          35
+        ],
+        "collision": true,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": true,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/海龟.vb",
+        "meshId": 383055520936695,
+        "metalness": 0,
+        "name": "海龟",
+        "orientation": [
+          0,
+          -0.70703125,
+          0,
+          0.70703125
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          71.5,
+          68.28125,
+          63.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.0625,
+          0.0625,
+          0.0625
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [
+          "showName"
+        ],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "CPS测试",
+      "kind": "prop",
+      "position": [
+        58.5,
+        59,
+        58.5
+      ],
+      "tags": [
+        "showName",
+        "source-node-334012924"
+      ],
+      "mesh": "mesh/猪.vb",
+      "source": {
+        "bounds": [
+          26,
+          16,
+          10
+        ],
+        "collision": true,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": true,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/猪.vb",
+        "meshId": 383059052541420,
+        "metalness": 0,
+        "name": "CPS测试",
+        "orientation": [
+          0,
+          -0.3828125,
+          0,
+          0.92578125
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          58.5,
+          59,
+          58.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.125,
+          0.125,
+          0.125
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [
+          "showName"
+        ],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "屏障",
+      "kind": "prop",
+      "position": [
+        63.5,
+        68,
+        63.5
+      ],
+      "tags": [
+        "source-node-801998313"
+      ],
+      "mesh": "mesh/屏障.vb",
+      "source": {
+        "bounds": [
+          70,
+          2.0000038146972656,
+          70
+        ],
+        "collision": false,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": false,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/屏障.vb",
+        "meshId": 383054099067429,
+        "metalness": 0,
+        "name": "屏障",
+        "orientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "color0": {
+            "b": 10,
+            "g": 2.5098039215686274,
+            "r": 0
+          },
+          "color1": {
+            "b": 10,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 10,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 10,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 10,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 0.6,
+          "lifetimeSpread": 0.6,
+          "limit": 234,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 7,
+          "rateSpread": 0,
+          "size0": 1.2000000476837158,
+          "size1": 1.2000000476837158,
+          "size2": 1.2000000476837158,
+          "size3": 1.2000000476837158,
+          "size4": 1.2000000476837158,
+          "sizeSpread": 0.4,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          63.5,
+          68,
+          63.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.0703125,
+          0.0078125,
+          0.0703125
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [],
+        "tint": [
+          255,
+          255,
+          255,
+          0
+        ]
+      }
+    },
+    {
+      "id": "加入游戏",
+      "kind": "prop",
+      "position": [
+        68.5,
+        59.19921875,
+        58.5
+      ],
+      "tags": [
+        "showName",
+        "source-node-825127188"
+      ],
+      "mesh": "mesh/雪傀儡.vb",
+      "source": {
+        "bounds": [
+          12,
+          28,
+          24
+        ],
+        "collision": true,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": true,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/雪傀儡.vb",
+        "meshId": 383053021131606,
+        "metalness": 0,
+        "name": "加入游戏",
+        "orientation": [
+          0,
+          0.3828125,
+          0,
+          0.92578125
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          68.5,
+          59.19921875,
+          58.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.08203125,
+          0.08203125,
+          0.08203125
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [
+          "showName"
+        ],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "美西螈",
+      "kind": "prop",
+      "position": [
+        55.5390625,
+        68.1015625,
+        63.5
+      ],
+      "tags": [
+        "showName",
+        "source-node-1061186510"
+      ],
+      "mesh": "mesh/美西螈.vb",
+      "source": {
+        "bounds": [
+          19,
+          8,
+          27
+        ],
+        "collision": true,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": true,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/美西螈.vb",
+        "meshId": 383060843508780,
+        "metalness": 0,
+        "name": "美西螈",
+        "orientation": [
+          -0.1171875,
+          0.6953125,
+          0.1171875,
+          0.6953125
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          55.5390625,
+          68.1015625,
+          63.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.0625,
+          0.0625,
+          0.0625
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [
+          "showName"
+        ],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    }
+  ]
+}

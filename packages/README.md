@@ -72,6 +72,10 @@ node scripts/serve.mjs --map <map-id>
 `scriptAssets.json`、`scriptIndex.json`、`scripts/` 以及可选素材目录。
 体素 shape 只约束稀疏体素数据；实体允许位于该包围盒之外，这是标准导出的合法坐标语义。
 
+当前已接入的标准导出包：
+
+- `packages/bedwars-s2`：起床战争 S2 赛季，128³ 地形、场景实体、服务端/客户端脚本、组存储和 UI/图片素材均由参考导出恢复。
+
 ## 非净室说明
 
 地形/代码直接来自 DAO3 dump（用户授权）。parkour 项目包的 `scripts/server.js`

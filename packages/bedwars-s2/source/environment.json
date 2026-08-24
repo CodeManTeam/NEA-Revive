@@ -1,0 +1,104 @@
+{
+  "bakedShadow": {
+    "chunkShift": 6,
+    "data": "",
+    "texture": ""
+  },
+  "drawDistance": 512,
+  "fog": {
+    "fogColor": {
+      "b": 1,
+      "g": 1,
+      "r": 1
+    },
+    "fogDensity": 0,
+    "fogHeightFalloff": 0.8,
+    "fogHeightOffset": -8,
+    "fogStartDistance": 0,
+    "maxFog": 1
+  },
+  "rain": {
+    "color": {
+      "a": 1,
+      "b": 1,
+      "g": 1,
+      "r": 1
+    },
+    "density": 0,
+    "direction": {
+      "x": 0,
+      "y": 1,
+      "z": 0
+    },
+    "interference": 0.04,
+    "size": {
+      "h": 0.5,
+      "w": 0.5
+    },
+    "speed": 1
+  },
+  "sky": {
+    "gamma": 1,
+    "globalLight": 0.01,
+    "lunarPhase": 0,
+    "skyBack": {
+      "b": 0,
+      "g": 0,
+      "r": 0
+    },
+    "skyBottom": {
+      "b": 0,
+      "g": 0,
+      "r": 0
+    },
+    "skyFront": {
+      "b": 0,
+      "g": 0,
+      "r": 0
+    },
+    "skyLeft": {
+      "b": 0,
+      "g": 0,
+      "r": 0
+    },
+    "skyRight": {
+      "b": 0,
+      "g": 0,
+      "r": 0
+    },
+    "skyTop": {
+      "b": 0,
+      "g": 0,
+      "r": 0
+    },
+    "skyType": 0,
+    "sunColor": {
+      "b": 0,
+      "g": 0,
+      "r": 0
+    },
+    "sunDirection": {
+      "x": 0,
+      "y": 0,
+      "z": 0
+    },
+    "sunFrequency": 0,
+    "sunPhase": 0.16666666666666666
+  },
+  "snow": {
+    "color": {
+      "a": 1,
+      "b": 1,
+      "g": 1,
+      "r": 1
+    },
+    "density": 1,
+    "fallSpeed": 1,
+    "size": {
+      "h": 0,
+      "w": 0
+    },
+    "spinSpeed": 0,
+    "texture": ""
+  }
+}
