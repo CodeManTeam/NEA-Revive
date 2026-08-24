@@ -4014,14 +4014,13 @@ impl RenderTerrain {
             surface_format,
             depth_format: Some(wgpu::TextureFormat::Depth32Float),
         };
-        let combined_vertices = terrain_meshes
-            .iter()
-            .flat_map(|(_, mesh)| mesh.vertices.iter().copied())
-            .collect::<Vec<_>>();
-        let combined_indices = terrain_meshes
-            .iter()
-            .flat_map(|(_, mesh)| mesh.indices.iter().copied())
-            .collect::<Vec<_>>();
+        let mut combined_vertices = Vec::new();
+        let mut combined_indices = Vec::new();
+        for (_, mesh) in &terrain_meshes {
+            let vertex_offset = (combined_vertices.len() / FLOATS_PER_VERTEX) as u32;
+            combined_vertices.extend_from_slice(&mesh.vertices);
+            combined_indices.extend(mesh.indices.iter().map(|index| index + vertex_offset));
+        }
         let combined_mesh = MeshBuffers {
             vertices: combined_vertices,
             indices: combined_indices,
