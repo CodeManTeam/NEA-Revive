@@ -567,11 +567,11 @@ impl Renderer {
                 visual.sun_dir.z,
                 visual.time_seconds,
             ],
-            fog_color: [
+            fog_color_exposure: [
                 visual.fog_color.x,
                 visual.fog_color.y,
                 visual.fog_color.z,
-                0.0,
+                1.0,
             ],
         };
         self.queue.write_buffer(

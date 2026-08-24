@@ -159,7 +159,7 @@ fn aces_tone_map(color: vec3f) -> vec3f {
 /// （box3 渲染器 environment.gamma 默认 1.3，提亮方向；sRGB surface 上
 /// 最终显示 = shader 输出值，故输出 pow(A, 1/1.3)≈pow(A,0.769) 而非 2.2。）
 fn decode_display(value: vec3f) -> vec3f {
-  return pow(value, vec3f(1.0 / 1.3));
+  return pow(value, vec3f(1.0 / max(globals.light_direction_gamma.w, 0.001)));
 }
 
 fn sample_shadows(world_pos: vec3f, face_normal: vec3f, frag_coord: vec4f) -> f32 {
@@ -448,9 +448,36 @@ fn fs_alpha(in: VsOut) {
   let face_v = a * base_v - b * base_u;
   let in_tile = tile_offset(fract(in.world_pos), face_u, face_v);
   let tex_coord = get_tex_coord(in.uv, in_tile);
-  let alpha = textureSample(atlas, atlas_sampler, tex_coord).a;
-  let color = textureSample(atlas, atlas_sampler, tex_coord).rgb;
-  oit_store(vec4f(color, alpha), in.pos);
+  let block_color = textureSample(atlas, atlas_sampler, tex_coord);
+  let material = textureSample(material_atlas, material_sampler, tex_coord);
+
+  let normal_light = saturate(dot(face_normal, safe_light_direction()));
+  let face_shadow = step(0.0, dot(face_normal, globals.light_direction_gamma.xyz));
+  var shadow = face_shadow;
+  if (shadow_data.enabled_splits.x > 0.0) {
+    shadow = face_shadow * sample_shadows(in.world_pos, face_normal, in.pos);
+  } else {
+    let packed_shadow = saturate(
+      0.484375 * (in.light00.a + in.light01.a + in.light10.a + in.light11.a));
+    shadow = face_shadow * packed_shadow;
+  }
+
+  let nu = 0.5 * dot(face_normal, face_u) + 0.5;
+  let nv = 0.5 * dot(face_normal, face_v) + 0.5;
+  let light =
+    ((1.0 - nu) * (1.0 - nv)) * in.light00 +
+    (nu * (1.0 - nv)) * in.light01 +
+    ((1.0 - nu) * nv) * in.light10 +
+    (nu * nv) * in.light11;
+  let irradiance = 100.0 * light.rgb + light.a * directional_sky(face_normal);
+  let direct = global_shade(normal_light * shadow) *
+    globals.light_color_global.rgb;
+  var shaded = block_color.rgb *
+    (direct + irradiance + 400.0 * material.b);
+  shaded = apply_fog(shaded, in.world_pos);
+  let mapped = aces_tone_map(globals.eye_exposure.w * shaded);
+  let displayed = decode_display(mapped);
+  oit_store(vec4f(displayed, block_color.a), in.pos);
 }
 "#;
 
@@ -512,6 +539,18 @@ mod tests {
         ));
         assert!(NEA_ALPHA_FRAGMENT_WGSL.contains("let h0 = step(in.texture_rotation"));
         assert!(NEA_ALPHA_FRAGMENT_WGSL.contains("let face_u = a * base_u + b * base_v"));
+        assert!(
+            NEA_ALPHA_FRAGMENT_WGSL.contains("100.0 * light.rgb"),
+            "alpha voxels must use the recovered lit path"
+        );
+        assert!(
+            NEA_ALPHA_FRAGMENT_WGSL.contains("oit_store(vec4f(displayed, block_color.a)"),
+            "alpha voxels must store displayed color and source alpha"
+        );
+        assert!(
+            NEA_FRAGMENT_WGSL.contains("globals.light_direction_gamma.w"),
+            "terrain output must use the recovered per-map gamma"
+        );
     }
 
     #[test]

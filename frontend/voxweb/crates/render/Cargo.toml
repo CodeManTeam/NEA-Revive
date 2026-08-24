@@ -17,6 +17,7 @@ futures-channel.workspace = true
 [dev-dependencies]
 serde_json = "1"
 log.workspace = true
+wgpu = { workspace = true, features = ["naga-ir"] }
 
 [lints]
 workspace = true

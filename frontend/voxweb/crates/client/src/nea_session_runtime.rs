@@ -1963,11 +1963,11 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     // use the derived phase so the skybox is not disabled.
                     map_environment.sun_phase,
                 ],
-                fog_color: [
+                fog_color_exposure: [
                     environment.sky_front[0].clamp(0.0, 1.0),
                     environment.sky_front[1].clamp(0.0, 1.0),
                     environment.sky_front[2].clamp(0.0, 1.0),
-                    1.0,
+                    environment.exposure,
                 ],
             };
             dc.queue.write_buffer(
@@ -1996,9 +1996,9 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 t.shadow_map.update(&dc.queue, shadow_frame);
                 // Complete shadow submission: every terrain batch AND every static
                 // entity batch casts into the same atlas. Previously only
-                // terrain_pipelines[0] was submitted, so large maps and imported
+                // terrain pipelines were submitted, so large maps and imported
                 // entities lost their cast shadows.
-                for (batch_index, terrain_pipeline) in t.terrain_pipelines.iter().enumerate() {
+                for terrain_pipeline in t.terrain_pipelines.iter() {
                     t.shadow_map.render_terrain(
                         &mut encoder,
                         &dc.queue,
@@ -2006,7 +2006,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                         &terrain_pipeline.vertex_buffer,
                         &terrain_pipeline.index_buffer,
                         terrain_pipeline.index_count,
-                        batch_index == 0 && t.entity_pipelines.is_empty(),
+                        t.entity_pipelines.is_empty(),
                     );
                 }
             }
@@ -2177,12 +2177,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 };
                 let hide_terrain = transport::page_flag("hideTerrain");
                 if !hide_terrain {
-                    for (batch_index, terrain_pipeline) in t.terrain_pipelines.iter().enumerate() {
-                        if let Some(bounds) = t.terrain_bounds.get(batch_index)
-                            && !aabb_visible(&mvp, bounds)
-                        {
-                            continue;
-                        }
+                    for terrain_pipeline in t.terrain_pipelines.iter() {
                         visible_terrain_batches += 1;
                         visible_terrain_indices += u64::from(terrain_pipeline.index_count);
                         terrain_pipeline.set_camera(
@@ -2302,6 +2297,13 @@ struct RenderTerrain {
     light_chunks: HashMap<(u32, u32, u32), Vec<u16>>,
     shadow_map: voxweb_render::nea_shadow::NeaShadowMap,
     entity_transforms: HashMap<String, HashMap<u32, EntityTransform>>,
+    terrain_pipeline_cache: HashMap<TerrainPipelineKey, NeaTerrainPipeline>,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+struct TerrainPipelineKey {
+    surface_format: wgpu::TextureFormat,
+    depth_format: Option<wgpu::TextureFormat>,
 }
 
 /// Mesh output for one NEA chunk. Keeping these buffers lets newly arrived
@@ -2372,6 +2374,7 @@ fn mesh_bounds(mesh: &MeshBuffers) -> ([f32; 3], [f32; 3]) {
     }
 }
 
+#[allow(dead_code)]
 fn aabb_visible(mvp: &[f32; 16], bounds: &([f32; 3], [f32; 3])) -> bool {
     let (min, max) = bounds;
     let corners = [
@@ -3330,6 +3333,7 @@ impl RenderTerrain {
                                         packed.vertices.chunks_exact_mut(FLOATS_PER_VERTEX)
                                     {
                                         vertex[8..12].copy_from_slice(&info);
+                                        vertex[12] = info[3];
                                     }
                                     let vertex_offset = (chunk_meshes.fluid.vertices.len()
                                         / FLOATS_PER_VERTEX)
@@ -3469,6 +3473,7 @@ impl RenderTerrain {
             })
             .collect::<Vec<_>>();
         let terrain_chunk_keys = terrain_mesh_cache.keys().copied().collect::<Vec<_>>();
+        let mut terrain_pipeline_cache = HashMap::new();
         let terrain_bounds = terrain_meshes
             .iter()
             .map(|(_, mesh)| mesh_bounds(mesh))
@@ -3477,17 +3482,26 @@ impl RenderTerrain {
             .iter()
             .enumerate()
             .map(|(index, _terrain_mesh)| {
-                NeaTerrainPipeline::new(
-                    device,
-                    atlas,
-                    material_atlas,
-                    bump_atlas,
-                    &shadow_map,
-                    &mesh,
+                let key = TerrainPipelineKey {
                     surface_format,
-                    Some(wgpu::TextureFormat::Depth32Float),
-                    &format!("nea.terrain.{index}"),
-                )
+                    depth_format: Some(wgpu::TextureFormat::Depth32Float),
+                };
+                terrain_pipeline_cache
+                    .entry(key)
+                    .or_insert_with(|| {
+                        NeaTerrainPipeline::new(
+                            device,
+                            atlas,
+                            material_atlas,
+                            bump_atlas,
+                            &shadow_map,
+                            &mesh,
+                            surface_format,
+                            Some(wgpu::TextureFormat::Depth32Float),
+                            &format!("nea.terrain.{index}"),
+                        )
+                    })
+                    .clone()
             })
             .collect::<Vec<_>>();
         let entity_keys = entity_scene.meshes.keys().cloned().collect::<Vec<_>>();
@@ -3613,6 +3627,7 @@ impl RenderTerrain {
                 .collect(),
             shadow_map,
             entity_transforms,
+            terrain_pipeline_cache,
         }
     }
 
@@ -3859,7 +3874,7 @@ impl RenderTerrain {
     fn rebuild_terrain_batches(
         &mut self,
         device: &wgpu::Device,
-        _queue: &wgpu::Queue,
+        queue: &wgpu::Queue,
         atlas: &AtlasTexture,
         material_atlas: &AtlasTexture,
         bump_atlas: &AtlasTexture,
@@ -3884,23 +3899,50 @@ impl RenderTerrain {
             .iter()
             .map(|(_, mesh)| mesh_bounds(mesh))
             .collect();
-        self.terrain_pipelines = terrain_meshes
-            .iter()
-            .enumerate()
-            .map(|(index, (_, mesh))| {
-                NeaTerrainPipeline::new(
-                    device,
-                    atlas,
-                    material_atlas,
-                    bump_atlas,
-                    &self.shadow_map,
-                    mesh,
+        if self.terrain_pipeline_cache.is_empty() {
+            let shared = NeaTerrainPipeline::create_layout(
+                device,
+                atlas,
+                material_atlas,
+                bump_atlas,
+                &self.shadow_map,
+                surface_format,
+                Some(wgpu::TextureFormat::Depth32Float),
+            );
+            self.terrain_pipeline_cache.insert(
+                TerrainPipelineKey {
                     surface_format,
-                    Some(wgpu::TextureFormat::Depth32Float),
-                    &format!("nea.terrain.{index}"),
-                )
-            })
-            .collect();
+                    depth_format: Some(wgpu::TextureFormat::Depth32Float),
+                },
+                shared,
+            );
+        }
+        let key = TerrainPipelineKey {
+            surface_format,
+            depth_format: Some(wgpu::TextureFormat::Depth32Float),
+        };
+        let combined_vertices = terrain_meshes
+            .iter()
+            .flat_map(|(_, mesh)| mesh.vertices.iter().copied())
+            .collect::<Vec<_>>();
+        let combined_indices = terrain_meshes
+            .iter()
+            .flat_map(|(_, mesh)| mesh.indices.iter().copied())
+            .collect::<Vec<_>>();
+        let combined_mesh = MeshBuffers {
+            vertices: combined_vertices,
+            indices: combined_indices,
+        };
+        if let Some(pipeline) = self.terrain_pipeline_cache.get_mut(&key) {
+            pipeline.update_mesh(device, queue, &combined_mesh);
+        }
+        self.terrain_pipelines.clear();
+        self.terrain_pipelines.push(
+            self.terrain_pipeline_cache
+                .get(&key)
+                .expect("shared terrain pipeline")
+                .clone(),
+        );
         jslog!(
             "[nea][perf] terrain-batches batches={} ms={}",
             self.terrain_pipelines.len(),

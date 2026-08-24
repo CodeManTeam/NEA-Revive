@@ -155,7 +155,7 @@ fn sample_shadows(world_pos: vec3f, face_normal: vec3f, frag_coord: vec4f) -> f3
 }
 
 @fragment fn fs_main(input: VertexOutput) -> @location(0) vec4f {
-  let rgbe = textureSample(avatar_texture, avatar_sampler, input.uv);
+  var rgbe = textureSample(avatar_texture, avatar_sampler, input.uv);
   let normal = normalize(input.normal);
   let normal_light = clamp(dot(normal, globals.light_direction_gamma.xyz), 0.0, 1.0);
   let face_shadow = step(0.0, dot(normal, globals.light_direction_gamma.xyz));
@@ -165,15 +165,17 @@ fn sample_shadows(world_pos: vec3f, face_normal: vec3f, frag_coord: vec4f) -> f3
   }
   let direct = (normal_light * shadow * (1.0 - globals.light_color_global.w) +
     globals.light_color_global.w) * globals.light_color_global.rgb;
-  // Avatar ambient samples are already normalized to 0..1. Multiplying them
-  // by 100 saturated every albedo to white, removing the outfit colors.
-  let irradiance = max(input.ambient.rgb, vec3f(0.18)) +
+  // Preserved mesh:forward feeds the same corner light to all four voxel
+  // corners and uses texture alpha as PBR material data. The opaque pass
+  // still clips on the separate per-vertex alpha attribute.
+  let irradiance = 100.0 * input.ambient.rgb +
     input.ambient.a * directional_sky(normal);
-  // The preserved opaque pass clips on a separate per-vertex alpha value.
-  // Texture alpha is PBR data, so it must not control fragment coverage.
-  // Emissive remains disabled until model.pbrMod is carried by this pipeline.
   let emissive = 0.0;
-  let shaded = rgbe.rgb * (direct + irradiance + 400.0 * emissive);
+  let material = 1.0 - (1.0 - 2.56 * vec3f(1.0, 1.0, rgbe.a));
+  rgbe.a = 1.0;
+  let shaded = rgbe.rgb * input.ambient.a * (
+    direct + irradiance + 400.0 * material.b * emissive
+  );
   let fogged = apply_fog(shaded, input.world_position);
   let mapped = aces_tone_map(globals.eye_exposure.w * fogged);
   // 原版 outputFragment：pow(rgb, 1/gamma)，environment.gamma 默认 1.3 →
@@ -189,7 +191,10 @@ fn sample_shadows(world_pos: vec3f, face_normal: vec3f, frag_coord: vec4f) -> f3
   if (dbg > 2.5) { return vec4f(irradiance / 400.0, 1.0); }   // F3: Ambient/Sky
   if (dbg > 1.5) { return vec4f(direct / 500.0, 1.0); }       // F2: Direct
   if (dbg > 0.5) { return vec4f(rgbe.rgb, 1.0); }             // F1: Albedo
-  return vec4f(pow(mapped, vec3f(1.0 / 1.3)), 1.0);            // F6: Final
+  return vec4f(
+    pow(mapped, vec3f(1.0 / max(globals.light_direction_gamma.w, 0.001))),
+    1.0,
+  );                                                            // F6: Final
 }
 "#;
 
@@ -221,16 +226,20 @@ mod tests {
     #[test]
     fn avatar_uses_recovered_opaque_material_path() {
         assert!(!NEA_AVATAR_WGSL.contains("if (rgbe.a < 0.5)"));
-        assert!(NEA_AVATAR_WGSL.contains("Texture alpha is PBR data"));
+        assert!(NEA_AVATAR_WGSL.contains("uses texture alpha as PBR material data"));
         // 已清理：不再有 direct_corrected 调试残留（忽略 fog）
         assert!(!NEA_AVATAR_WGSL.contains("direct_corrected"));
         assert!(NEA_AVATAR_WGSL.contains("normal_light * shadow"));
-        assert!(NEA_AVATAR_WGSL.contains("let emissive = 0.0"));
+        assert!(NEA_AVATAR_WGSL.contains("100.0 * input.ambient.rgb"));
+        assert!(NEA_AVATAR_WGSL.contains("2.56 * vec3f(1.0, 1.0, rgbe.a)"));
+        assert!(NEA_AVATAR_WGSL.contains("input.ambient.a * ("));
         assert!(NEA_AVATAR_WGSL.contains("input.ambient.a"));
         assert!(NEA_AVATAR_WGSL.contains("aces_tone_map"));
         assert!(NEA_AVATAR_WGSL.contains("fn sample_shadows"));
-        // sRGB surface：输出 pow(A, 1/1.3) 与地形/水统一（原版 gamma=1.3）
-        assert!(NEA_AVATAR_WGSL.contains("pow(mapped, vec3f(1.0 / 1.3))"));
+        assert!(
+            NEA_AVATAR_WGSL
+                .contains("pow(mapped, vec3f(1.0 / max(globals.light_direction_gamma.w, 0.001)))")
+        );
         let module = wgpu::naga::front::wgsl::parse_str(NEA_AVATAR_WGSL)
             .unwrap_or_else(|error| panic!("avatar WGSL parse failed: {error}"));
         wgpu::naga::valid::Validator::new(
