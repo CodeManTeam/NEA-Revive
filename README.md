@@ -46,6 +46,29 @@ node scripts\serve.mjs --map there-is-backroom
 （createSession → 3 WS → join → secret → 地形 → 人物模型）。世界 shape（含 128 高的
 minecraft）由 terrain reset 帧动态下发，前后端均已通用化，不再硬编码 256×64×256。
 
+## 导出器 CLI
+
+`reference/output_software_apkunpack` 是 DAO3 导出器 APK 的解包目录。项目已把其中的
+`assets/vb-converter.js` 接入 Node CLI，可离线转换 `.vb` 模型并检查导出器目录：
+
+```powershell
+# 检查 APK 解包目录是否完整
+node tools\nea-export.mjs inspect reference\output_software_apkunpack
+
+# 转换单个模型（默认同时生成 .vox 和 .gltf）
+node tools\nea-export.mjs convert packages\bedwars-s2\assets\mesh\弓.vb `
+  --out .build\models --format both --name bow
+
+# 递归转换一个导出目录中的全部 .vb
+node tools\nea-export.mjs convert-dir packages\bedwars-s2\assets\mesh `
+  --out .build\models --format both
+```
+
+CLI 默认使用 `reference/output_software_apkunpack/assets/vb-converter.js`；如果传入原始记录
+中的路径 `reference/output/_software/_apkunpack`，适配层会自动纠正为实际解包目录名称。
+APK 页面中的登录、远程 CDN 拉取和 ZIP 下载仍属于浏览器端流程；CLI 负责其可复用的离线
+模型转换能力，不会保存账号凭据。
+
 ## 项目包格式
 
 每个地图一个目录。当前项目包存在两类清单格式：`nea.map.json`（nea-map/v1）和
