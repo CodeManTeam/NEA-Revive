@@ -1,0 +1,129 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and publish VoxWeb
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve release version
+        id: version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            version="$(sed -n 's/^version = "\(.*\)"/\1/p' frontend/voxweb/Cargo.toml | head -n1)"
+            tag="v${version}"
+            if git rev-parse -q --verify "refs/tags/${tag}" >/dev/null; then
+              echo "::error::Tag ${tag} already exists"
+              exit 1
+            fi
+          fi
+          if [[ ! "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Invalid semantic version: ${version}"
+            exit 1
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Verify Cargo workspace version
+        if: github.ref_type == 'tag'
+        shell: bash
+        run: |
+          cargo_version="$(sed -n 's/^version = "\(.*\)"/\1/p' frontend/voxweb/Cargo.toml | head -n1)"
+          expected="${GITHUB_REF_NAME#v}"
+          test "${cargo_version}" = "${expected}" || {
+            echo "::error::Cargo version ${cargo_version} does not match tag ${expected}"
+            exit 1
+          }
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/box-go/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: backend/box-go
+        run: npm ci
+
+      - name: Backend tests
+        working-directory: backend/box-go
+        run: npx tsx --test src/*.test.ts
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: frontend/voxweb
+
+      - name: Client and protocol tests
+        working-directory: frontend/voxweb
+        run: cargo test -p voxweb-client -p voxweb-protocol
+
+      - name: WASM check
+        working-directory: frontend/voxweb
+        run: cargo check --target wasm32-unknown-unknown
+
+      - name: Build WASM bundle
+        working-directory: frontend/voxweb
+        shell: pwsh
+        env:
+          NO_COLOR: '0'
+        run: trunk build --release --color auto
+
+      - name: Inspect dist
+        shell: bash
+        run: |
+          test -f frontend/voxweb/dist/start.html
+          find frontend/voxweb/dist -maxdepth 1 -type f -name '*.wasm' | grep -q .
+
+      - name: Package release archive
+        id: package
+        shell: bash
+        run: |
+          mkdir -p .release
+          base="voxweb-${GITHUB_REF_NAME#v}"
+          cp -a frontend/voxweb/dist ".release/${base}"
+          tar -C .release -czf "${base}.tar.gz" "${base}"
+          echo "archive=${base}.tar.gz" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: NEA-Revive v${{ steps.version.outputs.version }}
+          draft: true
+          prerelease: ${{ contains(steps.version.outputs.version, '-') }}
+          generate_release_notes: true
+          files: ${{ steps.package.outputs.archive }}
+
+      - name: Upload manual dispatch artifact
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: voxweb-${{ steps.version.outputs.version }}
+          path: frontend/voxweb/dist/
+

@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches-ignore:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend typecheck and tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend/box-go
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/box-go/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Tests
+        run: npx tsx --test src/*.test.ts
+
+  frontend:
+    name: Frontend Rust and WASM
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend/voxweb
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: rustfmt, clippy
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: frontend/voxweb
+
+      - name: Format check
+        run: cargo fmt --all -- --check
+
+      - name: Client and protocol tests
+        run: cargo test -p voxweb-client -p voxweb-protocol
+
+      - name: WASM check
+        run: cargo check --target wasm32-unknown-unknown
+
+      - name: Build WASM bundle
+        shell: pwsh
+        env:
+          NO_COLOR: '0'
+        run: trunk build --release --color auto
+
+      - name: Upload dist artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: voxweb-dist-pr-${{ github.event.pull_request.number }}
+          path: frontend/voxweb/dist/
+          retention-days: 7
+

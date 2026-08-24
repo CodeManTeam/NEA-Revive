@@ -135,3 +135,31 @@ pong 协商 → join → secret → sync/unpause → reset → fetchChunk → �
   M2 最小完整游玩闭环；详见 `docs/project-revival-development-plan.md` 和
   `docs/ai-assisted-development-workflow.md`。
 - Parkour 仍是前端协议、渲染和运行时回归地图；Minecraft 主要用于大地图和性能验证。
+
+## 七、Git、版本与 CI/CD 纪律
+
+1. **每次修改必须存档**
+   - Agent 完成一组可验证的源码、文档、配置或资产修改后，必须在同一轮创建 Git 提交；
+     不允许把改动长期留在工作区。
+   - 一个提交只表达一个完整变更；如果包含多个逻辑修复，应先按逻辑拆分再提交。
+   - 提交前至少运行与改动相关的测试/构建。只有用户明确要求跳过验证时才允许例外，
+     且提交信息必须注明 `untested`。
+   - 提交信息使用 Conventional Commits：`feat:`、`fix:`、`perf:`、`refactor:`、`docs:`、
+     `ci:`、`test:`、`chore:`。
+
+2. **大版本必须发布到 GitHub**
+   - 大版本指语义化主版本或次版本变化，例如 `0.7.x -> 0.8.0` 或 `0.x -> 1.0.0`；
+     patch 变化可按需发布。
+   - 发布前更新 `frontend/voxweb/Cargo.toml` 的 `[workspace.package] version`，
+     并同步受影响的 `Cargo.lock`。
+   - 在当前分支提交版本号后合并/推进到默认分支，再创建 annotated tag：
+     `git tag -a vX.Y.Z -m "Release vX.Y.Z"` 并推送：
+     `git push origin <branch> && git push origin vX.Y.Z`。
+   - `.github/workflows/release.yml` 会在 `vX.Y.Z` 标签上构建 VoxWeb WASM/dist，
+     校验产物并上传 GitHub Release 资产。
+
+3. **CI 是合入门槛**
+   - PR 和非默认分支推送由 `.github/workflows/ci.yml` 验证：
+     后端 typecheck/tests 与前端 Rust tests/WASM check。
+   - CI 失败时不允许继续叠加新功能；先修复失败原因或明确回退该变更。
+   - 不要把本地构建产物、密钥、私有 dump 或未授权素材加入提交。
