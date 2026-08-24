@@ -6,7 +6,7 @@ pub(crate) const AXIS_SCALE: f32 = 4.0;
 pub(crate) const MOVEMENT_DOUBLE_TAP_MS: u32 = 200;
 pub(crate) const PITCH_CLAMP: f32 = std::f32::consts::FRAC_PI_2 - 1e-3;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub(crate) struct InputState {
     pub forward: bool,
     pub back: bool,
@@ -26,6 +26,8 @@ pub(crate) struct InputState {
     pub interact_edge: bool,
     pub action0: bool,
     pub action1: bool,
+    pub historical_key_events: Vec<(bool, u8)>,
+    pub pending_action_events: Vec<(u8, bool)>,
 }
 
 impl Default for InputState {
@@ -49,6 +51,8 @@ impl Default for InputState {
             interact_edge: false,
             action0: false,
             action1: false,
+            historical_key_events: Vec::new(),
+            pending_action_events: Vec::new(),
         }
     }
 }
@@ -71,7 +75,27 @@ impl InputState {
         self.interact_edge = false;
         self.action0 = false;
         self.action1 = false;
+        self.historical_key_events.clear();
+        self.pending_action_events.clear();
         self.look_axis = [0.0, 0.0];
+    }
+
+    pub(crate) fn record_historical_key(&mut self, pressed: bool, key_code: u8) {
+        if !self.historical_key_events.iter().any(|(state, code)| *state == pressed && *code == key_code) {
+            self.historical_key_events.push((pressed, key_code));
+        }
+    }
+
+    pub(crate) fn take_historical_key_events(&mut self) -> Vec<(bool, u8)> {
+        std::mem::take(&mut self.historical_key_events)
+    }
+
+    pub(crate) fn record_action_event(&mut self, button: u8, pressed: bool) {
+        self.pending_action_events.push((button, pressed));
+    }
+
+    pub(crate) fn take_action_events(&mut self) -> Vec<(u8, bool)> {
+        std::mem::take(&mut self.pending_action_events)
     }
 
     pub(crate) fn movement_pressed(&self) -> bool {

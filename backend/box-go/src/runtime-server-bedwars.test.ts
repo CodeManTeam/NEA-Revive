@@ -79,6 +79,10 @@ try {
   assert.equal(player.cameraMode, "fps")
   assert.equal(player.enableDoubleJump, false)
   assert.ok(player.walkSpeed > 0)
+  net.server.message.sendKeyBoardEvent({ id: 1, tick: 10, keyDownState: [50], prevKeyDownState: [] })
+  await waitFor(() => events.some(event => event.type === "setChooseCase" && event.args?.pos === 1))
+  net.server.message.sendKeyBoardEvent({ id: 1, tick: 11, keyDownState: [9], prevKeyDownState: [] })
+  await waitFor(() => server.runtime.snapshot().players[0]?.cameraMode === "follow")
   console.log(`[ok] bedwars-s2 reset=${reset.nx}x${reset.ny}x${reset.nz} boxes=${nonEmptyChunk.boxes.length} events=${events.length}`)
 } finally {
   if (client.running) client.destroy()

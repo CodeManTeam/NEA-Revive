@@ -903,6 +903,32 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         if (!playerId) return
         runtime.dispatchInputEvents(playerId, data)
       }
+      handlers.sendKeyBoardEvent = (client, data) => {
+        const playerId = sessions.get(client.sessionId)
+        if (!playerId) return
+        const packet = data as {
+          id?: unknown
+          tick?: unknown
+          keyDownState?: unknown
+          prevKeyDownState?: unknown
+        }
+        const tick = Number(packet?.tick)
+        if (!Number.isSafeInteger(tick) || tick < 0) return
+        const keyDownState = Array.isArray(packet?.keyDownState)
+          ? packet.keyDownState.filter((value): value is number => Number.isInteger(value) && value >= 0 && value <= 255)
+          : []
+        const prevKeyDownState = Array.isArray(packet?.prevKeyDownState)
+          ? packet.prevKeyDownState.filter((value): value is number => Number.isInteger(value) && value >= 0 && value <= 255)
+          : []
+        const previous = new Set(prevKeyDownState)
+        const current = new Set(keyDownState)
+        for (const keyCode of current) {
+          if (!previous.has(keyCode)) runtime.dispatchKeyboardEvent("keyDown", playerId, tick, keyCode)
+        }
+        for (const keyCode of previous) {
+          if (!current.has(keyCode)) runtime.dispatchKeyboardEvent("keyUp", playerId, tick, keyCode)
+        }
+      }
       handlers.join = (client) => {
         const playerId = `p-${randomUUID().slice(0, 8)}`
         const wirePlayerId = wirePlayerIdFor(playerId)

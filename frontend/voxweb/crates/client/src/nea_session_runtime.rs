@@ -1782,7 +1782,9 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 && last_input_tick != Some(server_tick)
             {
                 last_input_tick = Some(server_tick);
-                let inp = input.borrow();
+                let mut inp = input.borrow_mut();
+                let historical_key_events = inp.take_historical_key_events();
+                let action_events = inp.take_action_events();
                 let moving = movement[0] != 0.0 || movement[1] != 0.0;
                 let mut state = recovered_player_state(
                     moving,
@@ -1808,7 +1810,42 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     let d = driver.borrow();
                     (d.player_id, d.last_server_tick)
                 };
+                let action_wire_events = action_events.into_iter().map(|(button, pressed)| {
+                    let target = interaction_index
+                        .borrow()
+                        .candidate_ids(local_pos)
+                        .into_iter()
+                        .filter_map(|id| entity_scene.entities.iter().find(|entity| entity.id == id))
+                        .filter(|entity| entity.visible && entity.enable_interact)
+                        .filter_map(|entity| {
+                            let distance = interaction_distance(entity, local_pos);
+                            (distance <= entity.interact_radius.max(0.0)).then_some((distance, entity))
+                        })
+                        .min_by(|left, right| left.0.total_cmp(&right.0));
+                    let (ray_hit_entity, ray_time, ray_direction) = if let Some((_distance, entity)) = target {
+                        let center = interaction_center(entity);
+                        let delta = glam::Vec3::from_array(center) - glam::Vec3::from_array(local_pos);
+                        let distance = delta.length();
+                        let direction = if distance > 1.0e-4 { delta / distance } else { glam::Vec3::ZERO };
+                        (entity.id, distance, direction.to_array())
+                    } else {
+                        (0, -1.0, [0.0, 0.0, 0.0])
+                    };
+                    voxweb_protocol::player::ClientInputEvent {
+                        tick: tick_now as f32,
+                        ray_time,
+                        ray_hit_entity,
+                        ray_hit_voxel: [0, 0, 0],
+                        button_state: if pressed { button } else { 0 },
+                        prev_button_state: if pressed { 0 } else { button },
+                        position: local_pos,
+                        ray_direction,
+                        ray_hit_normal: 0,
+                        ray_origin: local_pos,
+                    }
+                }).collect();
                 let ci = voxweb_protocol::player::ClientInput {
+                    events: action_wire_events,
                     input_state: state,
                     input_angle: voxweb_protocol::player::wire_angle(
                         (moving && (movement[0] != 0.0 || movement[1] != 0.0)).then_some(movement),
@@ -1860,6 +1897,19 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                             local_pos[1],
                             local_pos[2]
                         );
+                    }
+                }
+                if pid > 0 {
+                    for (pressed, key_code) in historical_key_events {
+                        let outbound = voxweb_protocol::session::Outbound::KeyBoardEvent {
+                            id: pid,
+                            tick: tick_now,
+                            key_down: if pressed { vec![key_code] } else { Vec::new() },
+                            previous: if pressed { Vec::new() } else { vec![key_code] },
+                        };
+                        if let Ok(frame) = voxweb_protocol::session::encode_outbound(&table, &outbound) {
+                            let _ = sockets.send_reliable(&frame);
+                        }
                     }
                 }
             }
@@ -4634,6 +4684,10 @@ fn install_keyboard(
                 Err(_) => return, // main loop holds the state; skip this event
             };
             let mut handled = false;
+            if let Some(key_code) = historical_key_code(code.as_str()) {
+                s.record_historical_key(true, key_code);
+                handled = true;
+            }
             match code.as_str() {
                 "KeyW" => {
                     s.press_movement(0);
@@ -4711,6 +4765,9 @@ fn install_keyboard(
                 Ok(s) => s,
                 Err(_) => return,
             };
+            if let Some(key_code) = historical_key_code(ev.code().as_str()) {
+                s.record_historical_key(false, key_code);
+            }
             match ev.code().as_str() {
                 "KeyW" => s.forward = false,
                 "KeyS" => s.back = false,
@@ -4765,8 +4822,8 @@ fn install_keyboard(
                 Err(_) => return,
             };
             match ev.button() {
-                0 => s.action0 = true,
-                2 => s.action1 = true,
+                0 => { s.action0 = true; s.record_action_event(1, true); }
+                2 => { s.action1 = true; s.record_action_event(2, true); }
                 _ => {}
             }
             ev.prevent_default();
@@ -4778,8 +4835,8 @@ fn install_keyboard(
                 Err(_) => return,
             };
             match ev.button() {
-                0 => s.action0 = false,
-                2 => s.action1 = false,
+                0 => { s.action0 = false; s.record_action_event(1, false); }
+                2 => { s.action1 = false; s.record_action_event(2, false); }
                 _ => {}
             }
             ev.prevent_default();
@@ -4820,6 +4877,25 @@ fn install_keyboard(
     on_lock_change.forget();
     on_blur.forget();
     jslog!("[nea] keyboard + mouse listeners installed");
+}
+
+fn historical_key_code(code: &str) -> Option<u8> {
+    match code {
+        "Digit1" => Some(b'1'),
+        "Digit2" => Some(b'2'),
+        "Digit3" => Some(b'3'),
+        "Digit4" => Some(b'4'),
+        "Digit5" => Some(b'5'),
+        "Digit6" => Some(b'6'),
+        "Digit7" => Some(b'7'),
+        "Digit8" => Some(b'8'),
+        "Digit9" => Some(b'9'),
+        "KeyE" => Some(b'E'),
+        "KeyQ" => Some(b'Q'),
+        "Tab" => Some(9),
+        "Enter" => Some(13),
+        _ => None,
+    }
 }
 
 async fn fetch_bytes(url: &str) -> Result<Vec<u8>, JsValue> {

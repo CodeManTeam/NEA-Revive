@@ -17,6 +17,14 @@ var setChooseCase = function (pos) {
 const quickItem = ui.findChildByName('quickItem');
 var quickItemList = [];
 var quickNumList = [];
+const invItem = ui.findChildByName('invItem');
+const invQuickItem = ui.findChildByName('invQuickItem');
+const inventoryImage = ui.findChildByName('inventoryImage');
+const inventoryCase = ui.findChildByName('inventorycase');
+const shadow = ui.findChildByName('shadow');
+var inventoryList = [];
+var numberList = [];
+var inventoryVisible = false;
 
 var setSingleQI = function (index, image, number) {
     quickNumList[index].textFontSize = number == 1 ? 0 : 17;
@@ -29,7 +37,35 @@ var setAllQI = function (playerInventory) {
     for (let i = 0; i < quickItemList.length; i++) {
         setSingleQI(i, playerInventory[i][0], playerInventory[i][1])
     }
+    for (let i = 0; i < Math.min(inventoryList.length, playerInventory.length); i++) {
+        setSingleInventory(i, playerInventory[i][0], playerInventory[i][1]);
+    }
 };
+
+var setSingleInventory = function (index, image, number) {
+    const item = inventoryList[index];
+    const count = numberList[index];
+    if (!item || !count) return;
+    count.textFontSize = number == 1 ? 0 : 16;
+    count.textContent = number.toString();
+    item.imageOpacity = image == '' ? 0 : 1;
+    if (image != '') item.image = `picture/${image}.png`;
+};
+
+var setInventoryVisible = function (visible) {
+    inventoryVisible = Boolean(visible);
+    inventoryImage.visible = inventoryVisible;
+    inventoryCase.visible = false;
+    shadow.visible = inventoryVisible;
+    for (const item of inventoryList) item.visible = inventoryVisible;
+    for (const count of numberList) count.visible = inventoryVisible;
+    if (inventoryVisible) input.unlockPointer();
+    else input.lockPointer();
+};
+
+bagButton.events.on('pointerdown', () => setInventoryVisible(!inventoryVisible));
+cameraButton.events.on('pointerdown', () => remoteChannel.sendServerEvent({ type: 'cameraMode' }));
+shadow.events.on('pointerdown', () => setInventoryVisible(false));
 
 /**聊天栏 */
 const MSGLength = 20;
@@ -89,6 +125,7 @@ inputBox.events.add('blur', () => {
 
 /**滚动框 */
 input.pointerLockEvents.add("pointerlockchange", ({ isLocked }) => {
+    if (!load || !scrollBox || contentList.length === 0 || titleList.length === 0) return;
     if (isLocked) {
         ableScroll = false;
         scrollBox.scrollPosition.y = 200;
@@ -120,8 +157,9 @@ remoteChannel.events.on('client', event => {// 客户端监听
     if (!load && event.type !== 'draw') return;
     switch (event.type) {
         case 'draw':
-            bagButton.visible = false;
-            cameraButton.visible = false;
+            if (load) break;
+            bagButton.visible = true;
+            cameraButton.visible = true;
             sideBar.visible = false;
 
             /**快捷栏 */
@@ -135,6 +173,25 @@ remoteChannel.events.on('client', event => {// 客户端监听
                     remoteChannel.sendServerEvent({ type: 'pressQIbyScreen', args: { index: quickNumList.indexOf(quickItem_.findChildByName('quickNum')) } });
                 })
             };
+
+            for (let i = 0; i < 9; i++) {
+                const item = invQuickItem.clone();
+                item.position.offset.x += 30.7375 * i;
+                item.pointerEventBehavior = PointerEventBehavior.BLOCK_PASS_THROUGH;
+                inventoryList.push(item);
+                numberList.push(item.findChildByName('invQuickNum'));
+            }
+            for (let row = 0; row < 3; row++) {
+                for (let i = 0; i < 9; i++) {
+                    const item = invItem.clone();
+                    item.position.offset.x += 30.7375 * i;
+                    item.position.offset.y += 30.5 * row;
+                    item.pointerEventBehavior = PointerEventBehavior.BLOCK_PASS_THROUGH;
+                    inventoryList.push(item);
+                    numberList.push(item.findChildByName('invNum'));
+                }
+            }
+            setInventoryVisible(false);
 
             /**聊天栏 */
             for (let i = 0; i < MSGLength; i++) {
@@ -152,9 +209,13 @@ remoteChannel.events.on('client', event => {// 客户端监听
             break;
         case 'setSingleQI':
             setSingleQI(...Object.values(event.args));
+            setSingleInventory(event.args.index, event.args.image, event.args.number);
             break;
         case 'setAllQI':
             setAllQI(...Object.values(event.args));
+            break;
+        case 'toggleInventory':
+            setInventoryVisible(event.visible === undefined ? !inventoryVisible : event.visible);
             break;
         case 'message':
             message(...Object.values(event.args))

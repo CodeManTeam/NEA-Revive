@@ -38,6 +38,9 @@
         "meshId": 382986453333137,
         "metalness": 0,
         "name": "排行榜",
+        "enableInteract": true,
+        "interactHint": "查看排行榜",
+        "interactRadius": 4.5,
         "orientation": [
           0,
           0.70703125,
@@ -196,6 +199,9 @@
         "meshId": 383055520936695,
         "metalness": 0,
         "name": "海龟",
+        "enableInteract": true,
+        "interactHint": "商店",
+        "interactRadius": 4.5,
         "orientation": [
           0,
           -0.70703125,
@@ -667,6 +673,9 @@
         "meshId": 383053021131606,
         "metalness": 0,
         "name": "加入游戏",
+        "enableInteract": true,
+        "interactHint": "加入游戏",
+        "interactRadius": 4.5,
         "orientation": [
           0,
           0.3828125,
@@ -825,6 +834,9 @@
         "meshId": 383060843508780,
         "metalness": 0,
         "name": "美西螈",
+        "enableInteract": true,
+        "interactHint": "鱼市",
+        "interactRadius": 4.5,
         "orientation": [
           -0.1171875,
           0.6953125,

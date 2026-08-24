@@ -395,6 +395,9 @@ world.onPlayerJoin(async ({ entity }) => {
                 entity.player.rightHandPos = index;
                 entity.addRightHandWear();
                 remoteChannel.sendClientEvent(entity, { type: 'setChooseCase', args: { pos: index } });
+            } else if (index == 9) {
+                entity.player.cancelDialogs();
+                remoteChannel.sendClientEvent(entity, { type: 'toggleInventory' });
             } else if (index == 11) {
                 entity.player.cameraMode = entity.player.cameraMode == 'fps' ? 'follow' : 'fps'
             }
@@ -493,11 +496,16 @@ remoteChannel.onServerEvent(({ entity, args }) => {
                 entity.player.isChatting = false;
             }, 100);
             break;
+        case "cameraMode":
+            entity.player.cameraMode = entity.player.cameraMode == 'fps' ? 'follow' : 'fps';
+            break;
+        case "bag":
+            remoteChannel.sendClientEvent(entity, { type: 'toggleInventory' });
+            break;
         default:
             break;
     }
 });
-
 
 
 
