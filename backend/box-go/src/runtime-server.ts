@@ -923,7 +923,10 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         const previous = new Set(prevKeyDownState)
         const current = new Set(keyDownState)
         for (const keyCode of current) {
-          if (!previous.has(keyCode)) runtime.dispatchKeyboardEvent("keyDown", playerId, tick, keyCode)
+          if (!previous.has(keyCode)) {
+            if (keyCode === 9) runtime.toggleCameraMode(playerId)
+            else runtime.dispatchKeyboardEvent("keyDown", playerId, tick, keyCode)
+          }
         }
         for (const keyCode of previous) {
           if (!current.has(keyCode)) runtime.dispatchKeyboardEvent("keyUp", playerId, tick, keyCode)
