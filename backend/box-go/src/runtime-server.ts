@@ -238,6 +238,8 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   if (importedProject.clientUiState) {
     clientScriptModules["__nea_ui_state__"] = JSON.stringify(importedProject.clientUiState)
   }
+  const runtimeMeshNames = collectScriptMeshNames(importedProject.serverModules, importedProject.clientModules)
+  let nextRuntimeEntityId = 0x30000
 
   // ---- 1b. 人物模型 bootstrap（skin part hashes）----
   // 从恢复运行时的 bedwars bootstrap 读取 skinPartHashBatches，供 models.appendSkinPartHashes。
@@ -341,6 +343,13 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         args: JSON.stringify({ type: "nea-revive:gui", command }),
       })
       return true
+    },
+    createEntity: async (projection: any) => {
+      const entityId = nextRuntimeEntityId++
+      for (const playerId of playerSessions.keys()) {
+        deliverClientEvent(playerId, { type: "nea-revive:entity-created", entityId, entity: projection })
+      }
+      return { entityId }
     },
     writeEntityState: async (entityId: number, state: unknown) => {
       for (const playerId of playerSessions.keys()) {
@@ -592,7 +601,7 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
           const interactionOverrides = new Map(
             runtime.entityInteractionStates().map((entry: any) => [Number(entry.entityId), entry]),
           )
-          const scene = buildStaticEntityScene(options.sourceRoot, importedProject.entities, options.assetRoot, interactionOverrides)
+          const scene = buildStaticEntityScene(options.sourceRoot, importedProject.entities, options.assetRoot, interactionOverrides, runtimeMeshNames)
           staticEntityDiagnostics = scene.diagnostics
           staticEntitySceneJson = JSON.stringify(scene)
         }
@@ -1252,6 +1261,7 @@ function buildStaticEntityScene(
   entities: readonly any[],
   assetRoot: string,
   interactionOverrides: ReadonlyMap<number, any> = new Map(),
+  extraMeshNames: readonly string[] = [],
 ) {
   const meshes: Record<string, { positionsF32: string; uvsF32: string; indicesU32: string; texturePngBase64?: string; meshAssetHash?: string; renderBoxOffset?: number[] }> = {}
   const instances: Array<{
@@ -1283,7 +1293,11 @@ function buildStaticEntityScene(
   const skipped: Array<{ mesh: string; reason: string }> = []
   let nativeBindings = 0
   let nativeFailures = 0
-  for (const [sourceIndex, entity] of entities.entries()) {
+  const sceneEntities = [
+    ...entities,
+    ...extraMeshNames.map(mesh => ({ __meshOnly: true, position: [0, 0, 0], source: { mesh } })),
+  ]
+  for (const [sourceIndex, entity] of sceneEntities.entries()) {
     const mesh = String(entity.source?.mesh ?? entity.mesh ?? "")
     if (!mesh.endsWith(".vb")) continue
     const gltfName = mesh.slice(0, -3) + ".gltf"
@@ -1341,6 +1355,7 @@ function buildStaticEntityScene(
         - (bounds[axis] ?? 0) * 0.5
         + (renderBoxOffset[axis] ?? 0)) * (entityScale[axis] ?? 1),
     )
+    if (entity.__meshOnly) continue
     instances.push({
       id: sourceIndex + 0x10000,
       mesh,
@@ -1378,6 +1393,18 @@ function buildStaticEntityScene(
     })
   }
   return { meshes, entities: instances, skipped, diagnostics: { nativeBindings, nativeFailures, skipped } }
+}
+
+function collectScriptMeshNames(serverModules: readonly any[], clientModules: readonly any[]) {
+  const names = new Set<string>()
+  const meshPattern = /mesh\s*:\s*["'`]([^"'`]+\.vb)["'`]/g
+  for (const module of [...serverModules, ...clientModules]) {
+    const source = typeof module?.source === "string"
+      ? module.source
+      : Buffer.from(module?.bytes ?? []).toString("utf8")
+    for (const match of source.matchAll(meshPattern)) names.add(match[1])
+  }
+  return [...names]
 }
 
 function encodeFloat32Base64(values: readonly number[]): string {

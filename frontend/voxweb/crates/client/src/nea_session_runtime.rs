@@ -3169,6 +3169,96 @@ fn apply_entity_state_event(
         bodies.retain(|body| body.id != id);
         return scene.entities.len() != before_entities || bodies.len() != before_bodies;
     }
+    if event_type == Some("nea-revive:entity-created") {
+        let Some(id) = event.get("entityId").and_then(serde_json::Value::as_u64) else {
+            return false;
+        };
+        let id = id as u32;
+        let Some(entity) = event.get("entity") else {
+            return false;
+        };
+        let Some(mesh) = entity.get("mesh").and_then(serde_json::Value::as_str) else {
+            return false;
+        };
+        if !scene.meshes.contains_key(mesh)
+            || scene.entities.iter().any(|entry| entry.id == id)
+        {
+            return false;
+        }
+        let position = json_vec3(entity.get("position")).unwrap_or([0.0; 3]);
+        let scale = json_vec3(entity.get("meshScale")).unwrap_or([1.0; 3]);
+        let bounds = json_vec3(entity.get("bounds")).unwrap_or([1.0; 3]);
+        let orientation = entity
+            .get("meshOrientation")
+            .and_then(serde_json::Value::as_array)
+            .filter(|values| values.len() >= 4)
+            .map(|values| [
+                json_f32(values.get(1)),
+                json_f32(values.get(2)),
+                json_f32(values.get(3)),
+                json_f32(values.first()),
+            ])
+            .unwrap_or([0.0, 0.0, 0.0, 1.0]);
+        let collision = entity.get("collides").and_then(serde_json::Value::as_bool).unwrap_or(true);
+        let fixed = entity.get("fixed").and_then(serde_json::Value::as_bool).unwrap_or(false);
+        let mass = entity.get("mass").and_then(serde_json::Value::as_f64).unwrap_or(1.0).max(0.001);
+        let friction = entity.get("friction").and_then(serde_json::Value::as_f64).unwrap_or(0.0).max(0.0);
+        let restitution = entity.get("restitution").and_then(serde_json::Value::as_f64).unwrap_or(0.0).max(0.0);
+        let half_extents = [0, 1, 2].map(|axis| (bounds[axis].abs() * scale[axis].abs() / 2.0).max(0.01));
+        let instance_value = serde_json::json!({
+            "id": id,
+            "mesh": mesh,
+            "position": position,
+            "scale": scale,
+            "rotation": orientation,
+            "collision": collision,
+            "fixed": fixed,
+            "halfExtents": half_extents,
+            "mass": mass,
+            "friction": friction,
+            "restitution": restitution,
+            "enableInteract": entity.get("enableInteract").and_then(serde_json::Value::as_bool).unwrap_or(false),
+            "interactHint": entity.get("interactHint").and_then(serde_json::Value::as_str).unwrap_or(""),
+            "interactRadius": entity.get("interactRadius").and_then(serde_json::Value::as_f64).unwrap_or(3.0),
+            "visible": !entity.get("meshInvisible").and_then(serde_json::Value::as_bool).unwrap_or(false),
+            "meshOffset": [0.0, 0.0, 0.0],
+            "nameplate": entity.get("nameplate").cloned().unwrap_or(serde_json::Value::Null),
+        });
+        let Ok(instance) = serde_json::from_value::<StaticEntityInstance>(instance_value) else {
+            return false;
+        };
+        if collision {
+            bodies.push(voxweb_protocol::netstate::RigidBody {
+                id,
+                flags: 2 | if fixed { 16 } else { 64 },
+                group: 0,
+                mass: mass as f32,
+                friction: friction as f32,
+                restitution: restitution as f32,
+                rx: 1.0,
+                ry: 1.0,
+                rz: 1.0,
+                px: position[0],
+                py: position[1],
+                pz: position[2],
+                vx: 0.0,
+                vy: 0.0,
+                vz: 0.0,
+                qx: orientation[0],
+                qy: orientation[1],
+                qz: orientation[2],
+                qw: orientation[3],
+                hsx: half_extents[0],
+                hsy: half_extents[1],
+                hsz: half_extents[2],
+                ax: 0.0,
+                ay: 0.0,
+                az: 0.0,
+            });
+        }
+        scene.entities.push(instance);
+        return true;
+    }
     if event_type != Some("nea-revive:entity-state") {
         return false;
     }
@@ -5414,6 +5504,38 @@ mod tests {
             &mut scene,
         ));
         assert!(scene.entities.is_empty());
+        assert!(bodies.is_empty());
+    }
+
+    #[test]
+    fn entity_created_event_adds_runtime_mesh_and_body() {
+        let mut scene: StaticEntityScene = serde_json::from_value(serde_json::json!({
+            "meshes": {"mesh/diamond.vb": {}},
+            "entities": []
+        }))
+        .expect("dynamic entity fixture");
+        let mut bodies = Vec::new();
+        assert!(apply_entity_state_event(
+            &serde_json::json!({
+                "type": "nea-revive:entity-created",
+                "entityId": 196608,
+                "entity": {
+                    "mesh": "mesh/diamond.vb",
+                    "position": [1.0, 2.0, 3.0],
+                    "bounds": [2.0, 4.0, 2.0],
+                    "meshScale": [0.5, 0.5, 0.5],
+                    "meshOrientation": [1.0, 0.0, 0.0, 0.0],
+                    "collides": false,
+                    "fixed": false,
+                    "meshInvisible": false
+                }
+            }),
+            &mut bodies,
+            &mut scene,
+        ));
+        assert_eq!(scene.entities.len(), 1);
+        assert_eq!(scene.entities[0].id, 196608);
+        assert_eq!(scene.entities[0].position, [1.0, 2.0, 3.0]);
         assert!(bodies.is_empty());
     }
 

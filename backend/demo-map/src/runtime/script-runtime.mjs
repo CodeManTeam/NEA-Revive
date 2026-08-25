@@ -795,8 +795,10 @@ export class ScriptRuntime {
           this.logger.error("[script:world] entity limit exceeded");
           return null;
         }
-        const id = spec?.id ?? `runtime-entity-${this.#entities.size + 1}`;
-        if (this.#entities.has(id)) throw new Error(`Entity already exists: ${id}`);
+        const requestedId = spec?.id ?? `runtime-entity-${this.#entities.size + 1}`;
+        let id = requestedId;
+        let duplicateIndex = 2;
+        while (this.#entities.has(id)) id = `${requestedId}-${duplicateIndex++}`;
         const entity = createRuntimeEntity({
           id,
           name: spec?.name,
