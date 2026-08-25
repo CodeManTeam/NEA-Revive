@@ -1362,7 +1362,6 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                     if let Some(current) = terrain.as_mut() {
                                         current.append_or_replace_chunks(
                                             &dc.device,
-                                            &dc.queue,
                                             &atlas,
                                             &material_atlas,
                                             &bump_atlas,
@@ -1484,7 +1483,6 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                                     .expect("terrain")
                                                     .append_or_replace_chunks(
                                                         &dc.device,
-                                                        &dc.queue,
                                                         &atlas,
                                                         &material_atlas,
                                                         &bump_atlas,
@@ -2479,13 +2477,6 @@ struct RenderTerrain {
     light_chunks: HashMap<(u32, u32, u32), Vec<u16>>,
     shadow_map: voxweb_render::nea_shadow::NeaShadowMap,
     entity_transforms: HashMap<String, HashMap<u32, EntityTransform>>,
-    terrain_pipeline_cache: HashMap<TerrainPipelineKey, NeaTerrainPipeline>,
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
-struct TerrainPipelineKey {
-    surface_format: wgpu::TextureFormat,
-    depth_format: Option<wgpu::TextureFormat>,
 }
 
 /// Mesh output for one NEA chunk. Keeping these buffers lets newly arrived
@@ -3670,7 +3661,6 @@ impl RenderTerrain {
             })
             .collect::<Vec<_>>();
         let terrain_chunk_keys = terrain_mesh_cache.keys().copied().collect::<Vec<_>>();
-        let mut terrain_pipeline_cache = HashMap::new();
         let terrain_bounds = terrain_meshes
             .iter()
             .map(|(_, mesh)| mesh_bounds(mesh))
@@ -3678,27 +3668,18 @@ impl RenderTerrain {
         let terrain_pipelines = terrain_meshes
             .iter()
             .enumerate()
-            .map(|(index, _terrain_mesh)| {
-                let key = TerrainPipelineKey {
+            .map(|(index, (_, mesh))| {
+                NeaTerrainPipeline::new(
+                    device,
+                    atlas,
+                    material_atlas,
+                    bump_atlas,
+                    &shadow_map,
+                    mesh,
                     surface_format,
-                    depth_format: Some(wgpu::TextureFormat::Depth32Float),
-                };
-                terrain_pipeline_cache
-                    .entry(key)
-                    .or_insert_with(|| {
-                        NeaTerrainPipeline::new(
-                            device,
-                            atlas,
-                            material_atlas,
-                            bump_atlas,
-                            &shadow_map,
-                            &mesh,
-                            surface_format,
-                            Some(wgpu::TextureFormat::Depth32Float),
-                            &format!("nea.terrain.{index}"),
-                        )
-                    })
-                    .clone()
+                    Some(wgpu::TextureFormat::Depth32Float),
+                    &format!("nea.terrain.{index}"),
+                )
             })
             .collect::<Vec<_>>();
         let entity_keys = entity_scene.meshes.keys().cloned().collect::<Vec<_>>();
@@ -3824,7 +3805,6 @@ impl RenderTerrain {
                 .collect(),
             shadow_map,
             entity_transforms,
-            terrain_pipeline_cache,
         }
     }
 
@@ -3832,7 +3812,6 @@ impl RenderTerrain {
     fn append_or_replace_chunks(
         &mut self,
         device: &wgpu::Device,
-        queue: &wgpu::Queue,
         atlas: &AtlasTexture,
         material_atlas: &AtlasTexture,
         bump_atlas: &AtlasTexture,
@@ -3903,7 +3882,6 @@ impl RenderTerrain {
         );
         self.rebuild_terrain_batches(
             device,
-            queue,
             atlas,
             material_atlas,
             bump_atlas,
@@ -4071,7 +4049,6 @@ impl RenderTerrain {
     fn rebuild_terrain_batches(
         &mut self,
         device: &wgpu::Device,
-        queue: &wgpu::Queue,
         atlas: &AtlasTexture,
         material_atlas: &AtlasTexture,
         bump_atlas: &AtlasTexture,
@@ -4096,49 +4073,23 @@ impl RenderTerrain {
             .iter()
             .map(|(_, mesh)| mesh_bounds(mesh))
             .collect();
-        if self.terrain_pipeline_cache.is_empty() {
-            let shared = NeaTerrainPipeline::create_layout(
-                device,
-                atlas,
-                material_atlas,
-                bump_atlas,
-                &self.shadow_map,
-                surface_format,
-                Some(wgpu::TextureFormat::Depth32Float),
-            );
-            self.terrain_pipeline_cache.insert(
-                TerrainPipelineKey {
+        self.terrain_pipelines = terrain_meshes
+            .iter()
+            .enumerate()
+            .map(|(index, (_, mesh))| {
+                NeaTerrainPipeline::new(
+                    device,
+                    atlas,
+                    material_atlas,
+                    bump_atlas,
+                    &self.shadow_map,
+                    mesh,
                     surface_format,
-                    depth_format: Some(wgpu::TextureFormat::Depth32Float),
-                },
-                shared,
-            );
-        }
-        let key = TerrainPipelineKey {
-            surface_format,
-            depth_format: Some(wgpu::TextureFormat::Depth32Float),
-        };
-        let mut combined_vertices = Vec::new();
-        let mut combined_indices = Vec::new();
-        for (_, mesh) in &terrain_meshes {
-            let vertex_offset = (combined_vertices.len() / FLOATS_PER_VERTEX) as u32;
-            combined_vertices.extend_from_slice(&mesh.vertices);
-            combined_indices.extend(mesh.indices.iter().map(|index| index + vertex_offset));
-        }
-        let combined_mesh = MeshBuffers {
-            vertices: combined_vertices,
-            indices: combined_indices,
-        };
-        if let Some(pipeline) = self.terrain_pipeline_cache.get_mut(&key) {
-            pipeline.update_mesh(device, queue, &combined_mesh);
-        }
-        self.terrain_pipelines.clear();
-        self.terrain_pipelines.push(
-            self.terrain_pipeline_cache
-                .get(&key)
-                .expect("shared terrain pipeline")
-                .clone(),
-        );
+                    Some(wgpu::TextureFormat::Depth32Float),
+                    &format!("nea.terrain.{index}"),
+                )
+            })
+            .collect();
         jslog!(
             "[nea][perf] terrain-batches batches={} ms={}",
             self.terrain_pipelines.len(),
