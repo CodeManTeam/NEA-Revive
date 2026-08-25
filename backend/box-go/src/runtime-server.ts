@@ -23,7 +23,6 @@ import { gzipSync } from "node:zlib"
 
 let decodeMeshAssetTool: ((bytes: Uint8Array) => any) | undefined
 let decodeMeshTextureTool: ((texture: any) => any) | undefined
-let staticEntitySceneGzip: Buffer | undefined
 const transparentPng = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL7wgAAAABJRU5ErkJggg==", "base64")
 
 export interface RuntimeServerOptions {
@@ -219,6 +218,7 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   const uiPictureFallbacks = buildUiPictureFallbacks(importedProject.clientUiState, projectAssets)
   const spawn = options.spawn ?? importedProject.manifest.world.spawn
   let staticEntitySceneJson: string | null = null
+  let staticEntitySceneGzip: Buffer | undefined
   // Decoding the recovered .vb assets is CPU-heavy and the browser requests
   // the same mesh hashes for every session. Keep serialized responses in a
   // bounded process-local cache so later players do not repeat that work.
@@ -1277,6 +1277,8 @@ function buildStaticEntityScene(
     metalness: number
     shininess: number
     nameplate: { text: string; radius: number; color: number[] } | null
+    scriptInteractable: boolean
+    scriptInteractHint: string
   }> = []
   const skipped: Array<{ mesh: string; reason: string }> = []
   let nativeBindings = 0
@@ -1367,6 +1369,12 @@ function buildStaticEntityScene(
       metalness: Math.max(0, Number(entity.source?.metalness ?? 0)),
       shininess: Math.max(0, Number(entity.source?.shininess ?? 0)),
       nameplate: interactionOverrides.get(sourceIndex + 0x10000)?.nameplate ?? null,
+      // Recovered DAO3 maps mark their script-addressable named props with
+      // showName. They use game-net pointer rays rather than entity-interact,
+      // so retain this generic target signal for the client-side right-click
+      // affordance without interpreting any map script.
+      scriptInteractable: Array.isArray(entity.tags) && entity.tags.includes("showName"),
+      scriptInteractHint: String(interactionOverrides.get(sourceIndex + 0x10000)?.nameplate?.text ?? entity.id ?? ""),
     })
   }
   return { meshes, entities: instances, skipped, diagnostics: { nativeBindings, nativeFailures, skipped } }

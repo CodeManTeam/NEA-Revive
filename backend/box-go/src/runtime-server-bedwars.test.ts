@@ -7,6 +7,7 @@ import { box3Protocols, gameChat, gameNet, gameTerrain, remoteChannel } from "..
 import { startRuntimeServer } from "./runtime-server"
 
 const sourceRoot = "D:/Projects/Gaming/NEA-Revive/packages/bedwars-s2"
+const mainSourceRoot = "D:/Projects/Gaming/NEA-Revive/packages/bedwars-s2-main"
 const assetRoot = "D:/Projects/Gaming/NEA-Revive/backend/local-player/archive"
 const buildRoot = `D:/Projects/Gaming/NEA-Revive/.build/runtime-server-bedwars-${process.pid}`
 const server = await startRuntimeServer({
@@ -88,6 +89,24 @@ try {
   assert.equal(missingImage.status, 200)
   assert.equal(missingImage.headers.get("content-type"), "image/png")
   assert.ok((await missingImage.arrayBuffer()).byteLength > 0)
+
+  const mainBuildRoot = `D:/Projects/Gaming/NEA-Revive/.build/runtime-server-bedwars-main-${process.pid}`
+  const mainServer = await startRuntimeServer({ port: 0, sourceRoot: mainSourceRoot, assetRoot, buildRoot: mainBuildRoot, quiet: true })
+  try {
+    // Both maps run in one launcher process. Their compressed scene payloads
+    // must remain instance-local or the lobby receives the main-map entities.
+    const mainScene = await fetch(`http://${mainServer.host}:${mainServer.port}/api/map/entities`, { headers: { "accept-encoding": "gzip" } }).then(response => response.json() as Promise<any>)
+    const lobbyScene = await fetch(`http://${server.host}:${server.port}/api/map/entities`, { headers: { "accept-encoding": "gzip" } }).then(response => response.json() as Promise<any>)
+    assert.ok(mainScene.entities.some((entity: any) => entity.nameplate?.text === "商店"))
+    const joinGame = lobbyScene.entities.find((entity: any) => entity.scriptInteractHint === "加入游戏")
+    assert.deepEqual({ scriptInteractable: joinGame?.scriptInteractable, nameplate: joinGame?.nameplate }, {
+      scriptInteractable: true,
+      nameplate: { text: "加入游戏", radius: 4.5, color: [1, 1, 0] },
+    })
+  } finally {
+    await mainServer.close()
+    await rm(mainBuildRoot, { recursive: true, force: true })
+  }
 
   let nonEmptyChunk: any = null
   for (let chunkId = 0, rpcId = 1; chunkId < 64 && !nonEmptyChunk; chunkId += 1, rpcId += 1) {

@@ -174,6 +174,23 @@ try {
   assert.deepEqual(apiSurface.outbound[6], { type: "input", value: "Alex" })
   assert.equal(apiSurface.outbound[7].type, "resize")
 
+  const missingPicture = await page.evaluate(() => {
+    ;(window as any).__neaClientRuntimeInstall(JSON.stringify({
+      "clientIndex.js": `
+        const missing = UiImage.create();
+        missing.parent = ui;
+        missing.size.offset.copy({ x: 24, y: 24 });
+        missing.backgroundColor.copy({ r: 255, g: 0, b: 0 });
+        missing.backgroundOpacity = 1;
+        missing.image = "picture/not-exported.png";
+      `,
+    }))
+    const image = [...document.querySelectorAll("#nea-client-ui img")].at(-1) as HTMLImageElement
+    return { src: image?.getAttribute("src") ?? "", background: image ? getComputedStyle(image).backgroundColor : "" }
+  })
+  assert.equal(missingPicture.src, "")
+  assert.equal(missingPicture.background, "rgba(0, 0, 0, 0)")
+
   const damageFeedback = await page.evaluate(() => {
     ;(window as any).__neaClientRuntimeReceive(JSON.stringify({
       type: "nea-revive:damage-state",

@@ -159,6 +159,10 @@ struct StaticEntityInstance {
     shininess: f32,
     #[serde(default)]
     nameplate: Option<StaticEntityNameplate>,
+    #[serde(default, rename = "scriptInteractable")]
+    script_interactable: bool,
+    #[serde(default, rename = "scriptInteractHint")]
+    script_interact_hint: String,
 }
 
 #[derive(serde::Deserialize)]
@@ -1709,7 +1713,34 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 })
                 .min_by(|a, b| a.0.total_cmp(&b.0))
                 .map(|(_, hint)| if hint.is_empty() { "交互" } else { hint });
-            interaction_overlay.set(interaction_hint);
+            let (ray_origin, ray_target) = voxweb_protocol::player::fps_camera(
+                local_pos,
+                local_body_half_extents[1],
+                inp.crouching,
+                inp.local_pitch,
+                inp.local_yaw,
+            );
+            let pointer_hint = raycast_static_entity(
+                glam::Vec3::from_array(ray_origin),
+                (glam::Vec3::from_array(ray_target) - glam::Vec3::from_array(ray_origin))
+                    .normalize_or_zero(),
+                &entity_scene.entities,
+            )
+            .filter(|(distance, entity)| {
+                entity.visible && entity.script_interactable && *distance <= 4.5
+            })
+            .map(|(_, entity)| {
+                if entity.script_interact_hint.is_empty() {
+                    "交互"
+                } else {
+                    entity.script_interact_hint.as_str()
+                }
+            });
+            interaction_overlay.set(
+                interaction_hint
+                    .map(|hint| ("E", hint))
+                    .or_else(|| pointer_hint.map(|hint| ("鼠标右键", hint))),
+            );
             let interact_edge = std::mem::take(&mut inp.interact_edge);
             if interact_edge {
                 let nearest = interaction_index

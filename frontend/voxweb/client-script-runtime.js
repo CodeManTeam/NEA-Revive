@@ -1290,6 +1290,7 @@
     let textStrokeThickness = 0;
     let imageOpacity = 1;
     let imageDisplayMode = 0;
+    let imageMissing = false;
     let placeholder = "Type something here";
     let placeholderOpacity = 1;
     const placeholderColor = createVector({ r: 255, g: 255, b: 255 }, refresh);
@@ -1331,6 +1332,7 @@
         set(value) {
           const src = String(value || "");
           const resolved = resolvePictureUrl(src);
+          imageMissing = Boolean(src) && !resolved;
           if (kind === "image") {
             if (resolved) element.src = resolved;
             else element.removeAttribute("src");
@@ -1393,6 +1395,12 @@
       element.style.whiteSpace = autoWordWrap ? "pre-wrap" : "pre";
       element.style.transform = `translate(${-(Number(node.anchor.x) || 0) * 100}%, ${-(Number(node.anchor.y) || 0) * 100}%) rotate(${rotation}deg) scale(${Math.max(0, Number(node.uiScale.scale) || 0)})`;
       const rendersImage = kind === "image" || Boolean(element.dataset.neaImage);
+      // Missing project pictures are intentionally empty. Do not retain a
+      // recovered red debug/background color behind an unresolved image slot.
+      if (imageMissing) {
+        element.style.backgroundColor = "transparent";
+        element.style.backgroundImage = "none";
+      }
       element.style.opacity = rendersImage ? String(clamp(imageOpacity, 0, 1)) : "1";
       if (kind === "image") element.style.objectFit = imageDisplayMode === 1 ? "contain" : imageDisplayMode === 2 ? "cover" : "fill";
       if (kind === "text") element.style.webkitTextStroke = `${textStrokeThickness}px rgba(0,0,0,${clamp(textStrokeOpacity, 0, 1)})`;
