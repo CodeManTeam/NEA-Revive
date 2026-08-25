@@ -622,7 +622,16 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
           const interactionOverrides = new Map(
             runtime.entityInteractionStates().map((entry: any) => [Number(entry.entityId), entry]),
           )
-          const scene = buildStaticEntityScene(options.sourceRoot, importedProject.entities, options.assetRoot, interactionOverrides, runtimeMeshNames)
+          const projectMeshNames = importedProject.assets
+            .filter((asset: any) => asset?.kind === "mesh" && typeof asset?.name === "string")
+            .map((asset: any) => String(asset.name))
+          const scene = buildStaticEntityScene(
+            options.sourceRoot,
+            importedProject.entities,
+            options.assetRoot,
+            interactionOverrides,
+            [...new Set([...runtimeMeshNames, ...projectMeshNames])],
+          )
           staticEntityDiagnostics = scene.diagnostics
           staticEntitySceneJson = JSON.stringify(scene)
         }

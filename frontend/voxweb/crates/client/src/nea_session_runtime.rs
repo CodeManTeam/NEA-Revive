@@ -46,6 +46,10 @@ const MATERIAL_ATLAS_MIP_COUNT: usize = 10;
 const DEBUG_DIAGNOSTICS: bool = false;
 const BUMP_ATLAS_MIP_COUNT: usize = 12;
 const CHUNK_SIZE: usize = 16 * 256 * 16;
+// Bedwars server scripts damage players below Y=-32. Keep the local safety
+// net on the same boundary so the client does not visibly respawn early.
+const LOCAL_VOID_RESPAWN_Y: f32 = -32.0;
+const PLAYER_FLAG_SPECTATOR: u64 = 1;
 use crate::nea_session_context::{
     AvatarRollState, RECOVERED_WALK_VELOCITY_PER_TICK, RuntimeCameraState,
 };
@@ -122,7 +126,7 @@ struct DecodedMeshTexture {
     rgba: Vec<u8>,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Clone, serde::Deserialize)]
 struct StaticEntityInstance {
     id: u32,
     mesh: String,
@@ -163,9 +167,39 @@ struct StaticEntityInstance {
     script_interactable: bool,
     #[serde(default, rename = "scriptInteractHint")]
     script_interact_hint: String,
+    #[serde(skip)]
+    wearable_owner: Option<u32>,
+    #[serde(skip)]
+    wearable_rotation: [f32; 4],
+    #[serde(skip)]
+    wearable_body_part: String,
 }
 
-#[derive(serde::Deserialize)]
+#[derive(Clone, Debug, serde::Deserialize)]
+struct PlayerWearable {
+    #[serde(rename = "bodyPart")]
+    body_part: String,
+    mesh: String,
+    offset: [f32; 3],
+    orientation: [f32; 4],
+    scale: [f32; 3],
+    material: WearableMaterial,
+}
+
+#[derive(Clone, Debug, serde::Deserialize)]
+struct WearableMaterial {
+    color: [f32; 3],
+    metalness: f32,
+    emissive: f32,
+    shininess: f32,
+}
+
+#[derive(Clone, Debug, Default)]
+struct PlayerWearableState {
+    revision: u32,
+}
+
+#[derive(Clone, serde::Deserialize)]
 struct StaticEntityNameplate {
     text: String,
     radius: f32,
@@ -263,6 +297,27 @@ fn interaction_distance(entity: &StaticEntityInstance, player: [f32; 3]) -> f32 
     let center_distance = (dx * dx + dy * dy + dz * dz).sqrt();
     let radius = interaction_bounds_radius(entity);
     (center_distance - radius).max(0.0)
+}
+
+/// Runtime position samples are normally stale echoes while local physics is
+/// active. A spectator transition is the one server-side lifecycle edge that
+/// must override prediction: Bedwars sets spectator during death, resets the
+/// player to its spawn point, then clears spectator after the respawn delay.
+fn should_apply_authoritative_respawn(
+    local: [f32; 3],
+    authoritative: [f32; 3],
+    flags: u64,
+) -> bool {
+    if flags & PLAYER_FLAG_SPECTATOR == 0
+        || !local.iter().all(|value| value.is_finite())
+        || !authoritative.iter().all(|value| value.is_finite())
+    {
+        return false;
+    }
+    let dx = local[0] - authoritative[0];
+    let dy = local[1] - authoritative[1];
+    let dz = local[2] - authoritative[2];
+    dx * dx + dy * dy + dz * dz > 4.0
 }
 
 fn raycast_static_entity(
@@ -731,6 +786,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
         .await
         .unwrap_or_default();
     prefetch_entity_mesh_assets(&origin, &mut entity_scene).await;
+    let mut player_wearables = HashMap::<u32, PlayerWearableState>::new();
     let map_environment = fetch_map_environment(&format!("{origin}/api/map/environment")).await;
     let environment = voxweb_render::nea_environment::NeaEnvironment::from_map(&map_environment);
     let sun_active = environment.sun_active();
@@ -1260,6 +1316,11 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                             &mut static_collision_bodies,
                                             &mut entity_scene,
                                         );
+                                        entity_instances_dirty |= apply_player_wearables_event(
+                                            &event.event,
+                                            &mut entity_scene,
+                                            &mut player_wearables,
+                                        );
                                         if entity_instances_dirty {
                                             *interaction_index.borrow_mut() =
                                                 EntityInteractionIndex::build(
@@ -1702,8 +1763,18 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     }
                 }
             }
-            Err(error) => jslog!("[nea] client script drain failed: {error}"),
+        Err(error) => jslog!("[nea] client script drain failed: {error}"),
         }
+        let wearable_local_id = driver.borrow().player_id;
+        let wearable_local_yaw = input.borrow().local_yaw;
+        entity_instances_dirty |= update_player_wearable_transforms(
+            &mut entity_scene,
+            wearable_local_id,
+            player_pos,
+            wearable_local_yaw,
+            &mut remote_players,
+            now_ms(),
+        );
         if avatar_renderer.is_none()
             && !avatar_load_attempted
             && let Some(part_ids) = local_avatar_part_ids.as_ref()
@@ -1875,6 +1946,22 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
             );
             if let Some(runtime_player) = local_runtime_player.as_ref() {
                 physics.apply_runtime_state(runtime_player);
+                if should_apply_authoritative_respawn(
+                    physics.position,
+                    runtime_player.position,
+                    runtime_player.flags,
+                ) {
+                    physics.position = runtime_player.position;
+                    physics.velocity = [0.0, 0.0, 0.0];
+                    physics.grounded = runtime_player.phys_ground;
+                    unsubmitted_jump_edge = false;
+                    jslog!(
+                        "[nea] authoritative respawn: pos=({:.1},{:.1},{:.1})",
+                        runtime_player.position[0],
+                        runtime_player.position[1],
+                        runtime_player.position[2]
+                    );
+                }
             }
             if flight_toggle {
                 physics.request_flight_toggle();
@@ -1916,7 +2003,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     &|x, y, z| solid_voxel_at(&chunk_cells, x, y, z),
                     &mut physics_bodies,
                 );
-                if physics.position[1] < -16.0 {
+                if physics.position[1] < LOCAL_VOID_RESPAWN_Y {
                     if let Some(spawn) = spawn_position {
                         physics.position = spawn;
                         physics.velocity = [0.0, 0.0, 0.0];
@@ -3182,15 +3269,13 @@ fn build_static_entity_instances(
             }
         })
         .collect::<Vec<_>>();
-    if instances.is_empty() {
-        None
-    } else {
-        // Keep one compact diagnostic for the first model batch. It reports
-        // the exact values uploaded to the native model shader without adding
-        // per-frame logging or changing the render path.
+    // Keep one compact diagnostic for the first model batch. It reports the
+    // exact values uploaded to the native model shader without adding per-frame
+    // logging or changing the render path. Mesh-only entries intentionally
+    // carry an empty instance list and are populated by wearable events later.
+    if let Some(first) = instances.first() {
         static LIGHT_DIAG: std::sync::Once = std::sync::Once::new();
         LIGHT_DIAG.call_once(|| {
-            let first = &instances[0];
             let mut lo = [f32::INFINITY; 4];
             let mut hi = [f32::NEG_INFINITY; 4];
             for probe in first.ambient {
@@ -3207,8 +3292,8 @@ fn build_static_entity_instances(
                 hi
             );
         });
-        Some((vertices, safe_indices, instances))
     }
+    Some((vertices, safe_indices, instances))
 }
 
 fn build_static_entity_collision_bodies(
@@ -3496,6 +3581,157 @@ fn parse_entity_nameplate(value: &serde_json::Value) -> Option<StaticEntityNamep
         radius: radius.max(0.0),
         color,
     })
+}
+
+fn apply_player_wearables_event(
+    event: &serde_json::Value,
+    scene: &mut StaticEntityScene,
+    states: &mut HashMap<u32, PlayerWearableState>,
+) -> bool {
+    if event.get("type").and_then(serde_json::Value::as_str)
+        != Some("nea-revive:player-wearables")
+    {
+        return false;
+    }
+    let Some(player_id) = event.get("playerId").and_then(serde_json::Value::as_u64) else {
+        return false;
+    };
+    let player_id = player_id as u32;
+    let revision = event
+        .get("revision")
+        .and_then(serde_json::Value::as_u64)
+        .unwrap_or(0) as u32;
+    if states.get(&player_id).is_some_and(|state| revision < state.revision) {
+        return false;
+    }
+    let wearables = event
+        .get("wearables")
+        .cloned()
+        .and_then(|value| serde_json::from_value::<Vec<PlayerWearable>>(value).ok())
+        .unwrap_or_default();
+    scene.entities.retain(|entity| entity.wearable_owner != Some(player_id));
+    for (slot, wearable) in wearables.iter().enumerate() {
+        if !scene.meshes.contains_key(&wearable.mesh) {
+            jslog!("[nea] wearable mesh unavailable: {}", wearable.mesh);
+            continue;
+        }
+        let id = 0xe000_0000u32
+            .wrapping_add(player_id.wrapping_mul(64))
+            .wrapping_add(slot as u32);
+        let color = [
+            wearable.material.color[0].clamp(0.0, 1.0),
+            wearable.material.color[1].clamp(0.0, 1.0),
+            wearable.material.color[2].clamp(0.0, 1.0),
+            1.0,
+        ];
+        scene.entities.push(StaticEntityInstance {
+            id,
+            mesh: wearable.mesh.clone(),
+            position: [0.0; 3],
+            scale: wearable.scale.map(|value| value.abs().max(0.001)),
+            rotation: [
+                wearable.orientation[1],
+                wearable.orientation[2],
+                wearable.orientation[3],
+                wearable.orientation[0],
+            ],
+            collision: false,
+            fixed: true,
+            half_extents: [0.5; 3],
+            mass: 1.0,
+            friction: 0.0,
+            restitution: 0.0,
+            enable_interact: false,
+            interact_hint: String::new(),
+            interact_radius: 0.0,
+            visible: true,
+            mesh_offset: wearable.offset,
+            static_shadow: false,
+            tint: color,
+            emissive: wearable.material.emissive.max(0.0),
+            metalness: wearable.material.metalness.max(0.0),
+            shininess: wearable.material.shininess.max(0.0),
+            nameplate: None,
+            script_interactable: false,
+            script_interact_hint: String::new(),
+            wearable_owner: Some(player_id),
+            wearable_rotation: [
+                wearable.orientation[1],
+                wearable.orientation[2],
+                wearable.orientation[3],
+                wearable.orientation[0],
+            ],
+            wearable_body_part: wearable.body_part.clone(),
+        });
+    }
+    states.insert(player_id, PlayerWearableState { revision });
+    true
+}
+
+fn update_player_wearable_transforms(
+    scene: &mut StaticEntityScene,
+    local_player_id: u32,
+    local_position: Option<[f32; 3]>,
+    local_yaw: f32,
+    remote_players: &mut crate::remote_players::RemotePlayers,
+    now_ms: u32,
+) -> bool {
+    let samples = remote_players.sample(now_ms);
+    let mut changed = false;
+    for entity in scene.entities.iter_mut().filter(|entity| entity.wearable_owner.is_some()) {
+        let owner = entity.wearable_owner.unwrap_or_default();
+        let (position, yaw) = if owner == local_player_id {
+            let Some(position) = local_position else { continue };
+            (position, local_yaw)
+        } else {
+            let Some(player) = samples.iter().find(|player| player.id == owner) else {
+                if entity.visible {
+                    entity.visible = false;
+                    changed = true;
+                }
+                continue;
+            };
+            let yaw = if player.body.vx.hypot(player.body.vz) > 1.0e-4 {
+                recovered_avatar_yaw([player.body.vx, player.body.vz], 0.0)
+            } else {
+                0.0
+            };
+            ([player.body.px, player.body.py, player.body.pz], yaw)
+        };
+        let anchor = wearable_body_part_anchor(&entity.wearable_body_part);
+        let yaw_rotation = glam::Quat::from_rotation_y(yaw);
+        let next_position = glam::Vec3::from_array(position) + yaw_rotation * glam::Vec3::from_array(anchor);
+        let next_rotation = (yaw_rotation
+            * glam::Quat::from_xyzw(
+                entity.wearable_rotation[0],
+                entity.wearable_rotation[1],
+                entity.wearable_rotation[2],
+                entity.wearable_rotation[3],
+            ))
+        .normalize()
+        .to_array();
+        if entity.position != next_position.to_array() || entity.rotation != next_rotation {
+            entity.position = next_position.to_array();
+            entity.rotation = next_rotation;
+            entity.visible = true;
+            changed = true;
+        }
+    }
+    changed
+}
+
+fn wearable_body_part_anchor(body_part: &str) -> [f32; 3] {
+    match body_part {
+        "head" => [0.0, 2.15, 0.0],
+        "torso" => [0.0, 1.05, 0.0],
+        "leftShoulder" | "leftUpperArm" => [-0.52, 1.25, 0.0],
+        "rightShoulder" | "rightUpperArm" => [0.52, 1.25, 0.0],
+        "leftHand" => [-0.62, 0.75, 0.0],
+        "rightHand" => [0.62, 0.75, 0.0],
+        "leftFoot" | "leftLowerLeg" | "leftUpperLeg" => [-0.22, 0.15, 0.0],
+        "rightFoot" | "rightLowerLeg" | "rightUpperLeg" => [0.22, 0.15, 0.0],
+        _ => [0.0, 1.05, 0.0],
+    }
 }
 
 fn json_vec3(value: Option<&serde_json::Value>) -> Option<[f32; 3]> {
@@ -5421,13 +5657,16 @@ fn yield_animation_frame() -> js_sys::Promise {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
     use super::{
         AvatarRollState, EntityInteractionIndex, InputState, RuntimeCameraState, StaticEntityScene,
         apply_entity_state_event, apply_runtime_camera_state, block_is_solid,
         build_static_entity_collision_bodies, fluid_volume_fraction, make_camera,
         network_tick_is_newer, normalize_player_collision_half_extents, recovered_avatar_yaw,
         recovered_fluid_height, recovered_fluid_info, recovered_player_state,
-        raycast_static_entity, recovered_rotated_face_rects, recovered_voxel_face_visible, recovered_walk_phase_delta,
+        raycast_static_entity, recovered_rotated_face_rects, recovered_voxel_face_visible,
+        recovered_walk_phase_delta, apply_player_wearables_event,
+        should_apply_authoritative_respawn, LOCAL_VOID_RESPAWN_Y, PLAYER_FLAG_SPECTATOR,
         write_recovered_texture_rotation,
     };
     use voxweb_physics::NeaPlayerPhysics;
@@ -5644,6 +5883,54 @@ mod tests {
     }
 
     #[test]
+    fn player_wearables_event_creates_renderer_entities_and_replaces_revision() {
+        let mut scene: StaticEntityScene = serde_json::from_value(serde_json::json!({
+            "meshes": {"mesh/wooden-sword.vb": {}},
+            "entities": []
+        }))
+        .expect("wearable scene fixture");
+        let mut states = HashMap::new();
+        let event = serde_json::json!({
+            "type": "nea-revive:player-wearables",
+            "playerId": 3,
+            "revision": 1,
+            "wearables": [{
+                "id": "p-3:0",
+                "bodyPart": "rightHand",
+                "mesh": "mesh/wooden-sword.vb",
+                "offset": [0.0, -0.2, 0.5],
+                "orientation": [1.0, 0.0, 0.0, 0.0],
+                "scale": [0.5, 0.5, 0.5],
+                "material": {"color": [1.0, 0.2, 0.1], "metalness": 1.0, "emissive": 0.0, "shininess": 0.0}
+            }]
+        });
+        assert!(apply_player_wearables_event(&event, &mut scene, &mut states));
+        assert_eq!(scene.entities.len(), 1);
+        assert_eq!(scene.entities[0].wearable_owner, Some(3));
+        assert_eq!(scene.entities[0].wearable_body_part, "rightHand");
+        assert_eq!(scene.entities[0].mesh, "mesh/wooden-sword.vb");
+        assert_eq!(states.get(&3).map(|state| state.revision), Some(1));
+        assert!(!apply_player_wearables_event(
+            &serde_json::json!({"type": "nea-revive:player-wearables", "playerId": 3, "revision": 0, "wearables": []}),
+            &mut scene,
+            &mut states,
+        ));
+        assert_eq!(scene.entities.len(), 1);
+        assert!(apply_player_wearables_event(
+            &serde_json::json!({"type": "nea-revive:player-wearables", "playerId": 3, "revision": 2, "wearables": []}),
+            &mut scene,
+            &mut states,
+        ));
+        assert!(scene.entities.is_empty());
+    }
+
+    #[test]
+    fn wearable_body_part_anchor_places_hand_items_at_player_side() {
+        assert_eq!(super::wearable_body_part_anchor("rightHand"), [0.62, 0.75, 0.0]);
+        assert_eq!(super::wearable_body_part_anchor("head"), [0.0, 2.15, 0.0]);
+    }
+
+    #[test]
     fn network_ticks_are_monotonic_across_duplicates_and_wraparound() {
         assert!(network_tick_is_newer(10, 11));
         assert!(!network_tick_is_newer(10, 10));
@@ -5706,6 +5993,49 @@ mod tests {
             &|_, _, _| false,
         );
         assert!(physics.velocity[1] < 0.0);
+    }
+
+    #[test]
+    fn authoritative_respawn_overrides_only_spectator_teleports() {
+        assert!(should_apply_authoritative_respawn(
+            [224.5, 10.0, 127.5],
+            [224.5, 43.0, 127.5],
+            PLAYER_FLAG_SPECTATOR,
+        ));
+        assert!(!should_apply_authoritative_respawn(
+            [224.5, 10.0, 127.5],
+            [224.5, 43.0, 127.5],
+            0,
+        ));
+        assert!(!should_apply_authoritative_respawn(
+            [224.5, 43.0, 127.5],
+            [224.5, 43.5, 127.5],
+            PLAYER_FLAG_SPECTATOR,
+        ));
+    }
+
+    #[test]
+    fn local_void_boundary_matches_bedwars_server_rule() {
+        assert_eq!(LOCAL_VOID_RESPAWN_Y, -32.0);
+    }
+
+    #[test]
+    fn one_block_resource_pit_floor_keeps_jump_available() {
+        let pit = |x: i32, y: i32, z: i32| {
+            y == 40 && x == 227 && (126..=128).contains(&z)
+        };
+        let mut physics = NeaPlayerPhysics::new([227.5, 42.1, 127.5]);
+        physics.observe(&pit);
+        assert!(physics.grounded, "resource pit floor should support the player");
+        physics.step(
+            [0.0, 0.0],
+            MoveMode::Walk,
+            false,
+            true,
+            0.05,
+            &pit,
+        );
+        assert!(physics.position[1] > 42.1, "jump should leave the resource pit");
     }
 
     #[test]
