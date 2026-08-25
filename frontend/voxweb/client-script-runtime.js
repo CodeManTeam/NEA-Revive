@@ -95,6 +95,9 @@
   damageLayer.backgroundOpacity = 0;
   damageLayer.visible = true;
   damageLayer.zIndex = 19;
+  // This layer only paints HUD feedback. It must not consume the gameplay
+  // activation click, otherwise the canvas can never acquire pointer lock.
+  damageLayer.pointerEventBehavior = 1;
   damageLayer.parent = engineHost;
   // The historical Player uses two image nodes and swaps numbered frames;
   // keep that contract instead of inventing a CSS heart bar.
@@ -140,6 +143,7 @@
   deathOverlay.backgroundOpacity = 0.5;
   deathOverlay.visible = false;
   deathOverlay.zIndex = 2;
+  deathOverlay.pointerEventBehavior = 1;
   deathOverlay.parent = damageLayer;
   const deathTip = createUiNode("text");
   deathTip.name = "nea-death-tip";
@@ -363,6 +367,9 @@
   particleLayer.size.ratio.copy({ x: 1, y: 1 });
   particleLayer.visible = true;
   particleLayer.zIndex = 18;
+  // Particle dots are visual-only and should never sit in front of the game
+  // canvas for input hit-testing.
+  particleLayer.pointerEventBehavior = 1;
   particleLayer.parent = engineHost;
   let particleConfig = null;
   let particleLastMs = performance.now();
@@ -1455,7 +1462,10 @@
     let visible = true;
     let borderRadius = 0;
     let textAlign = "left";
-    let pointerEventBehavior = 0;
+    // Recovered HUD nodes are visual by default. DAO3 scripts opt into
+    // blocking or enabled input explicitly (0/2/3); defaulting to DISABLE
+    // keeps scoreboard panels from swallowing the gameplay click.
+    let pointerEventBehavior = 1;
     let rotation = 0;
     let richText = false;
     let autoWordWrap = false;
