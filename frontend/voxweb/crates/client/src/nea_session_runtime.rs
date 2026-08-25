@@ -4762,10 +4762,6 @@ fn install_keyboard(
                     s.press_jump();
                     handled = true;
                 }
-                "KeyE" => {
-                    s.interact_edge = true;
-                    handled = true;
-                }
                 "KeyT" => {
                     drop(s);
                     chat_state.toggle();
