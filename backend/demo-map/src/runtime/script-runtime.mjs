@@ -1874,6 +1874,8 @@ function createRuntimePlayer(runtime, input) {
     _tags: new Set(),
     _signals: { click: new EventSignal(), destroy: new EventSignal(), voxelContact: new EventSignal(), voxelSeparate: new EventSignal(), fluidEnter: new EventSignal(), fluidLeave: new EventSignal(), press: new EventSignal(), release: new EventSignal(), keyDown: new EventSignal(), keyUp: new EventSignal(), respawn: new EventSignal(), takeDamage: new EventSignal(), die: new EventSignal() },
     _wearables: [],
+    _wearableRevision: 0,
+    _wearableSignature: "[]",
     _inventory: new Map(),
     _buffs: new Set(),
     _gameMode: 0,
@@ -2022,9 +2024,16 @@ function createRuntimePlayer(runtime, input) {
     Give(name, count) { return runtime._givePlayer(this, name, count); },
     BuffClear() { return runtime._clearPlayerBuffs(this); },
     get gamemode() { return { gamemode: mode => runtime._setPlayerGameMode(this, mode) }; },
-    wearables(bodyPart) { return this._wearables.filter(item => item.bodyPart === bodyPart); },
-    addWearable(spec) { const wearable = { ...structuredClone(spec) }; this._wearables.push(wearable); return wearable; },
-    removeWearable(wearable) { const index = this._wearables.indexOf(wearable); if (index >= 0) this._wearables.splice(index, 1); },
+    wearables(bodyPart) { return bodyPart === undefined ? [...this._wearables] : this._wearables.filter(item => item.bodyPart === bodyPart); },
+    addWearable(spec) {
+      const wearable = createRuntimeWearable(this, spec);
+      this._wearables.push(wearable);
+      return wearable;
+    },
+    removeWearable(wearable) {
+      const index = this._wearables.indexOf(wearable);
+      if (index >= 0) this._wearables.splice(index, 1);
+    },
     dialog(config) { return runtime._dialogPlayer(this, config); },
     cancelDialogs() { return runtime._cancelPlayerDialogs(this); },
     get name() { return this._name; },
@@ -2100,6 +2109,7 @@ function createRuntimePlayer(runtime, input) {
         gamemode: this._gameMode,
         inventory: Object.fromEntries(this._inventory),
         buffs: [...this._buffs],
+        ...wearableSnapshot(this),
         cameraMode: this.cameraMode,
         cameraFovY: this.cameraFovY,
         cameraYaw: this.cameraYaw,
@@ -2186,6 +2196,62 @@ function stablePlayerUserKey(value) {
     hash = Math.imul(hash, 16777619) >>> 0;
   }
   return hash.toString(16).padStart(8, "0").repeat(2).slice(0, 16);
+}
+
+function createRuntimeWearable(player, spec) {
+  if (!spec || typeof spec !== "object" || Array.isArray(spec)) throw new TypeError("Wearable spec must be an object");
+  const wearable = structuredClone(spec);
+  const remove = () => player.removeWearable(wearable);
+  Object.defineProperty(wearable, "remove", { value: remove, enumerable: false });
+  return wearable;
+}
+
+function wearableSnapshot(player) {
+  const wearables = player._wearables.map((wearable, index) => Object.freeze({
+    id: `${player.id}:${index}`,
+    bodyPart: String(wearable.bodyPart ?? ""),
+    mesh: String(wearable.mesh ?? ""),
+    offset: vectorSnapshot(wearable.offset, [0, 0, 0]),
+    orientation: quaternionSnapshot(wearable.orientation),
+    scale: vectorSnapshot(wearable.scale, [1, 1, 1]),
+    material: Object.freeze({
+      color: rgbSnapshot(wearable.color, [1, 1, 1]),
+      metalness: finiteSnapshot(wearable.metalness, 0),
+      emissive: finiteSnapshot(wearable.emissive, 0),
+      shininess: finiteSnapshot(wearable.shininess, 0),
+    }),
+  }));
+  const signature = JSON.stringify(wearables);
+  if (signature !== player._wearableSignature) {
+    player._wearableSignature = signature;
+    player._wearableRevision += 1;
+  }
+  return { wearableRevision: player._wearableRevision, wearables: Object.freeze(wearables) };
+}
+
+function vectorSnapshot(value, fallback) {
+  const components = Array.isArray(value) ? value : [value?.x, value?.y, value?.z];
+  return components.length === 3 && components.every(Number.isFinite)
+    ? [Number(components[0]), Number(components[1]), Number(components[2])]
+    : fallback;
+}
+
+function quaternionSnapshot(value) {
+  const components = Array.isArray(value) ? value : [value?.w, value?.x, value?.y, value?.z];
+  return components.length === 4 && components.every(Number.isFinite)
+    ? [Number(components[0]), Number(components[1]), Number(components[2]), Number(components[3])]
+    : [1, 0, 0, 0];
+}
+
+function rgbSnapshot(value, fallback) {
+  const components = Array.isArray(value) ? value : [value?.r, value?.g, value?.b];
+  return components.length === 3 && components.every(Number.isFinite)
+    ? [Number(components[0]), Number(components[1]), Number(components[2])]
+    : fallback;
+}
+
+function finiteSnapshot(value, fallback) {
+  return Number.isFinite(value) ? Number(value) : fallback;
 }
 
 function normalizePlayerUrl(value) {

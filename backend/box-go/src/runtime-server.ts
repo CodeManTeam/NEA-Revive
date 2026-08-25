@@ -463,12 +463,33 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   let netStateTick = 4
   let lastWorldPhysics: unknown = null
   const lastCameraState = new Map<string, unknown>()
+  const sentWearableStates = new Map<string, Map<string, string>>()
+  function syncWearableStates(snap: any): void {
+    const players = Array.isArray(snap.players) ? snap.players : []
+    for (const [recipientId, sessionId] of playerSessions) {
+      const sent = sentWearableStates.get(sessionId) ?? new Map<string, string>()
+      for (const player of players) {
+        const runtimePlayerId = String(player.id)
+        const event = {
+          type: "nea-revive:player-wearables",
+          playerId: wirePlayerIdFor(runtimePlayerId),
+          revision: Number(player.wearableRevision ?? 0),
+          wearables: Array.isArray(player.wearables) ? player.wearables : [],
+        }
+        const signature = JSON.stringify(event)
+        if (sent.get(runtimePlayerId) === signature) continue
+        if (deliverClientEvent(recipientId, event)) sent.set(runtimePlayerId, signature)
+      }
+      sentWearableStates.set(sessionId, sent)
+    }
+  }
   const netStateTimer = setInterval(() => {
     const snap: any = runtime.snapshot()
     const tick = netStateTick
     netStateTick += 2
     const displays = netStateDisplays(snap)
     const players = netStatePlayers(snap)
+    syncWearableStates(snap)
     for (const [playerId, sessionId] of playerSessions) {
       const player = snap.players.find((p: any) => p.id === playerId)
       const netClient = gameNetClients()[sessionId]
@@ -1012,6 +1033,7 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         // registration across the three websocket transports.
         setTimeout(() => flushPendingClientEvents(playerId), 0)
         setTimeout(() => flushPendingClientEvents(playerId), 25)
+        setTimeout(() => syncWearableStates(runtime.snapshot()), 30)
         // voxweb 握手：join 后立即发 secret 原始帧（game-net rawId=10）：
         // varint(10) varint(1) 'E' 0 varint(playerId) uint8(5) varint(playerId) uint8(1) varint(playerId)
         const secret = encodeAnonymousPlayerSecret(wirePlayerId)
@@ -1179,6 +1201,7 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
             playerSessions.delete(playerId)
             wirePlayerIds.delete(playerId)
           }
+          sentWearableStates.delete(client.sessionId)
           sessions.delete(client.sessionId)
           sessionNames.delete(client.sessionId)
           chatLogIds.delete(client.sessionId)

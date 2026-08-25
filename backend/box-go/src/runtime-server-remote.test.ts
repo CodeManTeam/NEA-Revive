@@ -15,6 +15,15 @@ await mkdir(sourceRoot, { recursive: true })
 await cp(`${root}/packages/parkour`, sourceRoot, { recursive: true })
 await writeFile(`${sourceRoot}/scripts/server.js`, `
 world.onPlayerJoin(({ entity }) => {
+  entity.player.addWearable({
+    bodyPart: GameBodyPart.RIGHT_HAND,
+    mesh: "mesh/test-sword.vb",
+    offset: new GameVector3(0, -0.2, 0.5),
+    orientation: new GameQuaternion(1, 0, 0, 0),
+    scale: new GameVector3(0.5, 0.5, 0.5),
+    color: new GameRGBColor(1, 0, 0),
+    metalness: 1,
+  })
   remoteChannel.sendClientEvent(entity, { type: "server:joined", playerId: entity.id })
 })
 remoteChannel.onServerEvent(({ entity, args }) => {
@@ -75,6 +84,19 @@ try {
   await waitFor(() => received.some(item => item.event.type === "server:joined"))
   assert.equal(received[0].event.type, "server:joined")
   assert.equal(received[0].tick, 1)
+  await waitFor(() => received.some(item => item.event.type === "nea-revive:player-wearables"))
+  const wearableState = received.find(item => item.event.type === "nea-revive:player-wearables")!.event
+  assert.equal(wearableState.playerId, 1)
+  assert.equal(wearableState.revision, 1)
+  assert.deepEqual(wearableState.wearables, [{
+    id: `${server.runtime.snapshot().players[0].id}:0`,
+    bodyPart: "rightHand",
+    mesh: "mesh/test-sword.vb",
+    offset: [0, -0.2, 0.5],
+    orientation: [1, 0, 0, 0],
+    scale: [0.5, 0.5, 0.5],
+    material: { color: [1, 0, 0], metalness: 1, emissive: 0, shininess: 0 },
+  }])
 
   remoteProtocol.server.message.sendServerEvent({ tick: 41, args: JSON.stringify({ type: "client:ping", value: 9 }) })
   await waitFor(() => received.some(item => item.event.type === "server:pong"))
