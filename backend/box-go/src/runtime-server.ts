@@ -78,6 +78,25 @@ function buildRuntimeProjectAssetResolver(
   return buildProjectAssetResolver(declared) as { get(name: string): ResolvedProjectAsset | undefined }
 }
 
+function buildUiPictureFallbacks(
+  uiState: any,
+  projectAssets: { get(name: string): ResolvedProjectAsset | undefined },
+): ReadonlyMap<string, ResolvedProjectAsset> {
+  const fallbacks = new Map<string, ResolvedProjectAsset>()
+  const pictureAssets = uiState?.pictureAssets
+  if (!pictureAssets || typeof pictureAssets !== "object" || Array.isArray(pictureAssets)) return fallbacks
+  for (const [pictureName, metadata] of Object.entries(pictureAssets)) {
+    const hash = typeof (metadata as any)?.hash === "string" ? (metadata as any).hash : ""
+    if (!/^[A-Za-z0-9_-]{42,43}$/.test(hash) || !pictureName.startsWith("picture/")) continue
+    // Exported map packages retain the image bytes under image/<leaf>, while
+    // the recovered UI tree references the historical picture/<leaf> key.
+    // This is a format-level fallback, not a map-specific asset mapping.
+    const asset = projectAssets.get(`image/${pictureName.slice("picture/".length)}`)
+    if (asset) fallbacks.set(hash, asset)
+  }
+  return fallbacks
+}
+
 export async function startRuntimeServer(options: RuntimeServerOptions): Promise<RuntimeServerHandle> {
   if (!decodeMeshAssetTool) {
     const tool = await import("../tools/decode-engine-model.mjs") as any
@@ -190,6 +209,7 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   const assetIndex = JSON.parse(readFileSync(resolve(buildRoot, "assets", "index.json"), "utf8"))
   if (!Array.isArray(assetIndex?.assets)) throw new Error("Imported project asset index is missing or invalid")
   const projectAssets = buildRuntimeProjectAssetResolver(buildRoot, assetIndex.assets)
+  const uiPictureFallbacks = buildUiPictureFallbacks(importedProject.clientUiState, projectAssets)
   const spawn = options.spawn ?? importedProject.manifest.world.spawn
   let staticEntitySceneJson: string | null = null
   // Decoding the recovered .vb assets is CPU-heavy and the browser requests
@@ -613,13 +633,15 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         response.writeHead(400); response.end("invalid content hash"); return
       }
       const assetPath = resolve(options.assetRoot, "engine", "m", hash)
-      if (!existsSync(assetPath)) {
+      const fallback = uiPictureFallbacks.get(hash)
+      if (!existsSync(assetPath) && !fallback) {
         response.writeHead(404); response.end("picture asset not found"); return
       }
-      const extension = assetPath.toLowerCase().split(".").pop()
+      const resolvedPath = existsSync(assetPath) ? assetPath : fallback!.path
+      const extension = resolvedPath.toLowerCase().split(".").pop()
       const contentType = extension === "png" ? "image/png" : extension === "jpg" || extension === "jpeg" ? "image/jpeg" : "application/octet-stream"
       response.writeHead(200, { "content-type": contentType, "access-control-allow-origin": "*", "cache-control": "public,max-age=3600" })
-      createReadStream(assetPath).pipe(response)
+      createReadStream(resolvedPath).pipe(response)
       return
     }
     // Mesh assets use the same content-addressed store as pictures, but a

@@ -1,5 +1,6 @@
 import { strict as assert } from "node:assert"
 import { rm } from "node:fs/promises"
+import { readFile } from "node:fs/promises"
 import { MuClient } from "mudb"
 import { MuWebSocket } from "mudb/socket/web/client"
 import { box3Protocols, gameChat, gameNet, gameTerrain, remoteChannel } from "../protocol"
@@ -66,6 +67,13 @@ try {
   assert.equal(server.runtime.snapshot().players.length, 1)
   await waitFor(() => events.some(event => event.type === "draw"))
   await waitFor(() => group.get(config.sessionId) !== undefined)
+
+  const ui = JSON.parse(await readFile(`${sourceRoot}/source/ui.json`, "utf8"))
+  const inventoryHash = ui.pictureAssets["picture/inventoryImage.png"].hash
+  const inventoryImage = await fetch(`http://${server.host}:${server.port}/engine/m/${inventoryHash}`)
+  assert.equal(inventoryImage.status, 200)
+  assert.equal(inventoryImage.headers.get("content-type"), "image/png")
+  assert.equal((await inventoryImage.arrayBuffer()).byteLength, 98428)
 
   let nonEmptyChunk: any = null
   for (let chunkId = 0, rpcId = 1; chunkId < 64 && !nonEmptyChunk; chunkId += 1, rpcId += 1) {

@@ -59,34 +59,13 @@
   engineUiRoot.id = "nea-engine-ui";
   engineUiRoot.style.cssText = "position:fixed;inset:0;z-index:24;pointer-events:none;overflow:hidden";
   appendToBody(engineUiRoot);
-  const inputMonitor = (() => {
-    const root = document.createElement("div");
-    root.id = "nea-input-monitor";
-    root.style.cssText = "position:fixed;left:12px;top:42px;z-index:40;min-width:250px;max-width:360px;padding:8px 10px;border:1px solid rgba(255,255,255,.28);border-radius:4px;background:rgba(8,12,16,.72);color:#f4f7fb;font:12px/1.45 Consolas,monospace;white-space:pre-wrap;text-shadow:0 1px 2px #000;pointer-events:none";
-    engineUiRoot.appendChild(root);
-    const lines = [];
-    let camera = "FPS";
-    const render = () => {
-      root.textContent = `输入监听  相机: ${camera === "FPS" ? "第一人称" : "第三人称"}\n` +
-        "Tab 切换视角 | E 交互/物品栏 | 右键 交互 | 1-9 快捷栏\n" +
-        (lines.length ? lines.join("\n") : "等待输入...");
-    };
-    const push = text => {
-      lines.unshift(`${new Date().toLocaleTimeString()} ${text}`);
-      lines.splice(8);
-      render();
-    };
-    render();
-    return {
-      key(event) { push(`${event.type === "keydown" ? "按下" : "释放"} ${event.code}`); },
-      mouse(event) { push(`${event.type === "mousedown" ? "按下" : "释放"} ${event.button === 2 ? "右键" : event.button === 0 ? "左键" : `按钮${event.button}`}`); },
-      setCamera(mode) { camera = String(mode || "").toUpperCase(); render(); },
-    };
-  })();
-  window.addEventListener("keydown", event => inputMonitor.key(event), { capture: true });
-  window.addEventListener("keyup", event => inputMonitor.key(event), { capture: true });
-  window.addEventListener("mousedown", event => inputMonitor.mouse(event), { capture: true });
-  window.addEventListener("mouseup", event => inputMonitor.mouse(event), { capture: true });
+  // Input diagnostics belong to the browser console. Keeping them out of
+  // the game UI avoids obscuring recovered map HUDs and screens.
+  const logInput = (kind, detail) => console.debug(`[nea-input] ${kind}`, detail);
+  window.addEventListener("keydown", event => logInput("keydown", { code: event.code, repeat: event.repeat }), { capture: true });
+  window.addEventListener("keyup", event => logInput("keyup", { code: event.code }), { capture: true });
+  window.addEventListener("mousedown", event => logInput("mousedown", { button: event.button }), { capture: true });
+  window.addEventListener("mouseup", event => logInput("mouseup", { button: event.button }), { capture: true });
   window.addEventListener("nea-historical-ui-event", () => {
     const detail = window.__NEA_HISTORICAL_UI_EVENT;
     if (!detail || typeof detail !== "object") return;
@@ -430,17 +409,19 @@
       if (inventoryCase) inventoryCase.visible = false;
       shadow.visible = visible;
       for (const item of items) item.visible = visible;
-      for (const count of counts) count.visible = visible;
+      for (const count of counts) if (count) count.visible = visible;
       if (visible) input.unlockPointer();
       else input.lockPointer();
     };
     const updateSlot = (index, image, number) => {
       const item = items[index];
       const count = counts[index];
-      if (!item || !count) return;
+      if (!item) return;
       const amount = Number(number) || 0;
-      count.textFontSize = amount === 1 ? 0 : 16;
-      count.textContent = String(amount);
+      if (count) {
+        count.textFontSize = amount === 1 ? 0 : 16;
+        count.textContent = String(amount);
+      }
       item.imageOpacity = image ? 1 : 0;
       item.image = image ? resolvePictureUrl(`picture/${image}.png`) : "";
     };
@@ -467,9 +448,10 @@
     cameraButton.events.on("pointerdown", () => outbound.push({ type: "nea-revive:camera-toggle" }));
     shadow.events.on("pointerdown", () => setVisible(false));
     const onInventoryKey = event => {
-      if (event.code !== "KeyE" || document.pointerLockElement === null) return;
+      if (event.code !== "KeyE" || event.repeat || event.target instanceof HTMLInputElement) return;
       setVisible(!visible);
       event.preventDefault();
+      event.stopImmediatePropagation();
     };
     window.addEventListener("keydown", onInventoryKey, { capture: true });
     setVisible(false);
@@ -544,7 +526,7 @@
         // These states are projected by the native client. They still pass
         // through this ingress, but are not map remoteChannel payloads.
       }
-      else if (event?.type === "nea-revive:camera-state") inputMonitor.setCamera(event.mode);
+      else if (event?.type === "nea-revive:camera-state") logInput("camera-state", { mode: event.mode });
       else if (event?.type === "nea-revive:damage-state") applyDamageState(event);
       else if (event?.type === "nea-revive:player-gameplay") applyGameplayState(event);
       else if (event?.type === "nea-revive:sound") applySoundCommand(event.command);
@@ -1201,6 +1183,9 @@
     if (data.textContent !== undefined) node.textContent = data.textContent;
     if (data.textFontSize !== undefined) node.textFontSize = data.textFontSize;
     if (data.backgroundOpacity !== undefined) node.backgroundOpacity = data.backgroundOpacity;
+    if (data.image !== undefined) node.image = data.image;
+    if (data.imageOpacity !== undefined) node.imageOpacity = data.imageOpacity;
+    if (data.imageDisplayMode !== undefined) node.imageDisplayMode = data.imageDisplayMode;
     if (data.visible !== undefined) node.visible = data.visible;
     if (data.textAlign !== undefined) node.textAlign = ["left", "center", "right"][Number(data.textAlign)] || data.textAlign;
     node.zIndex = Number(data.zIndex) || 0;

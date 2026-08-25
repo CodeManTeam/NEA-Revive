@@ -1874,6 +1874,13 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     } else {
                         (0, -1.0)
                     };
+                    jslog!(
+                        "[nea] input {} {} target={} distance={:.2}",
+                        if pressed { "press" } else { "release" },
+                        if button == 1 { "action0" } else { "action1" },
+                        ray_hit_entity,
+                        ray_time,
+                    );
                     voxweb_protocol::player::ClientInputEvent {
                         tick: tick_now as f32,
                         ray_time,
@@ -4932,6 +4939,15 @@ fn historical_key_code(code: &str) -> Option<u8> {
         "Digit7" => Some(b'7'),
         "Digit8" => Some(b'8'),
         "Digit9" => Some(b'9'),
+        "Numpad1" => Some(b'1'),
+        "Numpad2" => Some(b'2'),
+        "Numpad3" => Some(b'3'),
+        "Numpad4" => Some(b'4'),
+        "Numpad5" => Some(b'5'),
+        "Numpad6" => Some(b'6'),
+        "Numpad7" => Some(b'7'),
+        "Numpad8" => Some(b'8'),
+        "Numpad9" => Some(b'9'),
         "KeyE" => Some(b'E'),
         "KeyQ" => Some(b'Q'),
         "Tab" => Some(9),
