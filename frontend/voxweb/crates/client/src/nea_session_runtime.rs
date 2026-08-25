@@ -2237,10 +2237,12 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
             let sampled_remote_players = remote_players.sample(now_ms());
             let other_players: Vec<AvatarInstance> = sampled_remote_players
                 .iter()
+                .filter(|player| !player.dead)
                 .map(|player| avatar_instance_from_body(&player.body, player.scale))
                 .collect();
             let other_player_nameplates: Vec<(u64, String, [f32; 3])> = sampled_remote_players
                 .iter()
+                .filter(|player| !player.dead)
                 .map(|player| {
                     (
                         u64::from(player.id),

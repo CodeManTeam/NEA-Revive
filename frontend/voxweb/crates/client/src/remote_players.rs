@@ -193,4 +193,27 @@ mod tests {
         players.update(&[body(1, 4.0)], &[], 1, 100);
         assert!(players.sample(200).is_empty());
     }
+
+    #[test]
+    fn carries_dead_replica_flag_for_render_filtering() {
+        let mut players = RemotePlayers::default();
+        players.update(
+            &[body(2, 4.0)],
+            &[ServerPlayerDisplay {
+                id: 2,
+                flags: 4,
+                tag: 0,
+                name: "dead".to_owned(),
+                scale: 1.0,
+                avatar_skin: [0; 18],
+                map_skin: [0; 18],
+                skin_invisible: [false; 18],
+            }],
+            1,
+            100,
+        );
+        let sampled = players.sample(200);
+        assert_eq!(sampled.len(), 1);
+        assert!(sampled[0].dead);
+    }
 }
