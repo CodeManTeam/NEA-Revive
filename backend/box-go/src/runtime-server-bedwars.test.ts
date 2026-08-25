@@ -91,7 +91,15 @@ try {
   assert.ok((await missingImage.arrayBuffer()).byteLength > 0)
 
   const mainBuildRoot = `D:/Projects/Gaming/NEA-Revive/.build/runtime-server-bedwars-main-${process.pid}`
-  const mainServer = await startRuntimeServer({ port: 0, sourceRoot: mainSourceRoot, assetRoot, buildRoot: mainBuildRoot, quiet: true })
+  const mainStorageDefaults = JSON.parse(await readFile(`${mainSourceRoot}/storage/defaults.json`, "utf8"))
+  const mainServer = await startRuntimeServer({
+    port: 0,
+    sourceRoot: mainSourceRoot,
+    assetRoot,
+    buildRoot: mainBuildRoot,
+    quiet: true,
+    storageDefaults: mainStorageDefaults,
+  })
   try {
     // Both maps run in one launcher process. Their compressed scene payloads
     // must remain instance-local or the lobby receives the main-map entities.
@@ -103,6 +111,40 @@ try {
       scriptInteractable: true,
       nameplate: { text: "加入游戏", radius: 4.5, color: [1, 1, 0] },
     })
+
+    const mainResponse = await fetch(`http://${mainServer.host}:${mainServer.port}/api/createSession`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "BedWars-S2-Main-Probe" }),
+    })
+    const mainConfig = (await mainResponse.json() as any).config
+    const mainClient = new MuClient(new MuWebSocket({
+      sessionId: mainConfig.sessionId,
+      url: mainConfig.socketServerUrl,
+      maxSockets: mainConfig.maxSockets,
+      logger: { log() {}, error() {}, exception() {} },
+    }), undefined, true)
+    const mainEvents: any[] = []
+    let mainNet: any
+    for (const schema of box3Protocols) {
+      const protocol = mainClient.protocol(schema as any)
+      const handlers: Record<string, (data: any) => void> = Object.fromEntries(Object.keys(schema.client).map(name => [name, () => undefined]))
+      if (schema === gameNet) mainNet = protocol
+      if (schema === remoteChannel) handlers.sendClientEvent = data => mainEvents.push(JSON.parse(String(data.args)))
+      protocol.configure({ message: handlers as any, raw() {} } as any)
+    }
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error("BedWars S2 main mudb ready timed out")), 8000)
+        mainClient.start({ ready: () => { clearTimeout(timer); resolve() }, close: reject })
+      })
+      mainNet.server.message.join()
+      await new Promise(resolve => setTimeout(resolve, 500))
+      assert.ok(mainEvents.some(event => event.type === "draw"), "main map playerJoin should initialize HUD")
+      assert.ok(mainEvents.some(event => event.type === "setYou"), "main map playerJoin should initialize player state")
+    } finally {
+      if (mainClient.running) mainClient.destroy()
+    }
   } finally {
     await mainServer.close()
     await rm(mainBuildRoot, { recursive: true, force: true })
