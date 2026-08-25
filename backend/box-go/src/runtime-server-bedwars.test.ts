@@ -126,10 +126,21 @@ try {
     }), undefined, true)
     const mainEvents: any[] = []
     let mainNet: any
+    let mainTerrain: any
+    let mainReset: any
+    const mainChunks = new Map<number, any>()
     for (const schema of box3Protocols) {
       const protocol = mainClient.protocol(schema as any)
       const handlers: Record<string, (data: any) => void> = Object.fromEntries(Object.keys(schema.client).map(name => [name, () => undefined]))
       if (schema === gameNet) mainNet = protocol
+      if (schema === gameTerrain) {
+        mainTerrain = protocol
+        handlers.reset = data => { mainReset = structuredClone(data) }
+        handlers.chunkResponse = data => {
+          const copy = structuredClone(data)
+          mainChunks.set(copy.rpcId, copy)
+        }
+      }
       if (schema === remoteChannel) handlers.sendClientEvent = data => mainEvents.push(JSON.parse(String(data.args)))
       protocol.configure({ message: handlers as any, raw() {} } as any)
     }
@@ -139,9 +150,97 @@ try {
         mainClient.start({ ready: () => { clearTimeout(timer); resolve() }, close: reject })
       })
       mainNet.server.message.join()
-      await new Promise(resolve => setTimeout(resolve, 500))
+      await waitFor(() => Boolean(mainReset))
       assert.ok(mainEvents.some(event => event.type === "draw"), "main map playerJoin should initialize HUD")
       assert.ok(mainEvents.some(event => event.type === "setYou"), "main map playerJoin should initialize player state")
+
+      // The initial main-map join must assign a playable team and a team
+      // spawn. This is the stable baseline for resource-pit and respawn work.
+      const setYou = mainEvents.find(event => event.type === "setYou")
+      assert.equal(setYou.args.v, true)
+      assert.ok([0, 1, 2, 3].includes(setYou.args.team))
+      const mainPlayer = mainServer.runtime.snapshot().players[0]
+      assert.deepEqual(mainPlayer.spawnPoint, [
+        [224.5, 43, 127.5],
+        [127.5, 43, 224.5],
+        [30.5, 43, 127.5],
+        [127.5, 43, 30.5],
+      ][setYou.args.team])
+      // The script handles a void kill below Y=-32. Movement bounds must not
+      // silently reset a player above that threshold before the rule can run.
+      assert.ok(mainPlayer.movementBounds.lo[1] <= -32)
+
+      const chunkIdFor = (x: number, y: number, z: number) =>
+        Math.floor(x / 32)
+          + (mainReset.nx / 32) * (Math.floor(y / 32) + (mainReset.ny / 32) * Math.floor(z / 32))
+      const resourcePitChunk = chunkIdFor(227, 40, 127)
+      mainTerrain.server.message.fetchChunk({ chunkId: resourcePitChunk, rpcId: 1 })
+      await waitFor(() => mainChunks.has(1))
+      assert.ok(mainChunks.get(1).boxes.length > 0, "team resource pit chunk should stream collision terrain")
+
+      // Route actual ACTION1 packets through the game-net protocol. This
+      // catches regressions where a ray target renders but its right-click
+      // never reaches the recovered script runtime.
+      const shop = mainScene.entities.find((entity: any) => entity.scriptInteractHint === "商店")
+      const enderChest = mainScene.entities.find((entity: any) => String(entity.scriptInteractHint).includes("末影"))
+      assert.ok(shop, "main scene should expose the shop target")
+      assert.ok(enderChest, "main scene should expose an ender chest target")
+      const rightClick = (entityId: number, tick: number) => {
+        mainNet.server.message.input({
+          pauseCounter: 0,
+          tick,
+          events: [{
+            rayTime: 1,
+            tick,
+            rayHitEntity: entityId,
+            rayHitVoxelX: 0,
+            rayHitVoxelY: 0,
+            rayHitVoxelZ: 0,
+            buttonState: 2,
+            prevButtonState: 0,
+            position: mainPlayer.spawnPoint,
+            rayDirection: [0, 0, 1],
+            rayHitNormal: 0,
+            rayOrigin: mainPlayer.spawnPoint,
+          }],
+          input: { inputState: 0, inputAngle: 0, inputCameraAngle: 0, inputPitch: 0, bodies: [] },
+        })
+      }
+      rightClick(shop.id, 20)
+      await waitFor(() => mainEvents.some(event => event.type === "showinventory" && event.args?.show === true && event.args?.type === "shop"))
+      rightClick(enderChest.id, 21)
+      await waitFor(() => mainEvents.some(event => event.type === "showinventory" && event.args?.show === true && event.args?.type === "enderBag"))
+      await waitFor(() => mainEvents.some(event => event.type === "setAllCI"), 3000)
+
+      // Use an authoritative probe player to exercise the recovered server
+      // script's void rule. The production client owns local movement, so a
+      // direct backend probe is the deterministic way to make this state
+      // observable without relying on a browser camera path.
+      const voidProbeId = "bedwars-void-probe"
+      mainServer.runtime.addPlayer({
+        id: voidProbeId,
+        name: "Void-Probe",
+        position: [127.5, 43, 30.5],
+        authority: "backend",
+      })
+      await waitFor(() => {
+        const player = mainServer.runtime.snapshot().players.find((entry: any) => entry.id === voidProbeId)
+        return player?.spawnPoint?.[1] === 43
+      })
+      // Player writes have a short ordering barrier after spawn assignment.
+      // Poll rather than sleeping a fixed interval so this remains stable on
+      // a busy CI worker.
+      await waitFor(() => mainServer.runtime.applyAuthoritativeState(voidProbeId, {
+        tick: 100000,
+        position: [127.5, -33, 30.5],
+        velocity: [0, 0, 0],
+      }), 3000)
+      await waitFor(() => mainServer.runtime.snapshot().players.find((entry: any) =>
+        entry.id === voidProbeId && entry.position[1] === 43,
+      ), 3000)
+      const voidProbe = mainServer.runtime.snapshot().players.find((entry: any) => entry.id === voidProbeId)
+      assert.deepEqual(voidProbe.position, voidProbe.spawnPoint, "void death should respawn at the assigned team spawn")
+      assert.equal(voidProbe.hp, 20, "void death should restore the Bedwars player health")
     } finally {
       if (mainClient.running) mainClient.destroy()
     }
