@@ -17,6 +17,13 @@ const mapArg = process.argv.includes("--map")
 const runtimeBuildRoot = process.env.NEA_BUILD_ROOT
   ? resolve(process.env.NEA_BUILD_ROOT)
   : resolve(rootDir, ".build", mapArg)
+const storageDefaultsPath = resolve(rootDir, "packages", mapArg, "storage", "defaults.json")
+const storageDefaults = await readFile(storageDefaultsPath, "utf8")
+  .then(JSON.parse)
+  .catch(error => {
+    if (error?.code === "ENOENT") return {}
+    throw error
+  })
 
 // ---- 后端（runtime-server）----
 // 用 child 方式启动，避免本进程直接 import tsx 的生命周期耦合
@@ -32,6 +39,7 @@ const server = await startRuntimeServer({
   sourceRoot: '${rootDir.replace(/\\/g, "/")}/packages/${mapArg}',
   assetRoot: '${rootDir.replace(/\\/g, "/")}/backend/local-player/archive',
   buildRoot: '${runtimeBuildRoot.replace(/\\/g, "/")}',
+  storageDefaults: ${JSON.stringify(storageDefaults)},
   quiet: false,
 })
 console.log('[backend] READY on', server.port)

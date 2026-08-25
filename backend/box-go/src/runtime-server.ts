@@ -35,6 +35,7 @@ export interface RuntimeServerOptions {
   worldManifest?: string
   buildRoot?: string
   spawn?: [number, number, number]
+  storageDefaults?: Record<string, unknown>
 }
 
 export interface RuntimeServerHandle {
@@ -393,6 +394,15 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
       for (const p of pending) p.reject(new Error("dialog cancelled"))
     },
   })
+  const storageDefaults = options.storageDefaults
+  if (storageDefaults && typeof storageDefaults === "object" && !Array.isArray(storageDefaults)) {
+    const groupStorage = runtime.storage.getGroupStorage(importedProject.manifest.runtime.groupId)
+    if (groupStorage) {
+      for (const [key, value] of Object.entries(storageDefaults)) {
+        if (await groupStorage.get(key) === undefined) await groupStorage.set(key, value)
+      }
+    }
+  }
   await runtime.start()
   function netStateDisplays(snap: any): Array<{ id: number, name: string, avatarSkin: number[], dead?: boolean }> {
     return (snap.players ?? []).map((player: any) => ({

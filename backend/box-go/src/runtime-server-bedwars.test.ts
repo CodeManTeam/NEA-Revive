@@ -9,10 +9,10 @@ import { startRuntimeServer } from "./runtime-server"
 const sourceRoot = "D:/Projects/Gaming/NEA-Revive/packages/bedwars-s2"
 const assetRoot = "D:/Projects/Gaming/NEA-Revive/backend/local-player/archive"
 const buildRoot = `D:/Projects/Gaming/NEA-Revive/.build/runtime-server-bedwars-${process.pid}`
-const server = await startRuntimeServer({ port: 0, sourceRoot, assetRoot, buildRoot, quiet: true })
+const server = await startRuntimeServer({ port: 0, sourceRoot, assetRoot, buildRoot, quiet: true, storageDefaults: { BlackList: [] } })
 
 const group = server.runtime.storage.getGroupStorage("storage")
-await group.set("BlackList", [])
+assert.deepEqual((await group.get("BlackList"))?.value, [])
 
 const response = await fetch(`http://${server.host}:${server.port}/api/createSession`, {
   method: "POST",
