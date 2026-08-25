@@ -169,6 +169,10 @@ try {
       // The script handles a void kill below Y=-32. Movement bounds must not
       // silently reset a player above that threshold before the rule can run.
       assert.ok(mainPlayer.movementBounds.lo[1] <= -32)
+      // BedWars team spawns reach x/z=224.5; map-derived bounds must include
+      // those coordinates instead of the legacy fixed upper bound of 178.
+      assert.ok(mainPlayer.movementBounds.hi[0] >= 224.5)
+      assert.ok(mainPlayer.movementBounds.hi[2] >= 224.5)
 
       const chunkIdFor = (x: number, y: number, z: number) =>
         Math.floor(x / 32)
