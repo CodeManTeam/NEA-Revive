@@ -1889,7 +1889,7 @@ function createRuntimePlayer(runtime, input) {
     _spawnPoint: Vector3.from(input.position ?? [0, 0, 0]),
     get spawnPoint() { return this._spawnPoint; },
     set spawnPoint(value) { this._spawnPoint = Vector3.from(value); },
-    movementBounds: new GameBounds3(new Vector3(-50, -50, -50), new Vector3(178, 178, 178)),
+    movementBounds: runtimeMovementBounds(runtime),
     color: new GameRGBColor(1, 1, 1),
     skin: Object.fromEntries(Object.values(GameBodyPart).map(part => [part, undefined])),
     // Recovered Player schema exposes one mutable boolean per body part.
@@ -2154,6 +2154,17 @@ function createRuntimePlayer(runtime, input) {
   };
   if (runtime.gamePlayerPrototype) Object.setPrototypeOf(player, runtime.gamePlayerPrototype);
   return player;
+}
+
+function runtimeMovementBounds(runtime) {
+  const shape = runtime?.voxels?.shape;
+  const upper = [shape?.x, shape?.y, shape?.z].map(value =>
+    Number.isFinite(value) && value >= 1 ? Number(value) + 1 : 178,
+  );
+  return new GameBounds3(
+    new Vector3(-50, -50, -50),
+    new Vector3(upper[0], upper[1], upper[2]),
+  );
 }
 
 function createEntitySoundSlots() {
