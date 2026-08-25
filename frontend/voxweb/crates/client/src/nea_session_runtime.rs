@@ -226,10 +226,21 @@ impl EntityInteractionIndex {
 }
 
 fn interaction_center(entity: &StaticEntityInstance) -> [f32; 3] {
+    // Static models are rendered with the authored mesh offset in model
+    // space. Apply the same rotation here so interaction and nameplate
+    // anchors follow the visible model instead of the unrotated source box.
+    let rotation = glam::Quat::from_xyzw(
+        entity.rotation[0],
+        entity.rotation[1],
+        entity.rotation[2],
+        entity.rotation[3],
+    )
+    .normalize();
+    let offset = rotation * glam::Vec3::from_array(entity.mesh_offset);
     [
-        entity.position[0] + entity.mesh_offset[0],
-        entity.position[1] + entity.mesh_offset[1],
-        entity.position[2] + entity.mesh_offset[2],
+        entity.position[0] + offset.x,
+        entity.position[1] + offset.y,
+        entity.position[2] + offset.z,
     ]
 }
 
@@ -1735,9 +1746,13 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 }
             });
             interaction_overlay.set(
-                interaction_hint
-                    .map(|hint| ("E", hint))
-                    .or_else(|| pointer_hint.map(|hint| ("鼠标右键", hint))),
+                // A model directly under the crosshair is the precise target;
+                // only fall back to the proximity interaction when no model
+                // can be pointed at. This keeps nearby menu volumes from
+                // stealing the CPS/start-game prompt.
+                pointer_hint
+                    .map(|hint| ("鼠标右键", hint))
+                    .or_else(|| interaction_hint.map(|hint| ("E", hint))),
             );
             let interact_edge = std::mem::take(&mut inp.interact_edge);
             if interact_edge {
@@ -2084,10 +2099,11 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     if nameplate.text.is_empty() || nameplate.radius <= 0.0 {
                         return None;
                     }
+                    let center = interaction_center(entity);
                     let world = [
-                        entity.position[0] + entity.mesh_offset[0],
-                        entity.position[1] + entity.half_extents[1] + 0.45,
-                        entity.position[2] + entity.mesh_offset[2],
+                        center[0],
+                        center[1] + entity.half_extents[1] + 0.45,
+                        center[2],
                     ];
                     let dx = world[0] - player_position[0];
                     let dy = world[1] - player_position[1];
@@ -4738,8 +4754,19 @@ fn install_keyboard(
                 .and_then(|target| target.dyn_into::<web_sys::Element>().ok())
                 .and_then(|element| element.closest("#nea-chat-input").ok().flatten())
                 .is_some();
+            let ui_click = ev
+                .target()
+                .and_then(|target| target.dyn_into::<web_sys::Element>().ok())
+                .and_then(|element| {
+                    element
+                        .closest("#nea-client-ui [data-nea-interactive], #nea-engine-ui [data-nea-interactive]")
+                        .ok()
+                        .flatten()
+                })
+                .is_some();
             if !dialog_click
                 && !chat_click
+                && !ui_click
                 && click_document
                     .as_ref()
                     .is_some_and(|document| document.pointer_lock_element().is_none())
@@ -4772,7 +4799,17 @@ fn install_keyboard(
                 .and_then(|target| target.dyn_into::<web_sys::Element>().ok())
                 .and_then(|element| element.closest("#nea-historical-dialog").ok().flatten())
                 .is_some();
-            if dialog_open {
+            let ui_input = ev
+                .target()
+                .and_then(|target| target.dyn_into::<web_sys::Element>().ok())
+                .and_then(|element| {
+                    element
+                        .closest("#nea-historical-dialog, #nea-chat-input, #nea-client-ui [data-nea-interactive], #nea-engine-ui [data-nea-interactive]")
+                        .ok()
+                        .flatten()
+                })
+                .is_some();
+            if dialog_open || ui_input {
                 ev.prevent_default();
                 return;
             }
@@ -4910,6 +4947,19 @@ fn install_keyboard(
     let action_up_state = Rc::clone(input);
     let on_action_down =
         Closure::<dyn FnMut(web_sys::MouseEvent)>::new(move |ev: web_sys::MouseEvent| {
+            let ui_target = ev
+                .target()
+                .and_then(|target| target.dyn_into::<web_sys::Element>().ok())
+                .and_then(|element| {
+                    element
+                        .closest("#nea-historical-dialog, #nea-chat-input, #nea-client-ui [data-nea-interactive], #nea-engine-ui [data-nea-interactive]")
+                        .ok()
+                        .flatten()
+                })
+                .is_some();
+            if ui_target {
+                return;
+            }
             let mut s = match action_down_state.try_borrow_mut() {
                 Ok(s) => s,
                 Err(_) => return,
@@ -4923,6 +4973,19 @@ fn install_keyboard(
         });
     let on_action_up =
         Closure::<dyn FnMut(web_sys::MouseEvent)>::new(move |ev: web_sys::MouseEvent| {
+            let ui_target = ev
+                .target()
+                .and_then(|target| target.dyn_into::<web_sys::Element>().ok())
+                .and_then(|element| {
+                    element
+                        .closest("#nea-historical-dialog, #nea-chat-input, #nea-client-ui [data-nea-interactive], #nea-engine-ui [data-nea-interactive]")
+                        .ok()
+                        .flatten()
+                })
+                .is_some();
+            if ui_target {
+                return;
+            }
             let mut s = match action_up_state.try_borrow_mut() {
                 Ok(s) => s,
                 Err(_) => return,

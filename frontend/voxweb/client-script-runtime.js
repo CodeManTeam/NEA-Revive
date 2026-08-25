@@ -393,6 +393,7 @@
     const cameraButton = ui.findChildByName("cameraButton");
     const inventoryImage = ui.findChildByName("inventoryImage");
     const inventoryCase = ui.findChildByName("inventorycase");
+    const chooseCase = ui.findChildByName(["choosecase", "chooseCase"]);
     const shadow = ui.findChildByName("shadow");
     const quickTemplate = ui.findChildByName("invQuickItem");
     const itemTemplate = ui.findChildByName("invItem");
@@ -412,6 +413,24 @@
       for (const count of counts) if (count) count.visible = visible;
       if (visible) input.unlockPointer();
       else input.lockPointer();
+    };
+    const setChooseCase = (rawPosition, oneBased) => {
+      if (!chooseCase) return;
+      const raw = Number(rawPosition);
+      if (!Number.isFinite(raw)) return;
+      const slot = Math.max(0, Math.min(8, Math.round(raw - (oneBased ? 1 : 0))));
+      // Both recovered map packages use the same 9-slot strip but disagree
+      // on whether the remote event is 0- or 1-based. Keep that compatibility
+      // at the engine boundary so the original scripts stay untouched.
+      chooseCase.position.offset.x = 40 * slot - 184;
+      chooseCase.visible = true;
+      chooseCase.element.dataset.neaSelectionFrame = "true";
+      if (!chooseCase.element.getAttribute("src") && !chooseCase.element.dataset.neaImage) {
+        chooseCase.element.style.backgroundImage = "none";
+        chooseCase.element.style.border = "2px solid rgba(255,255,255,.92)";
+        chooseCase.element.style.borderRadius = "3px";
+        chooseCase.element.style.boxShadow = "0 0 0 1px rgba(20,24,28,.7) inset";
+      }
     };
     const updateSlot = (index, image, number) => {
       const item = items[index];
@@ -465,6 +484,10 @@
           if (Array.isArray(values)) values.forEach((slot, index) => updateSlot(index, slot?.[0], slot?.[1]));
         } else if (event?.type === "setSingleQI") {
           updateSlot(Number(event.args?.index), event.args?.image, event.args?.number);
+        } else if (event?.type === "setChooseCase") {
+          setChooseCase(event.args?.pos, false);
+        } else if (event?.type === "setchoosecase") {
+          setChooseCase(event.args?.pos, true);
         } else if (event?.type === "toggleInventory") {
           setVisible(event.visible === undefined ? !visible : event.visible);
         }
@@ -1357,7 +1380,16 @@
       placeholderOpacity: { get: () => placeholderOpacity, set(value) { placeholderOpacity = clamp(Number(value), 0, 1); refresh(); } },
       isFocus: { get: () => kind === "input" && document.activeElement === element },
       zIndex: { get: () => Number(element.style.zIndex) || 0, set(value) { element.style.zIndex = String(Number(value) || 0); } },
-      pointerEventBehavior: { get: () => pointerEventBehavior, set(value) { pointerEventBehavior = value; element.style.pointerEvents = Number(value) ? "auto" : "none"; } },
+      pointerEventBehavior: {
+        get: () => pointerEventBehavior,
+        set(value) {
+          pointerEventBehavior = value;
+          const interactive = Number(value) !== 0;
+          element.style.pointerEvents = interactive ? "auto" : "none";
+          if (interactive) element.dataset.neaInteractive = "true";
+          else delete element.dataset.neaInteractive;
+        }
+      },
     });
     node.focus = () => { if (kind === "input") element.focus(); };
     node.blur = () => { if (kind === "input") element.blur(); return textContent; };
