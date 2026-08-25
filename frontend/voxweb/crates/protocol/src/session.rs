@@ -348,6 +348,23 @@ mod tests {
     }
 
     #[test]
+    fn remote_channel_event_preserves_historical_argument_order() {
+        let decoded = decode_remote_client_event(&Value::Struct(vec![
+            Value::Varint(12),
+            Value::UTF8(
+                r#"{"type":"changePlayers","args":{"index":2,"allplayers":[1,0,3,0],"single":true}}"#
+                    .to_string(),
+            ),
+        ]))
+        .expect("decode ordered remote event");
+
+        assert_eq!(
+            decoded.event.to_string(),
+            r#"{"type":"changePlayers","args":{"index":2,"allplayers":[1,0,3,0],"single":true}}"#
+        );
+    }
+
+    #[test]
     fn decode_reset_known_fields() {
         // wire order: positionX/Y/Z, resetCounter, nx/ny/nz, innerAO, ...
         let v = Value::Struct(vec![
