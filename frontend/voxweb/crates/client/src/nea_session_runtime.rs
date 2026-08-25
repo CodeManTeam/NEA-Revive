@@ -951,6 +951,37 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                         .iter()
                                         .find(|player| player.id == u64::from(d.player_id))
                                         .cloned();
+                                    // Map scripts can teleport a player after join (Bedwars
+                                    // assigns a team spawn). Keep local prediction for the
+                                    // normal echoed transform, but apply a large authoritative
+                                    // displacement immediately so the camera does not remain at
+                                    // the terrain-reset spawn in an empty part of the map.
+                                    if let Some(runtime_player) = local_runtime_player.as_ref() {
+                                        let next = runtime_player.position;
+                                        let valid = next.iter().all(|value| value.is_finite());
+                                        let far_from_local = player_pos.map_or(true, |current| {
+                                            let dx = current[0] - next[0];
+                                            let dy = current[1] - next[1];
+                                            let dz = current[2] - next[2];
+                                            dx * dx + dy * dy + dz * dz > 16.0
+                                        });
+                                        if valid && far_from_local {
+                                            local_pos = next;
+                                            local_vel = [0.0, 0.0, 0.0];
+                                            player_pos = Some(next);
+                                            if let Some(physics) = local_physics.as_mut() {
+                                                physics.position = next;
+                                                physics.velocity = [0.0, 0.0, 0.0];
+                                                physics.grounded = runtime_player.phys_ground;
+                                            }
+                                            jslog!(
+                                                "[nea] authoritative player reposition: ({:.1},{:.1},{:.1})",
+                                                next[0],
+                                                next[1],
+                                                next[2]
+                                            );
+                                        }
+                                    }
                                     // This backend echoes client transforms but
                                     // does not simulate player contacts. Its
                                     // schema-default contact values must not
