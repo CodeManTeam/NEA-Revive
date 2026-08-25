@@ -3624,11 +3624,16 @@ fn apply_player_wearables_event(
             wearable.material.color[2].clamp(0.0, 1.0),
             1.0,
         ];
+        // Wearable .vb meshes use the same 16-unit model space as static
+        // entities; DAO3's implicit wearable scale is 1/64 before the
+        // per-item WearDatas scale is applied.
         scene.entities.push(StaticEntityInstance {
             id,
             mesh: wearable.mesh.clone(),
             position: [0.0; 3],
-            scale: wearable.scale.map(|value| value.abs().max(0.001)),
+            scale: wearable
+                .scale
+                .map(|value| (value.abs() * (1.0 / 64.0)).max(0.0001)),
             rotation: [
                 wearable.orientation[1],
                 wearable.orientation[2],
