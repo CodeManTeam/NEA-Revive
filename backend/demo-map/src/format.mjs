@@ -117,9 +117,10 @@ export function validateUiSource(value) {
     const asset = requireRecord(value, `/ui/pictureAssets/${name}`);
     if (typeof asset.hash !== "string") throw new Error(`Invalid client UI picture asset: ${name}`);
     const metadataHash = typeof asset.metadataHash === "string" ? asset.metadataHash : asset.hash;
+    const previewImage = typeof asset.previewImage === "string" ? asset.previewImage : null;
     const width = Number.isInteger(asset.width) ? asset.width : 0;
     const height = Number.isInteger(asset.height) ? asset.height : 0;
-    validatedPictures[name] = Object.freeze({ hash: asset.hash, metadataHash, width, height });
+    validatedPictures[name] = Object.freeze({ hash: asset.hash, metadataHash, previewImage, width, height });
   }
   return Object.freeze({ format: "nea-recovered-client-ui", version: 1, sourceMessage: "gameUI.reset", running: record.running, defaultScreenId: uiTreeState.defaultScreenId, pictureAssets: Object.freeze(validatedPictures), uiTree: uiTreeState.uiTree });
 }

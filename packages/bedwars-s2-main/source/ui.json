@@ -1,0 +1,5131 @@
+{
+  "format": "nea-recovered-client-ui",
+  "version": 1,
+  "sourceMessage": "gameUI.reset",
+  "running": true,
+  "defaultScreenId": "100207687_DEFAULT_SCREEN_ID",
+  "uiTree": {
+    "3079413": {
+      "childrenIds": [],
+      "id": "3079413",
+      "name": "R",
+      "parentId": "772155591",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                30,
+                0
+              ],
+              "ratio": [
+                0.5,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textContent": "红队：",
+            "textFontFamily": 0,
+            "textFontSize": 20,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 1,
+            "textYAlignment": 0,
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "6778413": {
+      "childrenIds": [],
+      "id": "6778413",
+      "name": "invNum",
+      "parentId": "100207687_558230863",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                2
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                28,
+                28
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textContent": "",
+            "textFontFamily": 0,
+            "textFontSize": 16,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              0,
+              0,
+              0
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 1,
+            "textXAlignment": 2,
+            "textYAlignment": 2,
+            "visible": false,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "25407013": {
+      "childrenIds": [],
+      "id": "25407013",
+      "name": "date",
+      "parentId": "855223886",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                30
+              ],
+              "ratio": [
+                0.5,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              194,
+              194,
+              194
+            ],
+            "textContent": "",
+            "textFontFamily": 0,
+            "textFontSize": 20,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 1,
+            "textYAlignment": 0,
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "57111004": {
+      "childrenIds": [],
+      "id": "57111004",
+      "name": "shopNum",
+      "parentId": "100207687_526660562",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                2
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                28,
+                28
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textContent": "",
+            "textFontFamily": 0,
+            "textFontSize": 16,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              0,
+              0,
+              0
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 1,
+            "textXAlignment": 2,
+            "textYAlignment": 2,
+            "visible": false,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "83112763": {
+      "childrenIds": [],
+      "id": "83112763",
+      "name": "quickNum",
+      "parentId": "100207687_973968324",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                3
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                30,
+                30
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textContent": "1",
+            "textFontFamily": 0,
+            "textFontSize": 0,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              0,
+              0,
+              0
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 1,
+            "textXAlignment": 2,
+            "textYAlignment": 2,
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "89737509": {
+      "childrenIds": [],
+      "id": "89737509",
+      "name": "finalkills",
+      "parentId": "676089036",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                110,
+                0
+              ],
+              "ratio": [
+                0.5,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              0,
+              255,
+              0
+            ],
+            "textContent": "",
+            "textFontFamily": 0,
+            "textFontSize": 20,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 1,
+            "textYAlignment": 0,
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "154395951": {
+      "childrenIds": [],
+      "id": "154395951",
+      "name": "redNum",
+      "parentId": "772155591",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                110,
+                0
+              ],
+              "ratio": [
+                0.5,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textContent": "",
+            "textFontFamily": 0,
+            "textFontSize": 20,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 1,
+            "textYAlignment": 0,
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "158156813": {
+      "childrenIds": [],
+      "id": "158156813",
+      "name": "yellowbed",
+      "parentId": "694600824",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                85,
+                0
+              ],
+              "ratio": [
+                0.5,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textContent": "",
+            "textFontFamily": 0,
+            "textFontSize": 20,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 1,
+            "textYAlignment": 0,
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "158188644": {
+      "childrenIds": [],
+      "id": "158188644",
+      "name": "breakBeds",
+      "parentId": "953656174",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                5,
+                0
+              ],
+              "ratio": [
+                0.5,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              0,
+              255,
+              0
+            ],
+            "textContent": "",
+            "textFontFamily": 0,
+            "textFontSize": 20,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "160304790": {
+      "childrenIds": [],
+      "id": "160304790",
+      "name": "armor",
+      "parentId": "100207687_DEFAULT_SCREEN_ID",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0.5
+            ],
+            "autoResize": 0,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "image": "",
+            "imageDisplayMode": 0,
+            "imageOpacity": 1,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                -123.3984375,
+                -114
+              ],
+              "ratio": [
+                0.5,
+                0.5
+              ]
+            },
+            "rotation": 0,
+            "size": {
+              "offset": [
+                28,
+                28
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "visible": false,
+            "zIndex": 4
+          },
+          "type": "image"
+        },
+        "type": "element"
+      }
+    },
+    "169219682": {
+      "childrenIds": [],
+      "id": "169219682",
+      "name": "cameraButton",
+      "parentId": "100207687_DEFAULT_SCREEN_ID",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "autoResize": 0,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "image": "picture/telescope.png",
+            "imageDisplayMode": 0,
+            "imageOpacity": 0.5,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                70,
+                10
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "rotation": 0,
+            "size": {
+              "offset": [
+                50,
+                50
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "image"
+        },
+        "type": "element"
+      }
+    },
+    "190080564": {
+      "childrenIds": [],
+      "id": "190080564",
+      "name": "bagButton",
+      "parentId": "100207687_DEFAULT_SCREEN_ID",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "autoResize": 0,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "image": "picture/ChristmasChest.png",
+            "imageDisplayMode": 0,
+            "imageOpacity": 0.5,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                10,
+                70
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "rotation": 0,
+            "size": {
+              "offset": [
+                50,
+                50
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "visible": true,
+            "zIndex": 3
+          },
+          "type": "image"
+        },
+        "type": "element"
+      }
+    },
+    "196578211": {
+      "childrenIds": [],
+      "id": "196578211",
+      "name": "G",
+      "parentId": "323903158",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                30,
+                0
+              ],
+              "ratio": [
+                0.5,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textContent": "绿队：",
+            "textFontFamily": 0,
+            "textFontSize": 20,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 1,
+            "textYAlignment": 0,
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "211625212": {
+      "childrenIds": [],
+      "id": "211625212",
+      "name": "blueNum",
+      "parentId": "618390450",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                110,
+                0
+              ],
+              "ratio": [
+                0.5,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textContent": "",
+            "textFontFamily": 0,
+            "textFontSize": 20,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 1,
+            "textYAlignment": 0,
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "219859854": {
+      "childrenIds": [],
+      "id": "219859854",
+      "name": "B",
+      "parentId": "618390450",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                30,
+                0
+              ],
+              "ratio": [
+                0.5,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textContent": "蓝队：",
+            "textFontFamily": 0,
+            "textFontSize": 20,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 1,
+            "textYAlignment": 0,
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "229742469": {
+      "childrenIds": [],
+      "id": "229742469",
+      "name": "title",
+      "parentId": "855223886",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                5
+              ],
+              "ratio": [
+                0.5,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              247,
+              255,
+              0
+            ],
+            "textContent": "起床战争",
+            "textFontFamily": 0,
+            "textFontSize": 20,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              0,
+              0,
+              0
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "285888111": {
+      "childrenIds": [],
+      "id": "285888111",
+      "name": "greenbed",
+      "parentId": "323903158",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                85,
+                0
+              ],
+              "ratio": [
+                0.5,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textContent": "",
+            "textFontFamily": 0,
+            "textFontSize": 20,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 1,
+            "textYAlignment": 0,
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "323903158": {
+      "childrenIds": [
+        "196578211",
+        "573048178",
+        "285888111"
+      ],
+      "id": "323903158",
+      "name": "GREEN",
+      "parentId": "855223886",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                115
+              ],
+              "ratio": [
+                0.5,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              0,
+              255,
+              0
+            ],
+            "textContent": "绿",
+            "textFontFamily": 0,
+            "textFontSize": 20,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 1,
+            "textYAlignment": 0,
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "330884468": {
+      "childrenIds": [],
+      "id": "330884468",
+      "name": "Y",
+      "parentId": "694600824",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                30,
+                0
+              ],
+              "ratio": [
+                0.5,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textContent": "黄队：",
+            "textFontFamily": 0,
+            "textFontSize": 20,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 1,
+            "textYAlignment": 0,
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "353324403": {
+      "childrenIds": [],
+      "id": "353324403",
+      "name": "chestNum",
+      "parentId": "100207687_137319640",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                2
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                28,
+                28
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textContent": "1",
+            "textFontFamily": 0,
+            "textFontSize": 0,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              0,
+              0,
+              0
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 1,
+            "textXAlignment": 2,
+            "textYAlignment": 2,
+            "visible": false,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "354657472": {
+      "childrenIds": [],
+      "id": "354657472",
+      "name": "kills",
+      "parentId": "881404489",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                75,
+                0
+              ],
+              "ratio": [
+                0.5,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              0,
+              255,
+              0
+            ],
+            "textContent": "",
+            "textFontFamily": 0,
+            "textFontSize": 20,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 1,
+            "textYAlignment": 0,
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "367827770": {
+      "childrenIds": [],
+      "id": "367827770",
+      "name": "settingsButton",
+      "parentId": "100207687_DEFAULT_SCREEN_ID",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "autoResize": 0,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "image": "picture/clock.png",
+            "imageDisplayMode": 0,
+            "imageOpacity": 0.5,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                10,
+                10
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "rotation": 0,
+            "size": {
+              "offset": [
+                50,
+                50
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "image"
+        },
+        "type": "element"
+      }
+    },
+    "459108283": {
+      "childrenIds": [
+        "563725674"
+      ],
+      "id": "459108283",
+      "name": "invQuickItem",
+      "parentId": "100207687_DEFAULT_SCREEN_ID",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0.5
+            ],
+            "autoResize": 0,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "image": "",
+            "imageDisplayMode": 0,
+            "imageOpacity": 1,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                -123.3984375,
+                114.5
+              ],
+              "ratio": [
+                0.5,
+                0.5
+              ]
+            },
+            "rotation": 0,
+            "size": {
+              "offset": [
+                28,
+                28
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "visible": false,
+            "zIndex": 4
+          },
+          "type": "image"
+        },
+        "type": "element"
+      }
+    },
+    "538047081": {
+      "childrenIds": [],
+      "id": "538047081",
+      "name": "priceNum",
+      "parentId": "100207687_526660562",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0.349609375,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                28,
+                28
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textContent": "",
+            "textFontFamily": 0,
+            "textFontSize": 10,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              0,
+              0,
+              0
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 1,
+            "textXAlignment": 1,
+            "textYAlignment": 1,
+            "visible": false,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "563725674": {
+      "childrenIds": [],
+      "id": "563725674",
+      "name": "invQuickNum",
+      "parentId": "459108283",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                2
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                28,
+                28
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textContent": "",
+            "textFontFamily": 0,
+            "textFontSize": 17,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              0,
+              0,
+              0
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 1,
+            "textXAlignment": 2,
+            "textYAlignment": 2,
+            "visible": false,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "573048178": {
+      "childrenIds": [],
+      "id": "573048178",
+      "name": "greenNum",
+      "parentId": "323903158",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                110,
+                0
+              ],
+              "ratio": [
+                0.5,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textContent": "",
+            "textFontFamily": 0,
+            "textFontSize": 20,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 1,
+            "textYAlignment": 0,
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "589129512": {
+      "childrenIds": [],
+      "id": "589129512",
+      "name": "bluebed",
+      "parentId": "618390450",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                85,
+                0
+              ],
+              "ratio": [
+                0.5,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textContent": "",
+            "textFontFamily": 0,
+            "textFontSize": 20,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 1,
+            "textYAlignment": 0,
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "608823039": {
+      "childrenIds": [],
+      "id": "608823039",
+      "name": "redbed",
+      "parentId": "772155591",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                85,
+                0
+              ],
+              "ratio": [
+                0.5,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textContent": "",
+            "textFontFamily": 0,
+            "textFontSize": 20,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 1,
+            "textYAlignment": 0,
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "618390450": {
+      "childrenIds": [
+        "219859854",
+        "211625212",
+        "589129512"
+      ],
+      "id": "618390450",
+      "name": "BLUE",
+      "parentId": "855223886",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                90
+              ],
+              "ratio": [
+                0.5,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              0,
+              0,
+              255
+            ],
+            "textContent": "蓝",
+            "textFontFamily": 0,
+            "textFontSize": 20,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 1,
+            "textYAlignment": 0,
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "629702159": {
+      "childrenIds": [],
+      "id": "629702159",
+      "name": "inputBox",
+      "parentId": "100207687_DEFAULT_SCREEN_ID",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0,
+              1
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              0,
+              0,
+              0
+            ],
+            "backgroundOpacity": 0.5,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "placeholder": "",
+            "placeholderColor": [
+              255,
+              255,
+              255
+            ],
+            "placeholderOpacity": 1,
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                1
+              ]
+            },
+            "rotation": 0,
+            "size": {
+              "offset": [
+                0,
+                25
+              ],
+              "ratio": [
+                1,
+                0
+              ]
+            },
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textContent": "",
+            "textFontFamily": 0,
+            "textFontSize": 19,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 1,
+            "textYAlignment": 0,
+            "visible": false,
+            "zIndex": 1
+          },
+          "type": "input"
+        },
+        "type": "element"
+      }
+    },
+    "635456996": {
+      "childrenIds": [],
+      "id": "635456996",
+      "name": "shadow",
+      "parentId": "100207687_DEFAULT_SCREEN_ID",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0.5
+            ],
+            "autoResize": 0,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "image": "picture/shadow.png",
+            "imageDisplayMode": 0,
+            "imageOpacity": 0.5,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0.5,
+                0.5
+              ]
+            },
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                200
+              ],
+              "ratio": [
+                1,
+                1
+              ]
+            },
+            "visible": false,
+            "zIndex": 2
+          },
+          "type": "image"
+        },
+        "type": "element"
+      }
+    },
+    "676089036": {
+      "childrenIds": [
+        "89737509"
+      ],
+      "id": "676089036",
+      "name": "FINALKILL",
+      "parentId": "855223886",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                200
+              ],
+              "ratio": [
+                0.5,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textContent": "最终击杀数:",
+            "textFontFamily": 0,
+            "textFontSize": 20,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 1,
+            "textYAlignment": 0,
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "694600824": {
+      "childrenIds": [
+        "330884468",
+        "736565022",
+        "158156813"
+      ],
+      "id": "694600824",
+      "name": "YELLOW",
+      "parentId": "855223886",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                140
+              ],
+              "ratio": [
+                0.5,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              255,
+              255,
+              0
+            ],
+            "textContent": "黄",
+            "textFontFamily": 0,
+            "textFontSize": 20,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 1,
+            "textYAlignment": 0,
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "736565022": {
+      "childrenIds": [],
+      "id": "736565022",
+      "name": "yellowNum",
+      "parentId": "694600824",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                110,
+                0
+              ],
+              "ratio": [
+                0.5,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textContent": "",
+            "textFontFamily": 0,
+            "textFontSize": 20,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 1,
+            "textYAlignment": 0,
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "772155591": {
+      "childrenIds": [
+        "3079413",
+        "154395951",
+        "608823039"
+      ],
+      "id": "772155591",
+      "name": "RED",
+      "parentId": "855223886",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                65
+              ],
+              "ratio": [
+                0.5,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              255,
+              0,
+              0
+            ],
+            "textContent": "红",
+            "textFontFamily": 0,
+            "textFontSize": 20,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 1,
+            "textYAlignment": 0,
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "855223886": {
+      "childrenIds": [
+        "893786656",
+        "953656174",
+        "676089036",
+        "881404489",
+        "950239508",
+        "618390450",
+        "323903158",
+        "694600824",
+        "772155591",
+        "25407013",
+        "229742469"
+      ],
+      "id": "855223886",
+      "name": "sidebar",
+      "parentId": "100207687_DEFAULT_SCREEN_ID",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              1,
+              0.5
+            ],
+            "autoResize": 0,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "image": "picture/shadow.png",
+            "imageDisplayMode": 0,
+            "imageOpacity": 0.5,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                1,
+                0.5
+              ]
+            },
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                285
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "visible": true,
+            "zIndex": 2
+          },
+          "type": "image"
+        },
+        "type": "element"
+      }
+    },
+    "855959407": {
+      "childrenIds": [],
+      "id": "855959407",
+      "name": "titleContent",
+      "parentId": "900503231",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0,
+              1
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                400
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                0,
+                20
+              ],
+              "ratio": [
+                1,
+                0
+              ]
+            },
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textContent": "",
+            "textFontFamily": 0,
+            "textFontSize": 15,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 1,
+            "textYAlignment": 0,
+            "visible": false,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "880909089": {
+      "childrenIds": [],
+      "id": "880909089",
+      "name": "msgContent",
+      "parentId": "900503231",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0,
+              1
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              0,
+              0,
+              0
+            ],
+            "backgroundOpacity": 0.5,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                400
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                0,
+                20
+              ],
+              "ratio": [
+                1,
+                0
+              ]
+            },
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textContent": "",
+            "textFontFamily": 0,
+            "textFontSize": 15,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 1,
+            "textYAlignment": 0,
+            "visible": false,
+            "zIndex": 0
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "881404489": {
+      "childrenIds": [
+        "354657472"
+      ],
+      "id": "881404489",
+      "name": "KILL",
+      "parentId": "855223886",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                175
+              ],
+              "ratio": [
+                0.5,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textContent": "击杀数：",
+            "textFontFamily": 0,
+            "textFontSize": 20,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 1,
+            "textYAlignment": 0,
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "893786656": {
+      "childrenIds": [],
+      "id": "893786656",
+      "name": "YOU",
+      "parentId": "855223886",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                140,
+                65
+              ],
+              "ratio": [
+                0.5,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              194,
+              194,
+              194
+            ],
+            "textContent": "你",
+            "textFontFamily": 0,
+            "textFontSize": 20,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 1,
+            "textYAlignment": 0,
+            "visible": false,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "900503231": {
+      "childrenIds": [
+        "855959407",
+        "880909089"
+      ],
+      "id": "900503231",
+      "name": "scrollBox",
+      "parentId": "100207687_DEFAULT_SCREEN_ID",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0,
+              1
+            ],
+            "autoResize": 0,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": true,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                -80
+              ],
+              "ratio": [
+                0,
+                1
+              ]
+            },
+            "rotation": 0,
+            "scrollCanvasAutoResize": 0,
+            "scrollCanvasSize": {
+              "offset": [
+                0,
+                400
+              ],
+              "ratio": [
+                1,
+                0
+              ]
+            },
+            "scrollDirection": 1,
+            "scrollPosition": [
+              0,
+              0
+            ],
+            "scrollbarColor": [
+              153,
+              153,
+              153
+            ],
+            "scrollbarHorizontal": 1,
+            "scrollbarOpacity": 1,
+            "scrollbarThickness": 8,
+            "scrollbarVertical": 1,
+            "scrollbarVisibility": 0,
+            "size": {
+              "offset": [
+                650,
+                400
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "scrollBox"
+        },
+        "type": "element"
+      }
+    },
+    "950239508": {
+      "childrenIds": [],
+      "id": "950239508",
+      "name": "web",
+      "parentId": "855223886",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0,
+              1
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                1
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              247,
+              255,
+              0
+            ],
+            "textContent": "Create Better",
+            "textFontFamily": 0,
+            "textFontSize": 20,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              0,
+              0,
+              0
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "953656174": {
+      "childrenIds": [
+        "158188644"
+      ],
+      "id": "953656174",
+      "name": "BED",
+      "parentId": "855223886",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                225
+              ],
+              "ratio": [
+                0.5,
+                0
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                20
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              255,
+              255,
+              255
+            ],
+            "textContent": "破坏床数：",
+            "textFontFamily": 0,
+            "textFontSize": 20,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 1,
+            "textYAlignment": 0,
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "996355324": {
+      "childrenIds": [],
+      "id": "996355324",
+      "name": "text",
+      "parentId": "100207687_DEFAULT_SCREEN_ID",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0.5
+            ],
+            "autoResize": 0,
+            "autoWordWrap": false,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0.5,
+                0.5
+              ]
+            },
+            "richText": false,
+            "rotation": 0,
+            "size": {
+              "offset": [
+                200,
+                50
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "textColor": [
+              255,
+              0,
+              0
+            ],
+            "textContent": "",
+            "textFontFamily": 0,
+            "textFontSize": 100,
+            "textLineHeight": 1.19921875,
+            "textOpacity": 1,
+            "textStrokeColor": [
+              255,
+              255,
+              255
+            ],
+            "textStrokeOpacity": 1,
+            "textStrokeThickness": 0,
+            "textXAlignment": 0,
+            "textYAlignment": 0,
+            "visible": false,
+            "zIndex": 1
+          },
+          "type": "text"
+        },
+        "type": "element"
+      }
+    },
+    "1057463364": {
+      "childrenIds": [],
+      "id": "1057463364",
+      "name": "priceType",
+      "parentId": "100207687_526660562",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0,
+              0
+            ],
+            "autoResize": 0,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "image": "",
+            "imageDisplayMode": 1,
+            "imageOpacity": 1,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "rotation": 0,
+            "size": {
+              "offset": [
+                10,
+                10
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "visible": false,
+            "zIndex": 1
+          },
+          "type": "image"
+        },
+        "type": "element"
+      }
+    },
+    "100207687_132055051": {
+      "childrenIds": [],
+      "id": "100207687_132055051",
+      "name": "choosecase",
+      "parentId": "100207687_DEFAULT_SCREEN_ID",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0,
+              1
+            ],
+            "autoResize": 0,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "image": "picture/b.png",
+            "imageDisplayMode": 0,
+            "imageOpacity": 1,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                -184,
+                0
+              ],
+              "ratio": [
+                0.5,
+                1
+              ]
+            },
+            "rotation": 0,
+            "size": {
+              "offset": [
+                48,
+                46
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "image"
+        },
+        "type": "element"
+      }
+    },
+    "100207687_137319640": {
+      "childrenIds": [
+        "353324403"
+      ],
+      "id": "100207687_137319640",
+      "name": "chestItem",
+      "parentId": "100207687_DEFAULT_SCREEN_ID",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0.5
+            ],
+            "autoResize": 0,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "image": "",
+            "imageDisplayMode": 0,
+            "imageOpacity": 0,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                -123.3984375,
+                -97
+              ],
+              "ratio": [
+                0.5,
+                0.5
+              ]
+            },
+            "rotation": 0,
+            "size": {
+              "offset": [
+                28,
+                28
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "visible": false,
+            "zIndex": 4
+          },
+          "type": "image"
+        },
+        "type": "element"
+      }
+    },
+    "100207687_264471927": {
+      "childrenIds": [],
+      "id": "100207687_264471927",
+      "name": "shopImage",
+      "parentId": "100207687_DEFAULT_SCREEN_ID",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0.5
+            ],
+            "autoResize": 0,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "image": "picture/DM_20240824225100_001.png",
+            "imageDisplayMode": 0,
+            "imageOpacity": 1,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0.5,
+                0.5
+              ]
+            },
+            "rotation": 0,
+            "size": {
+              "offset": [
+                300,
+                377
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "visible": false,
+            "zIndex": 3
+          },
+          "type": "image"
+        },
+        "type": "element"
+      }
+    },
+    "100207687_393251795": {
+      "childrenIds": [],
+      "id": "100207687_393251795",
+      "name": "inventoryImage",
+      "parentId": "100207687_DEFAULT_SCREEN_ID",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0.5
+            ],
+            "autoResize": 0,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "image": "picture/inventoryImage.png",
+            "imageDisplayMode": 0,
+            "imageOpacity": 1,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0.5,
+                0.5
+              ]
+            },
+            "rotation": 0,
+            "size": {
+              "offset": [
+                300,
+                283
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "visible": false,
+            "zIndex": 3
+          },
+          "type": "image"
+        },
+        "type": "element"
+      }
+    },
+    "100207687_396832708": {
+      "childrenIds": [],
+      "id": "100207687_396832708",
+      "name": "hunger_bar",
+      "parentId": "100207687_DEFAULT_SCREEN_ID",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              1
+            ],
+            "autoResize": 0,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "image": "picture/hunger_bar.png",
+            "imageDisplayMode": 0,
+            "imageOpacity": 1,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                100,
+                -59
+              ],
+              "ratio": [
+                0.5,
+                1
+              ]
+            },
+            "rotation": 0,
+            "size": {
+              "offset": [
+                162,
+                18
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "image"
+        },
+        "type": "element"
+      }
+    },
+    "100207687_435829821": {
+      "childrenIds": [],
+      "id": "100207687_435829821",
+      "name": "quickinventorybar",
+      "parentId": "100207687_DEFAULT_SCREEN_ID",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              1
+            ],
+            "autoResize": 0,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "image": "picture/a.png",
+            "imageDisplayMode": 0,
+            "imageOpacity": 1,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0.5,
+                1
+              ]
+            },
+            "rotation": 0,
+            "size": {
+              "offset": [
+                364,
+                44
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "visible": true,
+            "zIndex": 0
+          },
+          "type": "image"
+        },
+        "type": "element"
+      }
+    },
+    "100207687_490113038": {
+      "childrenIds": [],
+      "id": "100207687_490113038",
+      "name": "inventorycase",
+      "parentId": "100207687_DEFAULT_SCREEN_ID",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0.5
+            ],
+            "autoResize": 0,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "image": "picture/choosecase.png",
+            "imageDisplayMode": 0,
+            "imageOpacity": 1,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                -123.3984375,
+                15.1015625
+              ],
+              "ratio": [
+                0.5,
+                0.5
+              ]
+            },
+            "rotation": 0,
+            "size": {
+              "offset": [
+                38,
+                36
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "visible": false,
+            "zIndex": 6
+          },
+          "type": "image"
+        },
+        "type": "element"
+      }
+    },
+    "100207687_509227291": {
+      "childrenIds": [],
+      "id": "100207687_509227291",
+      "name": "expbar",
+      "parentId": "100207687_DEFAULT_SCREEN_ID",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              1
+            ],
+            "autoResize": 0,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "image": "picture/exp_bar.png",
+            "imageDisplayMode": 0,
+            "imageOpacity": 1,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                -48
+              ],
+              "ratio": [
+                0.5,
+                1
+              ]
+            },
+            "rotation": 0,
+            "size": {
+              "offset": [
+                364,
+                10
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "visible": true,
+            "zIndex": 0
+          },
+          "type": "image"
+        },
+        "type": "element"
+      }
+    },
+    "100207687_526660562": {
+      "childrenIds": [
+        "538047081",
+        "1057463364",
+        "57111004"
+      ],
+      "id": "100207687_526660562",
+      "name": "shopItem",
+      "parentId": "100207687_DEFAULT_SCREEN_ID",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0.5
+            ],
+            "autoResize": 0,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "image": "",
+            "imageDisplayMode": 0,
+            "imageOpacity": 1,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                -93,
+                -144
+              ],
+              "ratio": [
+                0.5,
+                0.5
+              ]
+            },
+            "rotation": 0,
+            "size": {
+              "offset": [
+                28,
+                28
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "visible": false,
+            "zIndex": 4
+          },
+          "type": "image"
+        },
+        "type": "element"
+      }
+    },
+    "100207687_558230863": {
+      "childrenIds": [
+        "6778413"
+      ],
+      "id": "100207687_558230863",
+      "name": "invItem",
+      "parentId": "100207687_DEFAULT_SCREEN_ID",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0.5
+            ],
+            "autoResize": 0,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "image": "",
+            "imageDisplayMode": 0,
+            "imageOpacity": 0,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                -123.3984375,
+                15.1015625
+              ],
+              "ratio": [
+                0.5,
+                0.5
+              ]
+            },
+            "rotation": 0,
+            "size": {
+              "offset": [
+                28,
+                28
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "visible": false,
+            "zIndex": 4
+          },
+          "type": "image"
+        },
+        "type": "element"
+      }
+    },
+    "100207687_747407169": {
+      "childrenIds": [],
+      "id": "100207687_747407169",
+      "name": "chestImage",
+      "parentId": "100207687_DEFAULT_SCREEN_ID",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              0.5
+            ],
+            "autoResize": 0,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "image": "picture/chestImage.png",
+            "imageDisplayMode": 0,
+            "imageOpacity": 1,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                0,
+                0
+              ],
+              "ratio": [
+                0.5,
+                0.5
+              ]
+            },
+            "rotation": 0,
+            "size": {
+              "offset": [
+                300,
+                283
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "visible": false,
+            "zIndex": 3
+          },
+          "type": "image"
+        },
+        "type": "element"
+      }
+    },
+    "100207687_774347377": {
+      "childrenIds": [],
+      "id": "100207687_774347377",
+      "name": "health_bar",
+      "parentId": "100207687_DEFAULT_SCREEN_ID",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              1
+            ],
+            "autoResize": 0,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "image": "picture/health_bar21.png",
+            "imageDisplayMode": 0,
+            "imageOpacity": 1,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                -100,
+                -59
+              ],
+              "ratio": [
+                0.5,
+                1
+              ]
+            },
+            "rotation": 0,
+            "size": {
+              "offset": [
+                162,
+                18
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "image"
+        },
+        "type": "element"
+      }
+    },
+    "100207687_888055948": {
+      "childrenIds": [],
+      "id": "100207687_888055948",
+      "name": "extra_hp_bar",
+      "parentId": "100207687_DEFAULT_SCREEN_ID",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              1
+            ],
+            "autoResize": 0,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "image": "",
+            "imageDisplayMode": 0,
+            "imageOpacity": 0,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                -100,
+                -59
+              ],
+              "ratio": [
+                0.5,
+                1
+              ]
+            },
+            "rotation": 0,
+            "size": {
+              "offset": [
+                162,
+                38
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "image"
+        },
+        "type": "element"
+      }
+    },
+    "100207687_973968324": {
+      "childrenIds": [
+        "83112763"
+      ],
+      "id": "100207687_973968324",
+      "name": "quickItem",
+      "parentId": "100207687_DEFAULT_SCREEN_ID",
+      "type": 2,
+      "value": {
+        "data": {
+          "data": {
+            "anchor": [
+              0.5,
+              1
+            ],
+            "autoResize": 0,
+            "backgroundColor": [
+              255,
+              255,
+              255
+            ],
+            "backgroundOpacity": 0,
+            "clipsDescendants": false,
+            "image": "",
+            "imageDisplayMode": 0,
+            "imageOpacity": 0,
+            "layout": {
+              "data": null,
+              "type": "none"
+            },
+            "layoutOrder": 1,
+            "position": {
+              "offset": [
+                -160,
+                -7
+              ],
+              "ratio": [
+                0.5,
+                1
+              ]
+            },
+            "rotation": 0,
+            "size": {
+              "offset": [
+                30,
+                30
+              ],
+              "ratio": [
+                0,
+                0
+              ]
+            },
+            "visible": true,
+            "zIndex": 1
+          },
+          "type": "image"
+        },
+        "type": "element"
+      }
+    },
+    "100207687_DEFAULT_SCREEN_ID": {
+      "childrenIds": [
+        "900503231",
+        "629702159",
+        "190080564",
+        "367827770",
+        "169219682",
+        "996355324",
+        "100207687_264471927",
+        "100207687_774347377",
+        "100207687_888055948",
+        "100207687_396832708",
+        "100207687_509227291",
+        "635456996",
+        "855223886",
+        "100207687_526660562",
+        "100207687_558230863",
+        "100207687_137319640",
+        "459108283",
+        "160304790",
+        "100207687_393251795",
+        "100207687_747407169",
+        "100207687_973968324",
+        "100207687_490113038",
+        "100207687_132055051",
+        "100207687_435829821"
+      ],
+      "id": "100207687_DEFAULT_SCREEN_ID",
+      "name": "screen",
+      "parentId": "ROOT_ID",
+      "type": 2,
+      "value": {
+        "data": {
+          "enable": true,
+          "layout": {
+            "data": null,
+            "type": "none"
+          },
+          "zIndex": 1
+        },
+        "type": "screen"
+      }
+    },
+    "ROOT_ID": {
+      "childrenIds": [
+        "100207687_DEFAULT_SCREEN_ID"
+      ],
+      "id": "ROOT_ID",
+      "name": "Root",
+      "parentId": "",
+      "type": 0
+    }
+  },
+  "pictureAssets": {
+    "picture/ChainmailBoots.png": {
+      "hash": "ja5jeEcLh8gF6-LWAI60RcdCKO8l86jyWJwE7DJslOU",
+      "id": "382984972743563",
+      "previewImage": "zb3QTGJ6sk_ui_VxER4l5DKUsUa4wXEsD1Crr83BcJM",
+      "size": 286,
+      "type": 8,
+      "updateAt": 1739785509361
+    },
+    "picture/ChainmailBootsEnchanted.png": {
+      "hash": "kIlLotcQYWl3IQoIRPfaAgk4qHzMCREaUsoipRPteHQ",
+      "id": "382990358230526",
+      "previewImage": "HtvaCOKfVf2vZIsQy2lXrzHaJWMvOi7y2DWmQZVDHmk",
+      "size": 15094,
+      "type": 8,
+      "updateAt": 1739801585958
+    },
+    "picture/ChainmailLeggings.png": {
+      "hash": "zePKDWJf9WwyPUqk7HTMg6a5MVotrhmYTuVIB979J0o",
+      "id": "382990546973764",
+      "previewImage": "1f9ruJLxpgWuW2HSxWQSfbeOMsvHNeQhMJE2GP_2CGI",
+      "size": 146,
+      "type": 8,
+      "updateAt": 1739889988896
+    },
+    "picture/ChainmailLeggingsEnchanted.png": {
+      "hash": "anZnqLPiWq8Vt-YZqIzzo3V0XKsyqiey-JWYhvvYVY8",
+      "id": "382985312482112",
+      "previewImage": "G10JSvsbm9bYk-iHYpa_aEm8NRq5LxTjEwmt-hCgO8E",
+      "size": 22214,
+      "type": 8,
+      "updateAt": 1739891469370
+    },
+    "picture/ChristmasChest.png": {
+      "hash": "bi6L3CDWJJa17QUU5sG9__X13S4TolXMLIarJuX7tqs",
+      "id": "383053935489592",
+      "previewImage": "8V9kXiMYjQwf4BC1wayD91KKur9IAoFx4WwtlvImwqc",
+      "size": 23258,
+      "type": 8,
+      "updateAt": 1770433400295
+    },
+    "picture/DM_20240824225100_001.png": {
+      "hash": "eA4tgMgUtDG1AhXXZig1wtpL-bdwK9B5D9ceG7mGYps",
+      "id": "378088168943202",
+      "previewImage": "T-bnUKv5CHzFXM84CfI_Wtc514tiEWkUqN38zYesRsI",
+      "size": 16234,
+      "type": 8,
+      "updateAt": 1724511229709
+    },
+    "picture/DiamondBoots.png": {
+      "hash": "UKNkIUiPQJzDZf2k_7JGsVjlP8xTEly1U-cSmL59sVc",
+      "id": "382990207235289",
+      "previewImage": "lsCNJjHY_38EmDUeA6fum-stnCx0ccqnz3xW0FahVP8",
+      "size": 277,
+      "type": 8,
+      "updateAt": 1739785519242
+    },
+    "picture/DiamondBootsEnchanted.png": {
+      "hash": "4pqYH6adG2DzFLUi3nD-46A-jIfCmkIVy_JC2So-up4",
+      "id": "382990358230527",
+      "previewImage": "e8ForARIQ9cX5SNa40X05kU5rWPCalsYbjhg5eoIZj4",
+      "size": 1074,
+      "type": 8,
+      "updateAt": 1739801590862
+    },
+    "picture/DiamondLeggings.png": {
+      "hash": "MRrUl5LL7qZaqoDgloxLD3qp6Qs0pfsqBdqWDYV045c",
+      "id": "382985312482048",
+      "previewImage": "p9wJSQ-Ll-WVd6x2UsoEwjnroqUWPE7JsRtlUNQZ-1Q",
+      "size": 280,
+      "type": 8,
+      "updateAt": 1739890000725
+    },
+    "picture/DiamondLeggingsEnchanted.png": {
+      "hash": "Q_vT4yh_KlM23v4zG884Tr5jU9RT486a9QmEYnQJYZ8",
+      "id": "382990546973830",
+      "previewImage": "Afmfqd_LotMZE4vQs2tqwG0tUz0Zg-sTHr_Ot2zyuAk",
+      "size": 1255,
+      "type": 8,
+      "updateAt": 1739891478131
+    },
+    "picture/GoldenPickaxe.png": {
+      "hash": "tmvZgdUH7pwwVXS0KeV42GZOwHXpE10yr1-xj1calOU",
+      "id": "382987497714332",
+      "previewImage": "7VXaPI7Lvrkvu4E-36irkuMxrR5I0PoPecuJ2aBjOpY",
+      "size": 7588,
+      "type": 8,
+      "updateAt": 1740404822048
+    },
+    "picture/IronBoots.png": {
+      "hash": "lUsaVsnX26qDJq6hFn9YgTI_ebY7tRgUtX77DemaAHE",
+      "id": "382984972743564",
+      "previewImage": "v7vKI8XGpO3svhCGaXCNwKfxkHnB2aPnLPZ5jtTVv3U",
+      "size": 269,
+      "type": 8,
+      "updateAt": 1739785514933
+    },
+    "picture/IronBootsEnchanted.png": {
+      "hash": "4ylPQLLrWmJUU8ZXOFyU5qFcXhKL0PQV-VkNGD9jliQ",
+      "id": "382985132126927",
+      "previewImage": "U5TNFx0m27kIRd9_00-UuzxRX6gt46-BccKQzJXez3A",
+      "size": 1035,
+      "type": 8,
+      "updateAt": 1739801594599
+    },
+    "picture/IronLeggings.png": {
+      "hash": "mJaWqGwJPDwrsX2Fijek6HW_FBkxEDpsxrA_oyp0cVM",
+      "id": "382985312482072",
+      "previewImage": "JwOR1myMKhuI8pKpLLqqIU8nlOoVXVmR51b1rHYcD50",
+      "size": 276,
+      "type": 8,
+      "updateAt": 1739890025962
+    },
+    "picture/IronLeggingsEnchanted.png": {
+      "hash": "S1WMqGiaQCi1B9_SiCQ2AsHRqz5Ki_d1hFhXZrW1iOI",
+      "id": "382985312482113",
+      "previewImage": "q6zP47JUV1DwQ2LMd_tUP_T2nY84WaxjeNBFGPe-uSw",
+      "size": 1220,
+      "type": 8,
+      "updateAt": 1739891474478
+    },
+    "picture/IronPickaxe.png": {
+      "hash": "8wAQaRQVId32nUqSJnlovsWHL6j5TJpRmZQpWPsjiCQ",
+      "id": "382987493520132",
+      "previewImage": "p5tn2-NmBZdYuRJJFOCOFkmS8Edzwb3AEKORXjuSMWc",
+      "size": 7281,
+      "type": 8,
+      "updateAt": 1740404196638
+    },
+    "picture/LeatherBoots.png": {
+      "hash": "19DZilEleLDWMoCQkPc4Rh5LdEMWnrCTUFfzuM453hM",
+      "id": "382984972743292",
+      "previewImage": "L9ZKzLe2errPHIZIBAfmNdW9oIz5yDpVv0fzn7mRVQU",
+      "size": 295,
+      "type": 8,
+      "updateAt": 1739785091727
+    },
+    "picture/LeatherBootsEnchanted.png": {
+      "hash": "2q7RhuWqXbrbDJ2d-4bmeA0AT2nZh6YoDQens48Kjuk",
+      "id": "382985132126928",
+      "previewImage": "8gHGpUmmB3wiGkbqCJSgII9vdgZU6YRCkq2_T5L4clo",
+      "size": 1268,
+      "type": 8,
+      "updateAt": 1739801599901
+    },
+    "picture/LeatherCap.png": {
+      "hash": "u1MZLdeyI4E_wpVEshgDdqwcD-HgrMKuIsHuIga29No",
+      "id": "382990198846919",
+      "previewImage": "r29UtGS2haS-1xJM0EFpZGthYcS08iqe5AHcWd3SBIY",
+      "size": 292,
+      "type": 8,
+      "updateAt": 1739785086588
+    },
+    "picture/LeatherCapEnchanted.png": {
+      "hash": "dbqT0elu9VoatK5GHkskXHpfL_CL3ztauJu1eOIaZPA",
+      "id": "382990362424344",
+      "previewImage": "jgUG31v3ojV1TSK97bzxkKBOg2g1m0hWtGnw4cYdFDQ",
+      "size": 1260,
+      "type": 8,
+      "updateAt": 1739801604078
+    },
+    "picture/LeatherPants.png": {
+      "hash": "YP_VDq_a74_oGc8l6SHTONjNGsXZcNIQTfftdEMKO3o",
+      "id": "382990198846920",
+      "previewImage": "6koKJBN7AAgi_j-2xylfHc7ib2ZGOFLJWzXSzt7qB0c",
+      "size": 289,
+      "type": 8,
+      "updateAt": 1739785095414
+    },
+    "picture/LeatherPantsEnchanted.png": {
+      "hash": "b7b3sXBPfRm32gcVkG0N-n4WDdBwecKi6Sonl17KZA0",
+      "id": "382985132126954",
+      "previewImage": "WzaaGLZIaHTZqR6GdjKQ4YByJmQiple4WkkTq75cjps",
+      "size": 1684,
+      "type": 8,
+      "updateAt": 1739801607631
+    },
+    "picture/LeatherTunic.png": {
+      "hash": "qMx5sMWT5LY7TK5bqKKh3XBYtAUmqjEo9E1_vyJZ22E",
+      "id": "382990198846921",
+      "previewImage": "IDGAHX4zVDKTuH9zCGWVQwUpxyPNZQO2BqfdiJ8_Hcs",
+      "size": 348,
+      "type": 8,
+      "updateAt": 1739785098954
+    },
+    "picture/LeatherTunicEnchanted.png": {
+      "hash": "gBzLKzaMS6fuz2fsSgTg5w23GdtLJyqDb5TSyiEJUbE",
+      "id": "382990362424346",
+      "previewImage": "fnNAAKiYMEyNNdTMw_A3nZeQ-NEVmV81sRaV-EwW1yQ",
+      "size": 1699,
+      "type": 8,
+      "updateAt": 1739801611687
+    },
+    "picture/a.png": {
+      "hash": "uMSctaxydfdRHZ1GUgnOcs_4zKOZHTFuRJwnaf3Hl8g",
+      "id": "378088118611049",
+      "previewImage": "Ch9_op6jmNGN9-bA3X10DFFydoZE3BYAV6vcJOWfdGk",
+      "size": 6637,
+      "type": 8,
+      "updateAt": 1723037382042
+    },
+    "picture/arrow.png": {
+      "hash": "xLsCjicOePopGshNEKt0JmMz2ktJ-71j5bLWafTvJXc",
+      "id": "378088118611036",
+      "previewImage": "-nSrTHzO1Kk5dyw7HJd-YPBvRDQ1mxdDBIiTyfsEPM0",
+      "size": 962,
+      "type": 8,
+      "updateAt": 1723205231404
+    },
+    "picture/b.png": {
+      "hash": "ys8nCjuWffGwh_09S7aX8CTVr_BNxPpEqmCm9N_K9is",
+      "id": "378088168943236",
+      "previewImage": "AWJ4OJexygEgu63LPCOkgO-_9x7l6jq4nnJBGSqe0rk",
+      "size": 930,
+      "type": 8,
+      "updateAt": 1723111557510
+    },
+    "picture/bow.png": {
+      "hash": "fI7JRAcwy3ogBqxupm-hj8ic5o5Ocmd_aPXJohzk5TY",
+      "id": "378088168943233",
+      "previewImage": "hMA3IlV7pmcZIo4Nb-7m06k6vQm_i4OwTpFFBh6WXfo",
+      "size": 4622,
+      "type": 8,
+      "updateAt": 1723200404152
+    },
+    "picture/bow1.png": {
+      "hash": "RpZaBQuBbYq_5rFR6JvOofDY6Gw-H88XUYrr6KuwFF8",
+      "id": "382975753663472",
+      "previewImage": "TKpFoc3RCYZ_iCVjZr8hm-_vAwUEIu6WRYXdgxZibIo",
+      "size": 128357,
+      "type": 8,
+      "updateAt": 1737178834806
+    },
+    "picture/bow2.png": {
+      "hash": "dt6tKo6Mpavcgq5dBVwNoiODQJeBvmlr8y_RmqyF2pI",
+      "id": "382975766246288",
+      "previewImage": "VKZiuRihQWABhjOXAAvYkRzTEYKUZs9tspB1KI-edaA",
+      "size": 196812,
+      "type": 8,
+      "updateAt": 1737179689053
+    },
+    "picture/bucket.png": {
+      "hash": "6J4fb96NDGP2ySOYyGtnKNnJ5mJqax--S71r643b06w",
+      "id": "378088168943221",
+      "previewImage": "84uWcaTkEcoyFUD8WXrkL9X6yvulFXl2ABdaCBt72RE",
+      "size": 2466,
+      "type": 8,
+      "updateAt": 1723205386375
+    },
+    "picture/chest.png": {
+      "hash": "B-LBowUfV66DfHRqsJXXr-9fahL6Se6P4070TYaB6ow",
+      "id": "383059652326411",
+      "previewImage": "-n0mG1zUNVyIxHEP9AdJOrcLHvTiYisU-rgaPwmDF44",
+      "size": 789,
+      "type": 8,
+      "updateAt": 1770433279854
+    },
+    "picture/chestImage.png": {
+      "hash": "TAUr4keOxfASD4yFw4JHSOm0M3epkR2ofob2UZ_Pslw",
+      "id": "378088168943199",
+      "previewImage": "T2TLvLMjS7xcM2A3k5ZzCM84yfR1UTy0VixykqAouOM",
+      "size": 648,
+      "type": 8,
+      "updateAt": 1724937421327
+    },
+    "picture/choosecase.png": {
+      "hash": "P74gVEPfLyKFafDTj1plOTl0h9Inil3mFjwTfdSBrRk",
+      "id": "378088168943216",
+      "previewImage": "Jy3oBrOm6ZweZHAa0hyjOlJaOeKENBaKnwIFJTG1ZJg",
+      "size": 3144,
+      "type": 8,
+      "updateAt": 1723818754544
+    },
+    "picture/clock.png": {
+      "hash": "qi1oFeTsVnQscKGVumXVG0Hf9pYEyPBG6bvB-BOmPN0",
+      "id": "383060273083544",
+      "previewImage": "dgN0AcwJNRWSuDp4RI8NABpxAkSL_x1C8RM3ulDLDBM",
+      "size": 9600,
+      "type": 8,
+      "updateAt": 1770877063789
+    },
+    "picture/compass.png": {
+      "hash": "lzjNlzQYIOXesxGL5x_HfdLf-VJZ6A0hCEgBsX-OwW0",
+      "id": "378088118611011",
+      "previewImage": "GpptARXTnTBbak1Ny92HSIPEXxqohuid-Z-UJoyis9g",
+      "size": 6158,
+      "type": 8,
+      "updateAt": 1724941093370
+    },
+    "picture/defencePlus.png": {
+      "hash": "LwxFwh7jz8vI-bdvjMadD29EXqhOV9Z53m958K9o7zw",
+      "id": "378088118611010",
+      "previewImage": "dGO1GsumacmgxfDWV_7e-DVEzj8roKJOFT6AiJfU138",
+      "size": 875,
+      "type": 8,
+      "updateAt": 1725198124565
+    },
+    "picture/diamond.png": {
+      "hash": "jLEkhbSI-bGqfTpAqeprzYh2bj1Qf3AfwzHHNmf1qqI",
+      "id": "378088118611038",
+      "previewImage": "bX0uP-0ppfgC1EclgNy87rKmGH6uQ0UyR0jCik-u01s",
+      "size": 294,
+      "type": 8,
+      "updateAt": 1723205112010
+    },
+    "picture/diamondAxe.png": {
+      "hash": "_nq02OErymtKyw6PlOSf2jM4C9W1lCjqYi4mVM1SN1Y",
+      "id": "382992665097578",
+      "previewImage": "bBst_Jj6gVxFnY8PALPAmpUbvHcxWcWBsn9kJz-Utt0",
+      "size": 1133,
+      "type": 8,
+      "updateAt": 1740403823916
+    },
+    "picture/diamondPickaxe.png": {
+      "hash": "sbcK2x7ssce1Lkca3p4E3URnhtnLKPzZnYxZt1drQTs",
+      "id": "382987493520089",
+      "previewImage": "Guu1qo8uQegoi3P4OAeBBcdr2nJOl407aszimjQAVmg",
+      "size": 1389,
+      "type": 8,
+      "updateAt": 1740403803678
+    },
+    "picture/diamondSword.png": {
+      "hash": "2MB1hC0I_rnuON0JQpKnVnr4IqAny2le_aXeEIpdmkI",
+      "id": "378088168943226",
+      "previewImage": "oVIDm8XyXRI3mAHuGN0c4zZL-EwLPrgon0bxd38iJ_A",
+      "size": 5852,
+      "type": 8,
+      "updateAt": 1723205097577
+    },
+    "picture/diamondSwordEnchanted.png": {
+      "hash": "TrJU547155wHfjgiU2AW76Txf6nyTGGeyt1Ii9gWeQ0",
+      "id": "382983978693352",
+      "previewImage": "CGHPJm3WK6WNwlcoBnTj5O9A-E3DFM5X6ZFZr18_eH4",
+      "size": 1458,
+      "type": 8,
+      "updateAt": 1739544413815
+    },
+    "picture/egg.png": {
+      "hash": "PWYsy_wePlJlP8uhzWE7aMds4MF-NT-UVrkmw4dPS9o",
+      "id": "378088168943227",
+      "previewImage": "NZvJKwM5PEHWZ-wn_g6G3oQ56Pmr9u_-94tXqjp7SHU",
+      "size": 3046,
+      "type": 8,
+      "updateAt": 1723205049793
+    },
+    "picture/emerald.png": {
+      "hash": "n1bW1TOWLSx0bND90tXZ6SmQ1WqGYC3wVpN3_euAUWs",
+      "id": "378088168943224",
+      "previewImage": "aRvL1cor9H32nwBUf_RHa2YF914ePITeVhGUJrYCZ_0",
+      "size": 3783,
+      "type": 8,
+      "updateAt": 1723205221660
+    },
+    "picture/enderPearl.png": {
+      "hash": "7nzdpumtGBCZEBTo9ZxJKvE-ArePnH4HAZNUXn9hWg8",
+      "id": "378088118611033",
+      "previewImage": "bzf2nmFd3b8i3Y2U0QukFJYk95_ZHODy5k61WeM-EZ4",
+      "size": 5226,
+      "type": 8,
+      "updateAt": 1723205400526
+    },
+    "picture/enderStone.png": {
+      "hash": "B0YTvdiF-mmUm-Wik6tae9bJc_wUdPQM6W9yiJruhWw",
+      "id": "378088168943220",
+      "previewImage": "oFdISjG4FkGjn_9PoLjznid3aMHqP1D9VBmHlNN9av4",
+      "size": 22871,
+      "type": 8,
+      "updateAt": 1723205413246
+    },
+    "picture/exp_bar.png": {
+      "hash": "ZJVEX7pT1u1goMttRwz-MO_DV4vEsybpeBDJHT2y4fo",
+      "id": "378088118611028",
+      "previewImage": "-PGJNj9vSC6qN-srtdM_xG6Q2PgyhJfRJZni3q0ddAM",
+      "size": 456,
+      "type": 8,
+      "updateAt": 1724166163706
+    },
+    "picture/feather.png": {
+      "hash": "X6EOTPyL7MqlqKen5lRFaqUMicM0iYH8f4U3bfXykVo",
+      "id": "382974092718733",
+      "previewImage": "B9ZrvfYpsC6hCDNqkwF-8gN7cAp15lV4Q7EdK2n_OTk",
+      "size": 135,
+      "type": 8,
+      "updateAt": 1736685429614
+    },
+    "picture/fireBall.png": {
+      "hash": "44RtYQiTdcubErOEO85gQffVa11zMCRJjl2cQ70POeo",
+      "id": "378088168943222",
+      "previewImage": "_3VVVEEDUmopN51dpxXVyr4wDT2cPm_o12fT72bFMO0",
+      "size": 5983,
+      "type": 8,
+      "updateAt": 1723205356195
+    },
+    "picture/fishingRod.png": {
+      "hash": "oq5UspigTEJfTjjg1-vv3ap2dU0NiQ00BhjsE2pPqd4",
+      "id": "383054434612176",
+      "previewImage": "vFgwnl6AEb_uXl64jzfhIHMiaIUwkPM6seP8BOIr_pY",
+      "size": 8436,
+      "type": 8,
+      "updateAt": 1770870875032
+    },
+    "picture/fishingRodCasting.png": {
+      "hash": "HMs01uSblcP2e4rkaIcuSeBQOzLWndzuohGRMVbrG4g",
+      "id": "383060260500942",
+      "previewImage": "XvWglCZjigqJI5NjbJ8iZhRzIsfepdONrKcdcKHoBPM",
+      "size": 6246,
+      "type": 8,
+      "updateAt": 1770870878470
+    },
+    "picture/furnace.png": {
+      "hash": "ArbC52G0ItzcYobx_T2fViifIWpq5zQQoQPJvE6MUoY",
+      "id": "378088168943198",
+      "previewImage": "ZKTgQeQ87igiulMTXijNdPk4dkrplY5QQubWnbmTjI0",
+      "size": 15420,
+      "type": 8,
+      "updateAt": 1725197846973
+    },
+    "picture/glass.png": {
+      "hash": "Hu5-1dGvqoJHAHkQZMmlWQcmUcKQe4S22emVA4gJcWo",
+      "id": "382985736107221",
+      "previewImage": "SPrIScgY4mUGbemp8UT86e3XrXpoOr2hLs-gBjK1Yzg",
+      "size": 296,
+      "type": 8,
+      "updateAt": 1738500394684
+    },
+    "picture/gold.png": {
+      "hash": "qHPJyBHC609ECJ64F_quhznzYyJSTCJdqA1i4lpcvxI",
+      "id": "378088118611047",
+      "previewImage": "0ysHcSbWhHfY44oBoIq6nq7-woCP_40JYpEvXX3SEwQ",
+      "size": 4956,
+      "type": 8,
+      "updateAt": 1723197437368
+    },
+    "picture/goldenApple.png": {
+      "hash": "5cOd_mpIF-bke1ZaG0h2AFzyDQMuYnwMAbh3IJ2CJWU",
+      "id": "378088168943225",
+      "previewImage": "t2KV_YG7jjeusCSoC0IbfQNFiYFvrXgdMJiPuJgbK04",
+      "size": 5432,
+      "type": 8,
+      "updateAt": 1723205187917
+    },
+    "picture/goldenPickaxe.png": {
+      "hash": "NKvN5snuWvnHUq1eqHdPB_ImoOSwwBzaQi5cW3JncqY",
+      "id": "382992665097575",
+      "previewImage": "U7Mh-aL50ypGtvFBDlkCifWBD1ooggFBUud7HJ2c0GI",
+      "size": 1408,
+      "type": 8,
+      "updateAt": 1740403799693
+    },
+    "picture/health_bar1.png": {
+      "hash": "uBjEdMRHHu_WxG6b1sP9O9FcwNLxAzuXxPkC7CQa17k",
+      "id": "378088118611027",
+      "previewImage": "uGmW19e1F5ZLXcG3VcQIzs9Jmg5B4IY1Pd020iLlk9Y",
+      "size": 397,
+      "type": 8,
+      "updateAt": 1724254046097
+    },
+    "picture/health_bar10.png": {
+      "hash": "udV1KyM5CiOAEJLIRjsLwiLreNpfrqnMFmmKLz7L5u8",
+      "id": "378088168943210",
+      "previewImage": "b9MYqWOBbX6KlX4vmqoj4jwbtbLznBvl-rkeMUH6swY",
+      "size": 489,
+      "type": 8,
+      "updateAt": 1724254204972
+    },
+    "picture/health_bar11.png": {
+      "hash": "ibm25RUYJDKedxjko25EaJMFkHadYd-wc0wAa3qX3G0",
+      "id": "378088118611022",
+      "previewImage": "p8UCixRKMIJEYHZk5sUDOujFpcYKQ9Eg88X8eQQM5xo",
+      "size": 482,
+      "type": 8,
+      "updateAt": 1724254219735
+    },
+    "picture/health_bar12.png": {
+      "hash": "8nUqFPWfMe5yvjfXyn1BunYCDW_AQ_Rpx_FTKukbRlM",
+      "id": "378088168943209",
+      "previewImage": "SWL5DS5uojVZPtpsMChHK65HUUH1E6NC5d7dmn5dCzY",
+      "size": 491,
+      "type": 8,
+      "updateAt": 1724254225472
+    },
+    "picture/health_bar13.png": {
+      "hash": "11y1FJoUnOIDc70DtG4NmulJURfb3h6k4Ha991joj5A",
+      "id": "378088118611021",
+      "previewImage": "Nsn0HEcavKlU5MwArMxRUNeKDpKRyGzXYasItYPPTNQ",
+      "size": 490,
+      "type": 8,
+      "updateAt": 1724254232417
+    },
+    "picture/health_bar14.png": {
+      "hash": "tsFYIgaXUVbGlLZW51tz5l3fMzKAjep1YnTMtDozEpw",
+      "id": "378088168943208",
+      "previewImage": "ODOcsLmwozfOEVOxiKBIXBcAVhsqvB60YnsNDVnPNBo",
+      "size": 493,
+      "type": 8,
+      "updateAt": 1724254237697
+    },
+    "picture/health_bar15.png": {
+      "hash": "1-uUNVkWcgULsWbFOoM8qY1OdLFf8-gxTBvENkZoqTM",
+      "id": "378088118611020",
+      "previewImage": "MxdMrpkVRE1eotXoPd5LQ3zhcIuoSzrC9JGXfzo0aks",
+      "size": 490,
+      "type": 8,
+      "updateAt": 1724254244385
+    },
+    "picture/health_bar16.png": {
+      "hash": "67pDpGewNXZVBZlgX8ytaI_3nJI9yfe3VrtyYRYaCVg",
+      "id": "378088168943207",
+      "previewImage": "IlO6sIIhOGVXcFuLD1B4plyCspqfG3ZY2nkOM4YxaIo",
+      "size": 493,
+      "type": 8,
+      "updateAt": 1724505987433
+    },
+    "picture/health_bar17.png": {
+      "hash": "Mikh5Szr4LaJ4W7t40VaUKS4V5GUCsR4OJkBar-F8rs",
+      "id": "378088118611019",
+      "previewImage": "5xgm7ZuHjn7UnBU1eRXmHN8zPLjMGKM-zoSX2r57fOM",
+      "size": 496,
+      "type": 8,
+      "updateAt": 1724505993308
+    },
+    "picture/health_bar18.png": {
+      "hash": "D04MWiABbhLhtreBR4fI2kLY6BWgpPOhhwsQETeVlCI",
+      "id": "378088168943206",
+      "previewImage": "SXcqeUyUcRPMo4cW-M-ZNsZiOWZYGkgd_ga-5I0eMME",
+      "size": 497,
+      "type": 8,
+      "updateAt": 1724505998151
+    },
+    "picture/health_bar19.png": {
+      "hash": "MW7V0xkFW1ijIdp3X6Jj5czImHjbuRJQkBgSKV0wygE",
+      "id": "378088118611018",
+      "previewImage": "u1dIFpqmTEe7Qid7lZQCkN0ynCQam9Jm-s-xpn56HCM",
+      "size": 494,
+      "type": 8,
+      "updateAt": 1724506003517
+    },
+    "picture/health_bar2.png": {
+      "hash": "SlHNUzkMM2GU-hIjqcEmUY8iX_0w6lCLW5aq0U0gVbQ",
+      "id": "378088168943214",
+      "previewImage": "EYkv5iS_Q8TorLv59kr8GmMm9ZJxMwYaQrSKnkLgd5E",
+      "size": 460,
+      "type": 8,
+      "updateAt": 1724254052750
+    },
+    "picture/health_bar20.png": {
+      "hash": "hakfUCfK-lZE0KN-55SccGV_F3a5Kx2KkBgkKnEca7o",
+      "id": "378088168943205",
+      "previewImage": "LGV7TbdCPF-t9kH5ZpKK6SvpnzW2LPiI8vud-fK__58",
+      "size": 472,
+      "type": 8,
+      "updateAt": 1724506009177
+    },
+    "picture/health_bar21.png": {
+      "hash": "NSXJKPPVeD4XB9r03ScSEOAYS7vMCK7uGHUoC6OxbWY",
+      "id": "378088118611017",
+      "previewImage": "QsE2JcoTFgdY4WsI3eyOPHbmVk9zBVnmDP78HwsjhcI",
+      "size": 452,
+      "type": 8,
+      "updateAt": 1724509452092
+    },
+    "picture/health_bar22.png": {
+      "hash": "0FjtFU6vbfwM8zN5AAoXJcemZN8C2ePveU-tyhVjBWY",
+      "id": "378088168943204",
+      "previewImage": "r85jzTiRV09qIoxG4g_nrcm8NPeCzbuOtO0mg3yhIWw",
+      "size": 704,
+      "type": 8,
+      "updateAt": 1724509457119
+    },
+    "picture/health_bar23.png": {
+      "hash": "coPWmy6jkxapAr3qxSHGRTqSF-II6RKALheCm-o6U2o",
+      "id": "378088118611016",
+      "previewImage": "UOA2kb9NT-_ifk94E73bG-duXV-AiPF8XeCk7afTQUI",
+      "size": 705,
+      "type": 8,
+      "updateAt": 1724509461871
+    },
+    "picture/health_bar24.png": {
+      "hash": "258Gkd0omyfPbHFU_VoUykBCxzKQs_FG5--Faytog_0",
+      "id": "378088168943203",
+      "previewImage": "N_BYOiLNjTK01CcVwFosCmZ5SfD0glPkAzvYYys78tU",
+      "size": 754,
+      "type": 8,
+      "updateAt": 1724509468677
+    },
+    "picture/health_bar25.png": {
+      "hash": "EMGbq-38GDaIT5GlZP6p0E-b0mVlbZ2eRmuF__tCsOY",
+      "id": "378088118611015",
+      "previewImage": "Nj_e1srzfKAScaQJ4XZS8ByMxjsITehzE0IiQo-6meQ",
+      "size": 736,
+      "type": 8,
+      "updateAt": 1724509473861
+    },
+    "picture/health_bar3.png": {
+      "hash": "qsDC6ERSPFeEtE6cVfxa4QoFqouzYNtr8xNlqx1Axew",
+      "id": "378088118611026",
+      "previewImage": "CeY18atGpBuAdUbL7fOyLAQUFDtJVN3ZVcykNYpHlKA",
+      "size": 468,
+      "type": 8,
+      "updateAt": 1724254057745
+    },
+    "picture/health_bar4.png": {
+      "hash": "nWDon9Po9zlwnDgx-XS0lZqRF62Gby3co7PQucmnX5Y",
+      "id": "378088168943213",
+      "previewImage": "BTkGOFgEpi9P3baHqblWjusPXKQ4kupA69k69esCznI",
+      "size": 494,
+      "type": 8,
+      "updateAt": 1724254063201
+    },
+    "picture/health_bar5.png": {
+      "hash": "bZ-3qqs4sRPQF6zxk5j_unoc7iwdoO7856gdCrYiArQ",
+      "id": "378088118611025",
+      "previewImage": "8V1tJ9ZmUEUU2bmkiML_Pv6jnLfneYU3Z4PfmoFF9iQ",
+      "size": 493,
+      "type": 8,
+      "updateAt": 1724254175560
+    },
+    "picture/health_bar6.png": {
+      "hash": "D9DCPyxSfv-VhXvQkUhxhvI6q1MpTSpnQJlyAdAr7kM",
+      "id": "378088168943212",
+      "previewImage": "xX7kD5r-9atMyLPuNj5BiRe6U7aEK7HvnUNcexacRrQ",
+      "size": 487,
+      "type": 8,
+      "updateAt": 1724254181774
+    },
+    "picture/health_bar7.png": {
+      "hash": "LRYE0U5ccWKaF2DNFysO-gKyi3H65nFASDmUB-FOh3I",
+      "id": "378088118611024",
+      "previewImage": "0PCuHAD_wOGmQimBPPr3CP7h39ESB1pQoVb1jRc1P5U",
+      "size": 479,
+      "type": 8,
+      "updateAt": 1724254187282
+    },
+    "picture/health_bar8.png": {
+      "hash": "YTdK8CEsB_Ox44KK6lz6saTdnm3OVo_XOCsuzc9bGIs",
+      "id": "378088168943211",
+      "previewImage": "wjklinLAo7xr8wrC5_Ym2xLOYEd_ZJwMTDlCR0thoug",
+      "size": 492,
+      "type": 8,
+      "updateAt": 1724254193190
+    },
+    "picture/health_bar9.png": {
+      "hash": "LWB7dTKf0RTXjKhbzZAuD0ZYAe1ScDoXCAaxjyQjLnE",
+      "id": "378088118611023",
+      "previewImage": "6CCgNshCjxPZ0pZnZUTcJHPp6EnaH6A5uzfXwNhN14o",
+      "size": 492,
+      "type": 8,
+      "updateAt": 1724254198943
+    },
+    "picture/hunger_bar.png": {
+      "hash": "0NBXOsYWIOSs2WpZhKlPE0A0FEjRWeqGrtwStIvwWD4",
+      "id": "378088168943215",
+      "previewImage": "ZQzNAiOwC-JA5jzr6VjfJE8YLWEBxPgJOQVcVrVIvhI",
+      "size": 513,
+      "type": 8,
+      "updateAt": 1724251405996
+    },
+    "picture/inventoryImage.png": {
+      "hash": "hoJAptrqaLUpRLqdq_xB-TI-NjgnHMWIjKi0YvIlMGo",
+      "id": "382989141881944",
+      "previewImage": "xv6gwwOWt9NjkvdM93fa40_DBUQpM-jLHBB8RWBSLxE",
+      "size": 98428,
+      "type": 8,
+      "updateAt": 1739538876156
+    },
+    "picture/invisiblePotion.png": {
+      "hash": "FIQ3XBHeZBYbTmzzAk48WVlrQYtRoUr1p2HhhXQM8cc",
+      "id": "378088168943229",
+      "previewImage": "jB7eKC4Jof8zgdfAIScCgbV5SQudN2Hkx6GnSzf6crI",
+      "size": 4479,
+      "type": 8,
+      "updateAt": 1723204990047
+    },
+    "picture/iron.png": {
+      "hash": "_WOm8cotfsNXmUCSVTfHrU-h_BTvtE1SKmVbSNVit7c",
+      "id": "378088118611048",
+      "previewImage": "HfObJIBVEQx0Kuiu7qzRqzRXFLy09TJSqohfC0U6Q9A",
+      "size": 2830,
+      "type": 8,
+      "updateAt": 1723197230732
+    },
+    "picture/ironAxe.png": {
+      "hash": "3fr_ck0_OWZmkPofepyzMN2HIaYV1V2JGhAxeIDfYrw",
+      "id": "382987493520091",
+      "previewImage": "6IdsYqm4jQkV73wB7j4dwwXnZ7u9aB0bqyQ3YgXa3wk",
+      "size": 943,
+      "type": 8,
+      "updateAt": 1740403819191
+    },
+    "picture/ironPickaxe.png": {
+      "hash": "CKYLwusNpGdsioBaYANV2frMArpNhkAfCoD_PKEvd8c",
+      "id": "382987493520088",
+      "previewImage": "UjNWVfIumVJJ3AxVY8vxphnuQb31Yry3pmyqHjP1VRw",
+      "size": 1232,
+      "type": 8,
+      "updateAt": 1740403796022
+    },
+    "picture/ironSword.png": {
+      "hash": "m-6UgrkI5-2BNlDzG7-RMoj35QJNTKzuodnqqNYWj-A",
+      "id": "378088118611039",
+      "previewImage": "zkRGwftK9jNL0uodtKsDzEBYDGLE17dlygieiLAm0gc",
+      "size": 5117,
+      "type": 8,
+      "updateAt": 1723205061206
+    },
+    "picture/ironSwordEnchanted.png": {
+      "hash": "A8tpnD6fcIJfY690IQm7bwOzaElrjdelybo1NMdleVE",
+      "id": "382983978693353",
+      "previewImage": "Z--7g2GJd9crK8bU3M6fFONXZvjxac5O-Wxn9mGfWws",
+      "size": 1220,
+      "type": 8,
+      "updateAt": 1739544417082
+    },
+    "picture/jumpPotion.png": {
+      "hash": "7uMcHDdhs-OzAQYvJWk_ylAwbWOTY-6t2-e-Ls6_X6E",
+      "id": "378088118611043",
+      "previewImage": "LKoLPJADEkaGPYyb9WKA0g-ybJu8iZg787JKfVwifSw",
+      "size": 4604,
+      "type": 8,
+      "updateAt": 1723204958819
+    },
+    "picture/knockbackStick.png": {
+      "hash": "FFYgvcCw68ii_k4WpjISVBevFHZSD3Xq-ZOVFYymK5I",
+      "id": "382985312482256",
+      "previewImage": "ISj1M_4WUEdv-iEM1BCprVEt8SA9l4hkJ0nv_d4MCP4",
+      "size": 5395,
+      "type": 8,
+      "updateAt": 1739892634450
+    },
+    "picture/ladder.png": {
+      "hash": "_87MJD8khw9ITXuVVgOYsz9_yFPnxVEClF6iOEnR8qE",
+      "id": "383022276883129",
+      "previewImage": "n8FLNDhsiHAzf2UdU8P-A99BRWOyog8a8hM3A6WUo4Q",
+      "size": 350,
+      "type": 8,
+      "updateAt": 1751773663449
+    },
+    "picture/milk.png": {
+      "hash": "mIj_s8FG9kvyK-yZsDBTB0yb8IIQfOfJAzJHykYKo0w",
+      "id": "378088168943223",
+      "previewImage": "cM6sDbH44RG2AXfX8HoJIJtzetr0ktSoM5-bzbDoWTk",
+      "size": 4287,
+      "type": 8,
+      "updateAt": 1723205268688
+    },
+    "picture/obdisian.png": {
+      "hash": "C1u2vPb2HK_BgOdtcWbFd_lk0t6k5JupZrwNbLXSgGE",
+      "id": "378088118611042",
+      "previewImage": "9Ix55hHNfFU5fhuIO-VhTEYLDKIzFWX0IrbUk0wdkTI",
+      "size": 17265,
+      "type": 8,
+      "updateAt": 1723204976056
+    },
+    "picture/plank.png": {
+      "hash": "FOtk6HKyDjpJLBO9lROZvuguijiXKDyQP9wXibc6I4Q",
+      "id": "378088168943219",
+      "previewImage": "tOOgArMnNSID_druaWNvkiPXFhG8x7QC0VwzKhzrXq0",
+      "size": 20268,
+      "type": 8,
+      "updateAt": 1723205457052
+    },
+    "picture/plate.png": {
+      "hash": "DWY8jcWHkrgAiyM86Hi0oWhU59-Vso3ALhsVlcOKdWY",
+      "id": "378088118611035",
+      "previewImage": "CNuYkzEch9u0W3lqvSTuivww-Ag058uQWxjWhfyaUIk",
+      "size": 4561,
+      "type": 8,
+      "updateAt": 1723205347006
+    },
+    "picture/redTorch.png": {
+      "hash": "BAAGGAaNmgTjGW-1iXxnOQ7PqgX8Uoa_o_b1blqjbY8",
+      "id": "382977091646785",
+      "previewImage": "FgyroQkSMFXcACp0cUOcsyUCy8sHB0UkvlZHglhocqY",
+      "size": 150,
+      "type": 8,
+      "updateAt": 1736001092229
+    },
+    "picture/sand.png": {
+      "hash": "iFmS8MucUaeJBhot35nq7BlqTeUMCkRmsaaEnNllUUc",
+      "id": "378088118611032",
+      "previewImage": "MIm-9yCnBwJrDxkKe8a-4ywnoQjFnxqHIH5s3ZaqQK8",
+      "size": 12522,
+      "type": 8,
+      "updateAt": 1723205436090
+    },
+    "picture/scissors.png": {
+      "hash": "banuZ2OA-_GbCdXPpwwmJp34x7NWF0NJPI3GP9b4tR4",
+      "id": "378088168943234",
+      "previewImage": "FLKizy6wR5y0u0gTYN4fw8ctII6_Q6V6rkp65j8XVdI",
+      "size": 4461,
+      "type": 8,
+      "updateAt": 1723199582438
+    },
+    "picture/shadow.png": {
+      "hash": "ppTHzY5DyTw6ksnCsqFmXGFgQR83erDuMY0dXq03WVA",
+      "id": "378088118611029",
+      "previewImage": "wWpCxnsz5NgWkgcV-yREstMvYG3mpQogcIjeRDl18Ak",
+      "size": 499,
+      "type": 8,
+      "updateAt": 1723649369457
+    },
+    "picture/speedPotion.png": {
+      "hash": "gGq4qB7UwX43ITBzPZ-lOP_ShtAQA6ewIHLuaST9akM",
+      "id": "378088168943230",
+      "previewImage": "t9nwmEoOxMcm_lPCl0o3Ii7Z9awBTr40oJtKgTuqG1c",
+      "size": 4633,
+      "type": 8,
+      "updateAt": 1723204965107
+    },
+    "picture/stoneAxe.png": {
+      "hash": "c5HeW2qyykwGhAsmIsbZSghhsCXlBwsvGwTedcMfhss",
+      "id": "382992665097577",
+      "previewImage": "32oDzMoG-lGf4081nxz9Dkt4BpFFyPtCVSTKMMzF--4",
+      "size": 1094,
+      "type": 8,
+      "updateAt": 1740403814855
+    },
+    "picture/stoneSword.png": {
+      "hash": "IhK0FGfJyHfV5TFMjF2UMzW1rlxuixYioOCt6eL9yf8",
+      "id": "378088168943218",
+      "previewImage": "hKQ_Ma-uyuJgSFzUt-pTvaim0H2_5GEjEJEr2N0eu9I",
+      "size": 5220,
+      "type": 8,
+      "updateAt": 1723205598588
+    },
+    "picture/stoneSwordEnchanted.png": {
+      "hash": "c2xycOEiLhOEFl8GX7MdnpqdDxzRXl8ucuGij9dinqs",
+      "id": "382989204796421",
+      "previewImage": "_iK4ORFUc12g872h5eYp2tgQ6pTPCoOf4nJTxmqCbBs",
+      "size": 1487,
+      "type": 8,
+      "updateAt": 1739544421152
+    },
+    "picture/strengthPotion.png": {
+      "hash": "7oBKW31IHy-8in4qSxaROmeFOv51lJAVqzdJzzh6HNs",
+      "id": "378088118611046",
+      "previewImage": "1pXUu8aY-hiSJx_aDl_Fhzx4b7QykDhyMPf1vTg20JQ",
+      "size": 4439,
+      "type": 8,
+      "updateAt": 1723199603400
+    },
+    "picture/telescope.png": {
+      "hash": "Vl4_uGL0GpE_xjykN2X_gphs23rqjd0-BchWEdBvpOU",
+      "id": "383053935489568",
+      "previewImage": "MSd4hudNSL89idcKquWvZcUISOFmzPsIkv29_bqE5q0",
+      "size": 235,
+      "type": 8,
+      "updateAt": 1770432902423
+    },
+    "picture/tnt.png": {
+      "hash": "Juv_vMB37p8KCkhavllpr8B4uZi-QBmz6vQaJKuc1uU",
+      "id": "378088118611012",
+      "previewImage": "wXuLNOZC4EZ5k_wYteQtFGWRvjsvNzHSBgozen6NNXE",
+      "size": 25120,
+      "type": 8,
+      "updateAt": 1724847811937
+    },
+    "picture/trap.png": {
+      "hash": "gW4OoSaMcnTtkzNQTW7hsoE_mV_Ok1VEtFlbjcQUCF0",
+      "id": "378088168943197",
+      "previewImage": "jcpJx0LVcSQSHx-zp7ZjaPerRdeNl5GTtEJJPIEr4lA",
+      "size": 8147,
+      "type": 8,
+      "updateAt": 1725789579634
+    },
+    "picture/waterBucket.png": {
+      "hash": "__3ubNf9pTI4cLRKXBhGpaXBj-yIVW-4Tt6Ds1i_VkA",
+      "id": "378088118611034",
+      "previewImage": "JtsUvYlQBKxEa6WOfKCr-lunvvpzYUNb-98fwl5Z69E",
+      "size": 4519,
+      "type": 8,
+      "updateAt": 1723205364845
+    },
+    "picture/woodenAxe.png": {
+      "hash": "XT_mAM-LBOz0VC2zWv_IsieXhgueJq91omzghg6c284",
+      "id": "382992665097576",
+      "previewImage": "mJot2JG4l_GpVLTWW5wZwffHA9oLA5Cs3zBly2KUCGk",
+      "size": 1042,
+      "type": 8,
+      "updateAt": 1740403811183
+    },
+    "picture/woodenPickaxe.png": {
+      "hash": "sEpbvxY0lDIEBS7u_VudW21sUDTzOfeseSSun7FwElg",
+      "id": "382992665097550",
+      "previewImage": "uSrnPy-GJI30HpKRGSb-TX9SfY9fuuRVBPrA5I9SQWw",
+      "size": 1194,
+      "type": 8,
+      "updateAt": 1740403791932
+    },
+    "picture/woodenSword.png": {
+      "hash": "AxRFe9M9QXs3VnPhqfOv7aXWdffTyBiYpKuL1kRa9pM",
+      "id": "378088168943235",
+      "previewImage": "Lr8HhFkykEYmd5lhSkXo7TEuEE3-z8dmmCN-c-jnggc",
+      "size": 4913,
+      "type": 8,
+      "updateAt": 1723197317560
+    },
+    "picture/woodenSwordEnchanted.png": {
+      "hash": "KjlgKw9W0N79tvbL8KElFhLEzg4i52q-DOgYwZq_EbU",
+      "id": "382989204796418",
+      "previewImage": "eEv6OGotJyvQN_P3A6YpXyICe13HKGHUWqLrMLwDupQ",
+      "size": 1376,
+      "type": 8,
+      "updateAt": 1739544409474
+    },
+    "picture/wool.png": {
+      "hash": "AzomvoeYK3Lct3EtQ4CvRtHk7DMeoKiBJKfqGSRV1LU",
+      "id": "378088118611037",
+      "previewImage": "Sly4YdNZjXzIQBymgqDwD3t6Ivln7yOuBT5H-OC15N4",
+      "size": 20231,
+      "type": 8,
+      "updateAt": 1723205201563
+    },
+    "picture/xinbiao.png": {
+      "hash": "QL74U7Ypa-RyvulkNne_K_3nG7Y3XfA-Udyx1w78l24",
+      "id": "378088118611009",
+      "previewImage": "Y4BQbeQV8Ue7qRTiCCMJvGatC0juOLYmwrkdbkU3ZTI",
+      "size": 16939,
+      "type": 8,
+      "updateAt": 1725789878753
+    }
+  }
+}

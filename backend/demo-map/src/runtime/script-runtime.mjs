@@ -717,6 +717,13 @@ export class ScriptRuntime {
         enableInteract: Boolean(entity.enableInteract),
         interactHint: String(entity.interactHint),
         interactRadius: Math.max(0, Number(entity.interactRadius)),
+        nameplate: entity.showEntityName
+          ? Object.freeze({
+            text: String(entity.customName),
+            radius: Math.max(0, Number(entity.nameRadius)),
+            color: Object.freeze([entity.nameColor.r, entity.nameColor.g, entity.nameColor.b]),
+          })
+          : null,
       })));
   }
 

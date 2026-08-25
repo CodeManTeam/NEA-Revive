@@ -9,21 +9,87 @@ import { extname, join, resolve, normalize } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const rootDir = resolve(fileURLToPath(import.meta.url), "..", "..")
-const backendPort = Number(process.env.NEA_BACKEND_PORT ?? 18081)
-const frontendPort = Number(process.env.NEA_FRONTEND_PORT ?? 18082)
+const optionValue = name => {
+  const index = process.argv.indexOf(name)
+  return index >= 0 ? process.argv[index + 1] : undefined
+}
+const backendPort = Number(optionValue("--backend-port") ?? process.env.NEA_BACKEND_PORT ?? 18081)
+const frontendPort = Number(optionValue("--frontend-port") ?? process.env.NEA_FRONTEND_PORT ?? 18082)
 const mapArg = process.argv.includes("--map")
   ? process.argv[process.argv.indexOf("--map") + 1]
   : (process.env.NEA_MAP ?? "there-is-backroom")
-const runtimeBuildRoot = process.env.NEA_BUILD_ROOT
+const safeMapName = value => typeof value === "string" && /^[A-Za-z0-9][A-Za-z0-9_-]*$/.test(value)
+if (!safeMapName(mapArg)) throw new Error(`Invalid map name: ${String(mapArg)}`)
+
+async function readNavigation(mapName) {
+  const navigationPath = resolve(rootDir, "packages", mapName, "navigation.json")
+  const navigation = await readFile(navigationPath, "utf8")
+    .then(JSON.parse)
+    .catch(error => {
+      if (error?.code === "ENOENT") return null
+      throw error
+    })
+  if (navigation === null) return {}
+  if (navigation?.formatVersion !== "nea-map-navigation/v1" || !navigation.links || typeof navigation.links !== "object" || Array.isArray(navigation.links)) {
+    throw new Error(`Invalid map navigation: ${navigationPath}`)
+  }
+  const links = {}
+  for (const [href, targetMap] of Object.entries(navigation.links)) {
+    if (!/^https?:\/\//i.test(href) || !safeMapName(targetMap)) throw new Error(`Invalid navigation link in ${navigationPath}`)
+    links[href] = targetMap
+  }
+  return links
+}
+
+async function loadStorageDefaults(mapName) {
+  const storageDefaultsPath = resolve(rootDir, "packages", mapName, "storage", "defaults.json")
+  return readFile(storageDefaultsPath, "utf8")
+    .then(JSON.parse)
+    .catch(error => {
+      if (error?.code === "ENOENT") return {}
+      throw error
+    })
+}
+
+const mapNames = []
+const navigationByMap = new Map()
+for (const mapName of [mapArg]) {
+  if (!mapNames.includes(mapName)) mapNames.push(mapName)
+}
+for (let index = 0; index < mapNames.length; index += 1) {
+  const mapName = mapNames[index]
+  const links = await readNavigation(mapName)
+  navigationByMap.set(mapName, links)
+  for (const targetMap of Object.values(links)) {
+    if (!mapNames.includes(targetMap)) mapNames.push(targetMap)
+  }
+}
+
+if (!Number.isInteger(backendPort) || backendPort < 1 || backendPort > 65535) throw new Error(`Invalid backend port: ${backendPort}`)
+if (!Number.isInteger(frontendPort) || frontendPort < 1 || frontendPort > 65535 || frontendPort === backendPort) throw new Error(`Invalid frontend port: ${frontendPort}`)
+const portsByMap = new Map()
+let nextBackendPort = backendPort
+for (const mapName of mapNames) {
+  while (nextBackendPort === frontendPort) nextBackendPort += 1
+  if (nextBackendPort > 65535) throw new Error("No backend port is available for all linked maps")
+  portsByMap.set(mapName, nextBackendPort)
+  nextBackendPort += 1
+}
+const runtimeBuildRoot = mapName => mapName === mapArg && process.env.NEA_BUILD_ROOT
   ? resolve(process.env.NEA_BUILD_ROOT)
-  : resolve(rootDir, ".build", mapArg)
-const storageDefaultsPath = resolve(rootDir, "packages", mapArg, "storage", "defaults.json")
-const storageDefaults = await readFile(storageDefaultsPath, "utf8")
-  .then(JSON.parse)
-  .catch(error => {
-    if (error?.code === "ENOENT") return {}
-    throw error
-  })
+  : resolve(rootDir, ".build", mapName)
+const backendConfigs = await Promise.all(mapNames.map(async mapName => ({
+  port: portsByMap.get(mapName),
+  sourceRoot: resolve(rootDir, "packages", mapName),
+  assetRoot: resolve(rootDir, "backend", "local-player", "archive"),
+  buildRoot: runtimeBuildRoot(mapName),
+  storageDefaults: await loadStorageDefaults(mapName),
+  localLinks: Object.fromEntries(Object.entries(navigationByMap.get(mapName)).map(([href, targetMap]) => [
+    href,
+    `http://127.0.0.1:${portsByMap.get(targetMap)}/api/createSession`,
+  ])),
+  quiet: false,
+})))
 
 // ---- 后端（runtime-server）----
 // 用 child 方式启动，避免本进程直接 import tsx 的生命周期耦合
@@ -34,16 +100,14 @@ const backendChild = spawn(
     "--import", "tsx",
     "-e", `
 import { startRuntimeServer } from './src/runtime-server.ts'
-const server = await startRuntimeServer({
-  port: ${backendPort},
-  sourceRoot: '${rootDir.replace(/\\/g, "/")}/packages/${mapArg}',
-  assetRoot: '${rootDir.replace(/\\/g, "/")}/backend/local-player/archive',
-  buildRoot: '${runtimeBuildRoot.replace(/\\/g, "/")}',
-  storageDefaults: ${JSON.stringify(storageDefaults)},
-  quiet: false,
-})
-console.log('[backend] READY on', server.port)
-const shutdown = async () => { await server.close(); process.exit(0) }
+const configs = ${JSON.stringify(backendConfigs)}
+const servers = []
+for (const config of configs) {
+  const server = await startRuntimeServer(config)
+  servers.push(server)
+  console.log('[backend] READY on', server.port, 'for', config.sourceRoot)
+}
+const shutdown = async () => { await Promise.all(servers.map(server => server.close())); process.exit(0) }
 process.once('SIGINT', shutdown)
 process.once('SIGTERM', shutdown)
 `,

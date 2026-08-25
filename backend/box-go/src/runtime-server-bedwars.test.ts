@@ -9,7 +9,15 @@ import { startRuntimeServer } from "./runtime-server"
 const sourceRoot = "D:/Projects/Gaming/NEA-Revive/packages/bedwars-s2"
 const assetRoot = "D:/Projects/Gaming/NEA-Revive/backend/local-player/archive"
 const buildRoot = `D:/Projects/Gaming/NEA-Revive/.build/runtime-server-bedwars-${process.pid}`
-const server = await startRuntimeServer({ port: 0, sourceRoot, assetRoot, buildRoot, quiet: true, storageDefaults: { BlackList: [] } })
+const server = await startRuntimeServer({
+  port: 0,
+  sourceRoot,
+  assetRoot,
+  buildRoot,
+  quiet: true,
+  storageDefaults: { BlackList: [] },
+  localLinks: { "https://dao3.fun/play/24576b13504b5ee91fb1": "http://127.0.0.1:18083/api/createSession" },
+})
 
 const group = server.runtime.storage.getGroupStorage("storage")
 assert.deepEqual((await group.get("BlackList"))?.value, [])
@@ -75,6 +83,12 @@ try {
   assert.equal(inventoryImage.headers.get("content-type"), "image/png")
   assert.equal((await inventoryImage.arrayBuffer()).byteLength, 98428)
 
+  const uiMissingImageHash = ui.pictureAssets["picture/ChristmasChest.png"].hash
+  const missingImage = await fetch(`http://${server.host}:${server.port}/engine/m/${uiMissingImageHash}`)
+  assert.equal(missingImage.status, 200)
+  assert.equal(missingImage.headers.get("content-type"), "image/png")
+  assert.ok((await missingImage.arrayBuffer()).byteLength > 0)
+
   let nonEmptyChunk: any = null
   for (let chunkId = 0, rpcId = 1; chunkId < 64 && !nonEmptyChunk; chunkId += 1, rpcId += 1) {
     terrain.server.message.fetchChunk({ chunkId, rpcId })
@@ -91,6 +105,32 @@ try {
   await waitFor(() => events.some(event => event.type === "setChooseCase" && event.args?.pos === 1))
   net.server.message.sendKeyBoardEvent({ id: 1, tick: 11, keyDownState: [9], prevKeyDownState: [] })
   await waitFor(() => server.runtime.snapshot().players[0]?.cameraMode === "follow")
+  net.server.message.input({
+    pauseCounter: 0,
+    tick: 12,
+    events: [{
+      rayTime: 1,
+      tick: 12,
+      rayHitEntity: 65540,
+      rayHitVoxelX: 0,
+      rayHitVoxelY: 0,
+      rayHitVoxelZ: 0,
+      buttonState: 2,
+      prevButtonState: 0,
+      position: [68.5, 59.2, 57.5],
+      rayDirection: [0, 0, 1],
+      rayHitNormal: 0,
+      rayOrigin: [68.5, 59.2, 57.5],
+    }],
+    input: { inputState: 0, inputAngle: 0, inputCameraAngle: 0, inputPitch: 0, bodies: [] },
+  })
+  await waitFor(() => events.some(event => event.type === "nea-revive:link"))
+  assert.deepEqual(events.find(event => event.type === "nea-revive:link"), {
+    type: "nea-revive:link",
+    href: "https://dao3.fun/play/24576b13504b5ee91fb1",
+    options: { isNewTab: false, isConfirm: false },
+    createSessionUrl: "http://127.0.0.1:18083/api/createSession",
+  })
   console.log(`[ok] bedwars-s2 reset=${reset.nx}x${reset.ny}x${reset.nz} boxes=${nonEmptyChunk.boxes.length} events=${events.length}`)
 } finally {
   if (client.running) client.destroy()

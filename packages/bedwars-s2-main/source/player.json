@@ -1,0 +1,214 @@
+{
+  "allowAction0": true,
+  "allowAction1": true,
+  "allowCrouch": true,
+  "allowDoubleJump": true,
+  "allowFlight": false,
+  "allowJump": true,
+  "allowMove": true,
+  "cameraType": "follow",
+  "color": [
+    1,
+    1,
+    1
+  ],
+  "colorLUT": "",
+  "crouchAcceleration": 0.09,
+  "crouchSpeed": 0.1,
+  "damage": {
+    "enabled": false,
+    "hp": 100,
+    "maxHp": 100,
+    "showDamage": true,
+    "showHealth": true
+  },
+  "doubleJumpPower": 0.9,
+  "emissive": 0,
+  "flyAcceleration": 2,
+  "flySpeed": 2,
+  "friction": 0,
+  "initialPosition": {
+    "x": 128,
+    "y": 64,
+    "z": 128
+  },
+  "initialYaw": 0,
+  "invisible": false,
+  "jumpAccelerationFactor": 0.55,
+  "jumpPower": 0.96,
+  "jumpSpeedFactor": 0.85,
+  "mass": 1,
+  "metalness": 0,
+  "movementBounds": {
+    "hi": {
+      "x": 1000,
+      "y": 1000,
+      "z": 1000
+    },
+    "lo": {
+      "x": -50,
+      "y": -50,
+      "z": -50
+    }
+  },
+  "noClip": false,
+  "playerSounds": {
+    "action0": {
+      "gain": 1,
+      "gainRange": 0,
+      "pitch": 1,
+      "pitchRange": 0,
+      "radius": 32,
+      "sample": ""
+    },
+    "action1": {
+      "gain": 1,
+      "gainRange": 0,
+      "pitch": 1,
+      "pitchRange": 0,
+      "radius": 32,
+      "sample": ""
+    },
+    "crouch": {
+      "gain": 1,
+      "gainRange": 0,
+      "pitch": 1,
+      "pitchRange": 0,
+      "radius": 32,
+      "sample": ""
+    },
+    "doubleJump": {
+      "gain": 1,
+      "gainRange": 0,
+      "pitch": 1,
+      "pitchRange": 0,
+      "radius": 32,
+      "sample": "audio/double_jump.mp3"
+    },
+    "endFly": {
+      "gain": 1,
+      "gainRange": 0,
+      "pitch": 1,
+      "pitchRange": 0,
+      "radius": 32,
+      "sample": ""
+    },
+    "enterWater": {
+      "gain": 1,
+      "gainRange": 0,
+      "pitch": 1,
+      "pitchRange": 0,
+      "radius": 32,
+      "sample": "audio/dive.mp3"
+    },
+    "jump": {
+      "gain": 1,
+      "gainRange": 0,
+      "pitch": 1,
+      "pitchRange": 0,
+      "radius": 32,
+      "sample": "audio/jump.mp3"
+    },
+    "land": {
+      "gain": 1,
+      "gainRange": 0,
+      "pitch": 1,
+      "pitchRange": 0,
+      "radius": 32,
+      "sample": "audio/land.mp3"
+    },
+    "leaveWater": {
+      "gain": 1,
+      "gainRange": 0,
+      "pitch": 1,
+      "pitchRange": 0,
+      "radius": 32,
+      "sample": "audio/splash.mp3"
+    },
+    "music": {
+      "gain": 1,
+      "gainRange": 0,
+      "pitch": 1,
+      "pitchRange": 0,
+      "radius": 0,
+      "sample": ""
+    },
+    "spawn": {
+      "gain": 1,
+      "gainRange": 0,
+      "pitch": 1,
+      "pitchRange": 0,
+      "radius": 32,
+      "sample": "audio/spawn.mp3"
+    },
+    "startFly": {
+      "gain": 1,
+      "gainRange": 0,
+      "pitch": 1,
+      "pitchRange": 0,
+      "radius": 32,
+      "sample": ""
+    },
+    "step": {
+      "gain": 1,
+      "gainRange": 0,
+      "pitch": 1,
+      "pitchRange": 0.20000000298023224,
+      "radius": 32,
+      "sample": "audio/step.mp3"
+    },
+    "swim": {
+      "gain": 1,
+      "gainRange": 0,
+      "pitch": 1,
+      "pitchRange": 0,
+      "radius": 32,
+      "sample": "audio/swim.mp3"
+    }
+  },
+  "restitution": 0,
+  "runAcceleration": 0.35,
+  "runSpeed": 0.4,
+  "scale": 1,
+  "shininess": 0,
+  "showIndicator": false,
+  "showName": true,
+  "sounds": {
+    "chat": {
+      "gain": 1,
+      "gainRange": 0,
+      "pitch": 1,
+      "pitchRange": 0,
+      "radius": 32,
+      "sample": "audio/chat.mp3"
+    },
+    "die": {
+      "gain": 1,
+      "gainRange": 0,
+      "pitch": 1,
+      "pitchRange": 0,
+      "radius": 32,
+      "sample": "audio/die.mp3"
+    },
+    "hurt": {
+      "gain": 1,
+      "gainRange": 0,
+      "pitch": 1,
+      "pitchRange": 0,
+      "radius": 32,
+      "sample": "audio/hurt.mp3"
+    },
+    "interact": {
+      "gain": 1,
+      "gainRange": 0,
+      "pitch": 1,
+      "pitchRange": 0,
+      "radius": 32,
+      "sample": ""
+    }
+  },
+  "swimAcceleration": 0.1,
+  "swimSpeed": 0.4,
+  "walkAcceleration": 0.19,
+  "walkSpeed": 0.22
+}

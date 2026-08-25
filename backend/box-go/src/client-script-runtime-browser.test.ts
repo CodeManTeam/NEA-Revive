@@ -22,6 +22,18 @@ const archivedData = await readFile(
   "D:/Projects/Gaming/NEA-Revive/backend/local-player/archive/project/bedwars/client-scripts/cilentData.js",
   "utf8",
 )
+const bedwarsUi = await readFile(
+  "D:/Projects/Gaming/NEA-Revive/packages/bedwars-s2/source/ui.json",
+  "utf8",
+)
+const bedwarsClient = await readFile(
+  "D:/Projects/Gaming/NEA-Revive/packages/bedwars-s2/scripts/clientIndex.js",
+  "utf8",
+)
+const bedwarsClientConfig = await readFile(
+  "D:/Projects/Gaming/NEA-Revive/packages/bedwars-s2/scripts/cilentConfig.js",
+  "utf8",
+)
 
 const browser = await chromium.launch({ headless: true })
 try {
@@ -330,8 +342,31 @@ try {
   assert.deepEqual(remoteEventIsolation.internalOutbound, [])
   assert.deepEqual(remoteEventIsolation.mapOutbound, [{
     type: "observed-client-event",
-    event: { type: "map:event", value: "delivered" },
+    event: { type: "map:event", value: "delivered", args: {} },
   }])
+
+  const linkPage = await browser.newPage()
+  await linkPage.route("http://nea.test/**", route => route.fulfill({
+    contentType: "text/html",
+    body: "<html><body><canvas id=\"game\"></canvas></body></html>",
+  }))
+  await linkPage.goto("http://nea.test/start.html")
+  await linkPage.addScriptTag({ content: runtimeSource })
+  const localLink = await linkPage.evaluate(() => {
+    let opened: string | undefined
+    const originalOpen = window.open
+    window.open = (url: string | URL) => { opened = String(url); return null }
+    ;(window as any).__neaClientRuntimeReceive(JSON.stringify({
+      type: "nea-revive:link",
+      href: "https://dao3.fun/play/original-map",
+      createSessionUrl: "http://127.0.0.1:18083/api/createSession",
+      options: { isConfirm: false, isNewTab: true },
+    }))
+    window.open = originalOpen
+    return opened
+  })
+  assert.equal(new URL(localLink!).searchParams.get("nea"), "http://127.0.0.1:18083/api/createSession")
+  await linkPage.close()
 
   const uiEnhancements = await page.evaluate(() => {
     ;(window as any).__neaClientRuntimeInstall(JSON.stringify({
@@ -371,6 +406,28 @@ try {
     }
   }, { ui: archivedUi, client: archivedClient, data: archivedData })
   assert.equal(archivedPlayer.healthBar, true)
+
+  const bedwarsPage = await browser.newPage()
+  await bedwarsPage.setContent("<html><body><canvas id=\"game\"></canvas></body></html>")
+  await bedwarsPage.addScriptTag({ content: runtimeSource })
+  const bedwarsDraw = await bedwarsPage.evaluate(({ ui, client, config }) => {
+    const errors: string[] = []
+    window.addEventListener("error", event => errors.push(String(event.error ?? event.message)))
+    ;(window as any).__neaClientRuntimeInstall(JSON.stringify({
+      "clientIndex.js": client,
+      "cilentConfig.js": config,
+      __nea_ui_state__: ui,
+    }))
+    ;(window as any).__neaClientRuntimeReceive(JSON.stringify({ type: "draw" }))
+    document.dispatchEvent(new Event("pointerlockchange"))
+    return {
+      errors,
+      uiNodeCount: document.querySelectorAll("#nea-client-ui *").length,
+    }
+  }, { ui: bedwarsUi, client: bedwarsClient, config: bedwarsClientConfig })
+  assert.deepEqual(bedwarsDraw.errors, [])
+  assert.ok(bedwarsDraw.uiNodeCount > 20)
+  await bedwarsPage.close()
   console.log("client script browser runtime smoke passed")
 } finally {
   await browser.close()

@@ -157,6 +157,15 @@ struct StaticEntityInstance {
     metalness: f32,
     #[serde(default)]
     shininess: f32,
+    #[serde(default)]
+    nameplate: Option<StaticEntityNameplate>,
+}
+
+#[derive(serde::Deserialize)]
+struct StaticEntityNameplate {
+    text: String,
+    radius: f32,
+    color: [f32; 3],
 }
 
 fn default_entity_visible() -> bool {
@@ -2022,6 +2031,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                         id: *id,
                         name,
                         world: *world,
+                        color: [1.0, 1.0, 1.0],
                     })
                     .collect();
             if !first_person && let Some(position) = camera_player_pos {
@@ -2033,8 +2043,49 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                         position[1] + local_body_half_extents[1] + 0.45,
                         position[2],
                     ],
+                    color: [1.0, 1.0, 1.0],
                 });
             }
+            let static_entity_nameplates: Vec<(u64, String, [f32; 3], [f32; 3])> = entity_scene
+                .entities
+                .iter()
+                .filter_map(|entity| {
+                    let player_position = player_pos?;
+                    let nameplate = entity.nameplate.as_ref()?;
+                    if nameplate.text.is_empty() || nameplate.radius <= 0.0 {
+                        return None;
+                    }
+                    let world = [
+                        entity.position[0] + entity.mesh_offset[0],
+                        entity.position[1] + entity.half_extents[1] + 0.45,
+                        entity.position[2] + entity.mesh_offset[2],
+                    ];
+                    let dx = world[0] - player_position[0];
+                    let dy = world[1] - player_position[1];
+                    let dz = world[2] - player_position[2];
+                    if (dx * dx + dy * dy + dz * dz).sqrt() > nameplate.radius {
+                        return None;
+                    }
+                    Some((
+                        u64::from(entity.id),
+                        nameplate.text.clone(),
+                        world,
+                        nameplate.color,
+                    ))
+                })
+                .collect();
+            nameplates.extend(
+                static_entity_nameplates
+                    .iter()
+                    .map(
+                        |(id, name, world, color)| crate::nea_nameplates::NameplateEntry {
+                            id: *id,
+                            name,
+                            world: *world,
+                            color: *color,
+                        },
+                    ),
+            );
             nameplate_overlay.update(&nameplates, mvp, width, height)?;
             damage_overlay.update(
                 &static_collision_bodies,
@@ -3173,6 +3224,9 @@ fn apply_entity_state_event(
         {
             entity.interact_radius = value.max(0.0) as f32;
         }
+        if let Some(value) = state.get("nameplate") {
+            entity.nameplate = parse_entity_nameplate(value);
+        }
     }
     if let Some(invisible) = state
         .pointer("/model/invisible")
@@ -3198,6 +3252,18 @@ fn apply_entity_state_event(
         }
     }
     true
+}
+
+fn parse_entity_nameplate(value: &serde_json::Value) -> Option<StaticEntityNameplate> {
+    let object = value.as_object()?;
+    let text = object.get("text")?.as_str()?.to_owned();
+    let radius = object.get("radius")?.as_f64()? as f32;
+    let color = json_vec3(object.get("color"))?;
+    Some(StaticEntityNameplate {
+        text,
+        radius: radius.max(0.0),
+        color,
+    })
 }
 
 fn json_vec3(value: Option<&serde_json::Value>) -> Option<[f32; 3]> {
@@ -5253,7 +5319,8 @@ mod tests {
                 "state": {
                     "enableInteract": false,
                     "interactHint": "Use keypad",
-                    "interactRadius": 4.5
+                    "interactRadius": 4.5,
+                    "nameplate": {"text": "商店", "radius": 6.0, "color": [1.0, 0.8, 0.0]}
                 }
             }),
             &mut bodies,
@@ -5264,6 +5331,10 @@ mod tests {
         assert!(!entity.enable_interact);
         assert_eq!(entity.interact_hint, "Use keypad");
         assert_eq!(entity.interact_radius, 4.5);
+        let nameplate = entity.nameplate.as_ref().expect("nameplate state");
+        assert_eq!(nameplate.text, "商店");
+        assert_eq!(nameplate.radius, 6.0);
+        assert_eq!(nameplate.color, [1.0, 0.8, 0.0]);
     }
 
     #[test]

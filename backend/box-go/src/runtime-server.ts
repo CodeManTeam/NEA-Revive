@@ -24,6 +24,7 @@ import { gzipSync } from "node:zlib"
 let decodeMeshAssetTool: ((bytes: Uint8Array) => any) | undefined
 let decodeMeshTextureTool: ((texture: any) => any) | undefined
 let staticEntitySceneGzip: Buffer | undefined
+const transparentPng = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL7wgAAAABJRU5ErkJggg==", "base64")
 
 export interface RuntimeServerOptions {
   host?: string
@@ -36,6 +37,7 @@ export interface RuntimeServerOptions {
   buildRoot?: string
   spawn?: [number, number, number]
   storageDefaults?: Record<string, unknown>
+  localLinks?: Record<string, string>
 }
 
 export interface RuntimeServerHandle {
@@ -82,8 +84,8 @@ function buildRuntimeProjectAssetResolver(
 function buildUiPictureFallbacks(
   uiState: any,
   projectAssets: { get(name: string): ResolvedProjectAsset | undefined },
-): ReadonlyMap<string, ResolvedProjectAsset> {
-  const fallbacks = new Map<string, ResolvedProjectAsset>()
+): ReadonlyMap<string, ResolvedProjectAsset | string> {
+  const fallbacks = new Map<string, ResolvedProjectAsset | string>()
   const pictureAssets = uiState?.pictureAssets
   if (!pictureAssets || typeof pictureAssets !== "object" || Array.isArray(pictureAssets)) return fallbacks
   for (const [pictureName, metadata] of Object.entries(pictureAssets)) {
@@ -94,6 +96,10 @@ function buildUiPictureFallbacks(
     // This is a format-level fallback, not a map-specific asset mapping.
     const asset = projectAssets.get(`image/${pictureName.slice("picture/".length)}`)
     if (asset) fallbacks.set(hash, asset)
+    else {
+      const previewHash = typeof (metadata as any)?.previewImage === "string" ? (metadata as any).previewImage : ""
+      if (/^[A-Za-z0-9_-]{42,43}$/.test(previewHash)) fallbacks.set(hash, previewHash)
+    }
   }
   return fallbacks
 }
@@ -310,12 +316,17 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         log(`[player-link] ignored legacy javascript URL for ${playerId}`)
         return
       }
-      const sessionId = playerSessions.get(playerId)
-      const client = sessionId === undefined ? undefined : remoteChannelClients()[sessionId]
-      client?.message.sendClientEvent({
-        tick: remoteEventTick++,
-        args: JSON.stringify({ type: "nea-revive:link", href, options: linkOptions }),
-      })
+      const localCreateSessionUrl = options.localLinks?.[href]
+      const event = {
+        type: "nea-revive:link",
+        href,
+        options: linkOptions,
+        ...(typeof localCreateSessionUrl === "string" ? { createSessionUrl: localCreateSessionUrl } : {}),
+      }
+      if (deliverClientEvent(playerId, event)) return
+      const events = pendingClientEvents.get(playerId) ?? []
+      events.push(event)
+      pendingClientEvents.set(playerId, events.slice(-maxPendingClientEvents))
     },
     sendGuiCommand: async (command: any) => {
       if (command.operation === "getAttribute") {
@@ -644,10 +655,15 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
       }
       const assetPath = resolve(options.assetRoot, "engine", "m", hash)
       const fallback = uiPictureFallbacks.get(hash)
-      if (!existsSync(assetPath) && !fallback) {
-        response.writeHead(404); response.end("picture asset not found"); return
+      const fallbackPath = typeof fallback === "string" ? resolve(options.assetRoot, "engine", "m", fallback) : fallback?.path
+      if (!existsSync(assetPath) && (!fallbackPath || !existsSync(fallbackPath))) {
+        // Some historical UI metadata references an asset omitted from the
+        // recovered export. Preserve layout while avoiding noisy browser 404s.
+        response.writeHead(200, { "content-type": "image/png", "access-control-allow-origin": "*", "cache-control": "no-store" })
+        response.end(transparentPng)
+        return
       }
-      const resolvedPath = existsSync(assetPath) ? assetPath : fallback!.path
+      const resolvedPath = existsSync(assetPath) ? assetPath : fallbackPath!
       const extension = resolvedPath.toLowerCase().split(".").pop()
       const contentType = extension === "png" ? "image/png" : extension === "jpg" || extension === "jpeg" ? "image/jpeg" : "application/octet-stream"
       response.writeHead(200, { "content-type": contentType, "access-control-allow-origin": "*", "cache-control": "public,max-age=3600" })
@@ -979,6 +995,7 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
               enableInteract: entity.enableInteract,
               interactHint: entity.interactHint,
               interactRadius: entity.interactRadius,
+              nameplate: entity.nameplate,
             },
           })
         }
@@ -1259,6 +1276,7 @@ function buildStaticEntityScene(
     emissive: number
     metalness: number
     shininess: number
+    nameplate: { text: string; radius: number; color: number[] } | null
   }> = []
   const skipped: Array<{ mesh: string; reason: string }> = []
   let nativeBindings = 0
@@ -1348,6 +1366,7 @@ function buildStaticEntityScene(
       emissive: Math.max(0, Number(entity.source?.emissive ?? 0)),
       metalness: Math.max(0, Number(entity.source?.metalness ?? 0)),
       shininess: Math.max(0, Number(entity.source?.shininess ?? 0)),
+      nameplate: interactionOverrides.get(sourceIndex + 0x10000)?.nameplate ?? null,
     })
   }
   return { meshes, entities: instances, skipped, diagnostics: { nativeBindings, nativeFailures, skipped } }

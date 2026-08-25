@@ -1,0 +1,4094 @@
+{
+  "entities": [
+    {
+      "id": "商店",
+      "kind": "prop",
+      "position": [
+        30.5,
+        43,
+        120.5
+      ],
+      "tags": [
+        "showName",
+        "source-node-23050106"
+      ],
+      "mesh": "mesh/Dream.vb",
+      "source": {
+        "bounds": [
+          8,
+          33,
+          14
+        ],
+        "collision": true,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": true,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/Dream.vb",
+        "meshId": 382974751224438,
+        "metalness": 0,
+        "name": "商店",
+        "orientation": [
+          0,
+          -0.70703125,
+          0,
+          0.70703125
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          30.5,
+          43,
+          120.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.0625,
+          0.0625,
+          0.0625
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [
+          "showName"
+        ],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "末影箱",
+      "kind": "prop",
+      "position": [
+        34.5,
+        42.3984375,
+        130.5
+      ],
+      "tags": [
+        "showName",
+        "source-node-23887462"
+      ],
+      "mesh": "mesh/末影箱.vb",
+      "source": {
+        "bounds": [
+          15,
+          14,
+          14
+        ],
+        "collision": true,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": true,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/末影箱.vb",
+        "meshId": 313323237206976,
+        "metalness": 0,
+        "name": "末影箱",
+        "orientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          34.5,
+          42.3984375,
+          130.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.0625,
+          0.0625,
+          0.0625
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [
+          "showName"
+        ],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "末影箱-56613349",
+      "kind": "prop",
+      "position": [
+        124.5,
+        42.3984375,
+        34.5
+      ],
+      "tags": [
+        "showName",
+        "source-node-56613349"
+      ],
+      "mesh": "mesh/末影箱.vb",
+      "source": {
+        "bounds": [
+          15,
+          14,
+          14
+        ],
+        "collision": true,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": true,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/末影箱.vb",
+        "meshId": 313323237206976,
+        "metalness": 0,
+        "name": "末影箱",
+        "orientation": [
+          0,
+          -0.70703125,
+          0,
+          0.70703125
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          124.5,
+          42.3984375,
+          34.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.0625,
+          0.0625,
+          0.0625
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [
+          "showName"
+        ],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "EmeraldGenerator",
+      "kind": "prop",
+      "position": [
+        127.5,
+        53,
+        127.5
+      ],
+      "tags": [
+        "source-node-57122203"
+      ],
+      "mesh": "mesh/绿宝石块.vb",
+      "source": {
+        "bounds": [
+          32,
+          32,
+          32
+        ],
+        "collision": false,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": false,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/绿宝石块.vb",
+        "meshId": 382985228596119,
+        "metalness": 0,
+        "name": "EmeraldGenerator",
+        "orientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          127.5,
+          53,
+          127.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.01953125,
+          0.01953125,
+          0.01953125
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "团队升级",
+      "kind": "prop",
+      "position": [
+        224.5,
+        43.3984375,
+        120.5
+      ],
+      "tags": [
+        "showName",
+        "source-node-80132822"
+      ],
+      "mesh": "mesh/末影人.vb",
+      "source": {
+        "bounds": [
+          8,
+          44,
+          12
+        ],
+        "collision": true,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": true,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/末影人.vb",
+        "meshId": 382980111545703,
+        "metalness": 0,
+        "name": "团队升级",
+        "orientation": [
+          0,
+          -0.70703125,
+          0,
+          0.70703125
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          224.5,
+          43.3984375,
+          120.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.0625,
+          0.0625,
+          0.0625
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [
+          "showName"
+        ],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "DiamondGenerator",
+      "kind": "prop",
+      "position": [
+        182.5,
+        43,
+        182.5
+      ],
+      "tags": [
+        "source-node-105798662"
+      ],
+      "mesh": "mesh/钻石块.vb",
+      "source": {
+        "bounds": [
+          32,
+          32,
+          32
+        ],
+        "collision": false,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": false,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/钻石块.vb",
+        "meshId": 382990463087787,
+        "metalness": 0,
+        "name": "DiamondGenerator",
+        "orientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          182.5,
+          43,
+          182.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.01953125,
+          0.01953125,
+          0.01953125
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "团队升级-121738950",
+      "kind": "prop",
+      "position": [
+        120.5,
+        43.3984375,
+        30.5
+      ],
+      "tags": [
+        "showName",
+        "source-node-121738950"
+      ],
+      "mesh": "mesh/末影人.vb",
+      "source": {
+        "bounds": [
+          8,
+          44,
+          12
+        ],
+        "collision": true,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": true,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/末影人.vb",
+        "meshId": 382980111545703,
+        "metalness": 0,
+        "name": "团队升级",
+        "orientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          120.5,
+          43.3984375,
+          30.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.0625,
+          0.0625,
+          0.0625
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [
+          "showName"
+        ],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "商店-158329586",
+      "kind": "prop",
+      "position": [
+        224.5,
+        43,
+        134.5
+      ],
+      "tags": [
+        "showName",
+        "source-node-158329586"
+      ],
+      "mesh": "mesh/Dream.vb",
+      "source": {
+        "bounds": [
+          8,
+          33,
+          14
+        ],
+        "collision": true,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": true,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/Dream.vb",
+        "meshId": 382974751224438,
+        "metalness": 0,
+        "name": "商店",
+        "orientation": [
+          0,
+          0.70703125,
+          0,
+          0.70703125
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          224.5,
+          43,
+          134.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.0625,
+          0.0625,
+          0.0625
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [
+          "showName"
+        ],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "团队箱子-蓝",
+      "kind": "prop",
+      "position": [
+        124.5,
+        42.3984375,
+        220.5
+      ],
+      "tags": [
+        "showName",
+        "source-node-175124311"
+      ],
+      "mesh": "mesh/箱子.vb",
+      "source": {
+        "bounds": [
+          14,
+          14,
+          15
+        ],
+        "collision": true,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": true,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/箱子.vb",
+        "meshId": 313306313190392,
+        "metalness": 0,
+        "name": "团队箱子-蓝",
+        "orientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          124.5,
+          42.3984375,
+          220.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.0625,
+          0.0625,
+          0.0625
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [
+          "showName"
+        ],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "商店-221234954",
+      "kind": "prop",
+      "position": [
+        134.5,
+        43,
+        30.5
+      ],
+      "tags": [
+        "showName",
+        "source-node-221234954"
+      ],
+      "mesh": "mesh/Dream.vb",
+      "source": {
+        "bounds": [
+          8,
+          33,
+          14
+        ],
+        "collision": true,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": true,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/Dream.vb",
+        "meshId": 382974751224438,
+        "metalness": 0,
+        "name": "商店",
+        "orientation": [
+          0,
+          -1,
+          0,
+          0
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          134.5,
+          43,
+          30.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.0625,
+          0.0625,
+          0.0625
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [
+          "showName"
+        ],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "团队箱子-绿",
+      "kind": "prop",
+      "position": [
+        34.5,
+        42.3984375,
+        124.5
+      ],
+      "tags": [
+        "showName",
+        "source-node-232836361"
+      ],
+      "mesh": "mesh/箱子.vb",
+      "source": {
+        "bounds": [
+          14,
+          14,
+          15
+        ],
+        "collision": true,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": true,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/箱子.vb",
+        "meshId": 313306313190392,
+        "metalness": 0,
+        "name": "团队箱子-绿",
+        "orientation": [
+          0,
+          -0.70703125,
+          0,
+          0.70703125
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          34.5,
+          42.3984375,
+          124.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.0625,
+          0.0625,
+          0.0625
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [
+          "showName"
+        ],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "末影箱-293513658",
+      "kind": "prop",
+      "position": [
+        220.5,
+        42.3984375,
+        124.5
+      ],
+      "tags": [
+        "showName",
+        "source-node-293513658"
+      ],
+      "mesh": "mesh/末影箱.vb",
+      "source": {
+        "bounds": [
+          15,
+          14,
+          14
+        ],
+        "collision": true,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": true,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/末影箱.vb",
+        "meshId": 313323237206976,
+        "metalness": 0,
+        "name": "末影箱",
+        "orientation": [
+          0,
+          1,
+          0,
+          0
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          220.5,
+          42.3984375,
+          124.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.0625,
+          0.0625,
+          0.0625
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [
+          "showName"
+        ],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "团队升级-346210337",
+      "kind": "prop",
+      "position": [
+        134.5,
+        43.3984375,
+        224.5
+      ],
+      "tags": [
+        "showName",
+        "source-node-346210337"
+      ],
+      "mesh": "mesh/末影人.vb",
+      "source": {
+        "bounds": [
+          8,
+          44,
+          12
+        ],
+        "collision": true,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": true,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/末影人.vb",
+        "meshId": 382980111545703,
+        "metalness": 0,
+        "name": "团队升级",
+        "orientation": [
+          0,
+          -1,
+          0,
+          0
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          134.5,
+          43.3984375,
+          224.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.0625,
+          0.0625,
+          0.0625
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [
+          "showName"
+        ],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "团队升级-383222283",
+      "kind": "prop",
+      "position": [
+        30.5,
+        43.3984375,
+        134.5
+      ],
+      "tags": [
+        "showName",
+        "source-node-383222283"
+      ],
+      "mesh": "mesh/末影人.vb",
+      "source": {
+        "bounds": [
+          8,
+          44,
+          12
+        ],
+        "collision": true,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": true,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/末影人.vb",
+        "meshId": 382980111545703,
+        "metalness": 0,
+        "name": "团队升级",
+        "orientation": [
+          0,
+          0.70703125,
+          0,
+          0.70703125
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          30.5,
+          43.3984375,
+          134.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.0625,
+          0.0625,
+          0.0625
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [
+          "showName"
+        ],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "末影箱-433019964",
+      "kind": "prop",
+      "position": [
+        130.5,
+        42.3984375,
+        220.5
+      ],
+      "tags": [
+        "showName",
+        "source-node-433019964"
+      ],
+      "mesh": "mesh/末影箱.vb",
+      "source": {
+        "bounds": [
+          15,
+          14,
+          14
+        ],
+        "collision": true,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": true,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/末影箱.vb",
+        "meshId": 313323237206976,
+        "metalness": 0,
+        "name": "末影箱",
+        "orientation": [
+          0,
+          0.70703125,
+          0,
+          0.70703125
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          130.5,
+          42.3984375,
+          220.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.0625,
+          0.0625,
+          0.0625
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [
+          "showName"
+        ],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "DiamondGenerator-435328532",
+      "kind": "prop",
+      "position": [
+        70.5,
+        43,
+        70.5
+      ],
+      "tags": [
+        "source-node-435328532"
+      ],
+      "mesh": "mesh/钻石块.vb",
+      "source": {
+        "bounds": [
+          32,
+          32,
+          32
+        ],
+        "collision": false,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": false,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/钻石块.vb",
+        "meshId": 382990463087787,
+        "metalness": 0,
+        "name": "DiamondGenerator",
+        "orientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          70.5,
+          43,
+          70.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.01953125,
+          0.01953125,
+          0.01953125
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "蓝床",
+      "kind": "prop",
+      "position": [
+        127.5,
+        41.28125,
+        213
+      ],
+      "tags": [
+        "bed",
+        "source-node-472183587"
+      ],
+      "mesh": "mesh/bluebed.vb",
+      "source": {
+        "bounds": [
+          32,
+          9,
+          16
+        ],
+        "collision": false,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": false,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/bluebed.vb",
+        "meshId": 302461751452276,
+        "metalness": 0,
+        "name": "蓝床",
+        "orientation": [
+          0,
+          -0.70703125,
+          0,
+          0.70703125
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          127.5,
+          41.28125,
+          213
+        ],
+        "restitution": 0,
+        "scale": [
+          0.0546875,
+          0.0546875,
+          0.0546875
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [
+          "bed"
+        ],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "红床",
+      "kind": "prop",
+      "position": [
+        213,
+        41.30078125,
+        127.5
+      ],
+      "tags": [
+        "bed",
+        "source-node-480124746"
+      ],
+      "mesh": "mesh/redbed.vb",
+      "source": {
+        "bounds": [
+          32,
+          9,
+          16
+        ],
+        "collision": false,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": false,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/redbed.vb",
+        "meshId": 313306174778302,
+        "metalness": 0,
+        "name": "红床",
+        "orientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          213,
+          41.30078125,
+          127.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.0546875,
+          0.0546875,
+          0.0546875
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [
+          "bed"
+        ],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "团队箱子-黄",
+      "kind": "prop",
+      "position": [
+        130.5,
+        42.3984375,
+        34.5
+      ],
+      "tags": [
+        "showName",
+        "source-node-531568815"
+      ],
+      "mesh": "mesh/箱子.vb",
+      "source": {
+        "bounds": [
+          14,
+          14,
+          15
+        ],
+        "collision": true,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": true,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/箱子.vb",
+        "meshId": 313306313190392,
+        "metalness": 0,
+        "name": "团队箱子-黄",
+        "orientation": [
+          0,
+          -1,
+          0,
+          0
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          130.5,
+          42.3984375,
+          34.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.0625,
+          0.0625,
+          0.0625
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [
+          "showName"
+        ],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "商店-549644164",
+      "kind": "prop",
+      "position": [
+        120.5,
+        43,
+        224.5
+      ],
+      "tags": [
+        "showName",
+        "source-node-549644164"
+      ],
+      "mesh": "mesh/Dream.vb",
+      "source": {
+        "bounds": [
+          8,
+          33,
+          14
+        ],
+        "collision": true,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": true,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/Dream.vb",
+        "meshId": 382974751224438,
+        "metalness": 0,
+        "name": "商店",
+        "orientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          120.5,
+          43,
+          224.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.0625,
+          0.0625,
+          0.0625
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [
+          "showName"
+        ],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "团队箱子-红",
+      "kind": "prop",
+      "position": [
+        220.5,
+        42.3984375,
+        130.5
+      ],
+      "tags": [
+        "showName",
+        "source-node-584306476"
+      ],
+      "mesh": "mesh/箱子.vb",
+      "source": {
+        "bounds": [
+          14,
+          14,
+          15
+        ],
+        "collision": true,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": true,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/箱子.vb",
+        "meshId": 313306313190392,
+        "metalness": 0,
+        "name": "团队箱子-红",
+        "orientation": [
+          0,
+          0.70703125,
+          0,
+          0.70703125
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          220.5,
+          42.3984375,
+          130.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.0625,
+          0.0625,
+          0.0625
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [
+          "showName"
+        ],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "DiamondGenerator-595193007",
+      "kind": "prop",
+      "position": [
+        70.5,
+        43,
+        182.5
+      ],
+      "tags": [
+        "source-node-595193007"
+      ],
+      "mesh": "mesh/钻石块.vb",
+      "source": {
+        "bounds": [
+          32,
+          32,
+          32
+        ],
+        "collision": false,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": false,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/钻石块.vb",
+        "meshId": 382990463087787,
+        "metalness": 0,
+        "name": "DiamondGenerator",
+        "orientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          70.5,
+          43,
+          182.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.01953125,
+          0.01953125,
+          0.01953125
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "绿床",
+      "kind": "prop",
+      "position": [
+        42,
+        41.30078125,
+        127.5
+      ],
+      "tags": [
+        "bed",
+        "source-node-736973117"
+      ],
+      "mesh": "mesh/greenbed.vb",
+      "source": {
+        "bounds": [
+          32,
+          9,
+          16
+        ],
+        "collision": false,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": false,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/greenbed.vb",
+        "meshId": 302461747258341,
+        "metalness": 0,
+        "name": "绿床",
+        "orientation": [
+          0,
+          -1,
+          0,
+          0
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          42,
+          41.30078125,
+          127.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.0546875,
+          0.0546875,
+          0.0546875
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [
+          "bed"
+        ],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "黄床",
+      "kind": "prop",
+      "position": [
+        127.5,
+        41.28125,
+        42
+      ],
+      "tags": [
+        "bed",
+        "source-node-762426179"
+      ],
+      "mesh": "mesh/yellowbed.vb",
+      "source": {
+        "bounds": [
+          32,
+          9,
+          16
+        ],
+        "collision": false,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": false,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/yellowbed.vb",
+        "meshId": 302461751452302,
+        "metalness": 0,
+        "name": "黄床",
+        "orientation": [
+          0,
+          0.70703125,
+          0,
+          0.70703125
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          127.5,
+          41.28125,
+          42
+        ],
+        "restitution": 0,
+        "scale": [
+          0.0546875,
+          0.0546875,
+          0.0546875
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [
+          "bed"
+        ],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "EmeraldGenerator-800959396",
+      "kind": "prop",
+      "position": [
+        127.5,
+        43,
+        127.5
+      ],
+      "tags": [
+        "source-node-800959396"
+      ],
+      "mesh": "mesh/绿宝石块.vb",
+      "source": {
+        "bounds": [
+          32,
+          32,
+          32
+        ],
+        "collision": false,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": false,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/绿宝石块.vb",
+        "meshId": 382985228596119,
+        "metalness": 0,
+        "name": "EmeraldGenerator",
+        "orientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          127.5,
+          43,
+          127.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.01953125,
+          0.01953125,
+          0.01953125
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    },
+    {
+      "id": "DiamondGenerator-988086449",
+      "kind": "prop",
+      "position": [
+        182.5,
+        43,
+        70.5
+      ],
+      "tags": [
+        "source-node-988086449"
+      ],
+      "mesh": "mesh/钻石块.vb",
+      "source": {
+        "bounds": [
+          32,
+          32,
+          32
+        ],
+        "collision": false,
+        "damage": {
+          "enabled": false,
+          "hp": 100,
+          "maxHp": 100,
+          "showDamage": true,
+          "showHealth": true
+        },
+        "defaultMotionId": "",
+        "editLock": true,
+        "emissive": 0,
+        "fixed": false,
+        "friction": 1,
+        "gravity": false,
+        "mass": 1,
+        "mesh": "mesh/钻石块.vb",
+        "meshId": 382990463087787,
+        "metalness": 0,
+        "name": "DiamondGenerator",
+        "orientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "particle": {
+          "acceleration": {
+            "x": 0,
+            "y": -1,
+            "z": 0
+          },
+          "color0": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color1": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color2": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color3": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "color4": {
+            "b": 0,
+            "g": 0,
+            "r": 0
+          },
+          "damping": 0,
+          "lifetime": 10,
+          "lifetimeSpread": 0,
+          "limit": 0,
+          "noiseAmpl": 0,
+          "noiseFreq": 0,
+          "rate": 0,
+          "rateSpread": 0,
+          "size0": 1,
+          "size1": 1,
+          "size2": 1,
+          "size3": 1,
+          "size4": 1,
+          "sizeSpread": 0,
+          "velocity": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "velocitySpread": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          }
+        },
+        "position": [
+          182.5,
+          43,
+          70.5
+        ],
+        "restitution": 0,
+        "scale": [
+          0.01953125,
+          0.01953125,
+          0.01953125
+        ],
+        "shininess": 0,
+        "sound": {
+          "chat": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "die": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "hurt": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          },
+          "interact": {
+            "gain": 1,
+            "gainRange": 0,
+            "pitch": 1,
+            "pitchRange": 0,
+            "radius": 32,
+            "sample": ""
+          }
+        },
+        "staticShadow": true,
+        "tags": [],
+        "tint": [
+          255,
+          255,
+          255,
+          255
+        ]
+      }
+    }
+  ]
+}

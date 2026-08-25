@@ -539,9 +539,15 @@
         showEngineNotice(event.message);
       }
       else {
-        remoteEvents.emit("client", event);
-        inventoryControls?.receive(event);
-        if (event?.type === "draw") flushPointerLockEvents();
+        // DAO3 remoteChannel payloads conventionally carry args. A few
+        // recovered maps rely on that shape even for marker events such as
+        // draw, so normalize at the engine boundary rather than patching maps.
+        const mapEvent = event && typeof event === "object" && !Array.isArray(event) && event.args === undefined
+          ? { ...event, args: {} }
+          : event;
+        remoteEvents.emit("client", mapEvent);
+        inventoryControls?.receive(mapEvent);
+        if (mapEvent?.type === "draw") flushPointerLockEvents();
       }
     },
     drain() {
@@ -1076,9 +1082,15 @@
 
   function applyPlayerLink(event) {
     const href = String(event?.href || "");
-    if (!/^https?:\/\//i.test(href)) return;
-    if (event?.options?.isConfirm !== false && !window.confirm(`Open ${href}?`)) return;
-    window.open(href, event?.options?.isNewTab === false ? "_self" : "_blank", "noopener");
+    const createSessionUrl = String(event?.createSessionUrl || "");
+    const target = /^https?:\/\//i.test(createSessionUrl)
+      ? new URL(window.location.href)
+      : null;
+    if (target) target.searchParams.set("nea", createSessionUrl);
+    const destination = target?.toString() || href;
+    if (!/^https?:\/\//i.test(destination)) return;
+    if (event?.options?.isConfirm !== false && !window.confirm(`Open ${destination}?`)) return;
+    window.open(destination, event?.options?.isNewTab === false ? "_self" : "_blank", "noopener");
   }
 
   function applyGuiCommand(command) {

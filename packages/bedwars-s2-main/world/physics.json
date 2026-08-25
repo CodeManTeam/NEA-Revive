@@ -1,0 +1,27 @@
+{
+  "formatVersion": "nea-physics/v1",
+  "gravity": -0.1,
+  "airFriction": 0.01,
+  "maxFallSpeed": 50,
+  "stepHeight": 1.25,
+  "playerBody": {
+    "profileId": "historical-player-default-v1",
+    "origin": "body-center",
+    "originStatus": "confirmed",
+    "sizeStatus": "confirmed",
+    "boundsHalfExtents": [
+      0.45,
+      1.1,
+      0.45
+    ],
+    "shapeHalfExtents": [
+      0.45,
+      1.1,
+      0.45
+    ],
+    "evidence": "DAO3 standard export player body defaults"
+  },
+  "materials": {},
+  "colliders": [],
+  "triggers": []
+}

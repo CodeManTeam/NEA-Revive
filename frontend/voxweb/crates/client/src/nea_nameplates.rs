@@ -7,6 +7,7 @@ pub struct NameplateEntry<'a> {
     pub id: u64,
     pub name: &'a str,
     pub world: [f32; 3],
+    pub color: [f32; 3],
 }
 
 pub struct NameplateOverlay {
@@ -73,7 +74,10 @@ impl NameplateOverlay {
             label.set_attribute(
                 "style",
                 &format!(
-                    "position:absolute;display:block;left:{x:.1}px;top:{y:.1}px;transform:translate(-50%,-100%);color:white;font:600 14px Arial,sans-serif;text-shadow:0 1px 2px black,0 0 3px black;white-space:nowrap"
+                    "position:absolute;display:block;left:{x:.1}px;top:{y:.1}px;transform:translate(-50%,-100%);color:rgb({},{},{});font:600 14px Arial,sans-serif;text-shadow:0 1px 2px black,0 0 3px black;white-space:nowrap",
+                    color_component(entry.color[0]),
+                    color_component(entry.color[1]),
+                    color_component(entry.color[2]),
                 ),
             )?;
         }
@@ -89,6 +93,10 @@ impl NameplateOverlay {
         self.labels.insert(id, label.clone());
         Ok(label)
     }
+}
+
+fn color_component(value: f32) -> u8 {
+    (value.clamp(0.0, 1.0) * 255.0).round() as u8
 }
 
 impl Drop for NameplateOverlay {
