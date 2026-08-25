@@ -952,10 +952,12 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                         .find(|player| player.id == u64::from(d.player_id))
                                         .cloned();
                                     // Map scripts can teleport a player after join (Bedwars
-                                    // assigns a team spawn). Keep local prediction for the
-                                    // normal echoed transform, but apply a large authoritative
-                                    // displacement immediately so the camera does not remain at
-                                    // the terrain-reset spawn in an empty part of the map.
+                                    // assigns a team spawn). The compatibility backend does
+                                    // not simulate movement, so its periodic net-state frames
+                                    // continue to contain the last runtime position. Apply a
+                                    // large displacement only before local physics exists;
+                                    // otherwise an ordinary walk would be mistaken for a
+                                    // server teleport and snap the player back every 200 ms.
                                     if let Some(runtime_player) = local_runtime_player.as_ref() {
                                         let next = runtime_player.position;
                                         let valid = next.iter().all(|value| value.is_finite());
@@ -965,7 +967,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                             let dz = current[2] - next[2];
                                             dx * dx + dy * dy + dz * dz > 16.0
                                         });
-                                        if valid && far_from_local {
+                                        if local_physics.is_none() && valid && far_from_local {
                                             local_pos = next;
                                             local_vel = [0.0, 0.0, 0.0];
                                             player_pos = Some(next);
