@@ -843,6 +843,8 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
     let mut pending_chunks: Vec<(u32, u32, u32)> = Vec::new();
     let mut near_count: usize = 0;
     let mut chunk_cells: Vec<(u32, u32, u32, Vec<u16>)> = Vec::new();
+    let mut spawn_area_ready = false;
+    let mut spawn_position: Option<[f32; 3]> = None;
     let mut full_map_built = false;
     // net-state: incremental base + decoded player body position
     let mut ns_base = voxweb_protocol::netstate::NetStateBase::default();
@@ -1335,6 +1337,8 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                     reset.origin[1] as f32,
                                     reset.origin[2] as f32,
                                 ];
+                                spawn_position = Some(local_pos);
+                                spawn_area_ready = false;
                                 player_pos = Some(local_pos);
                                 // Chunk grid + spawn chunk from the reset shape.
                                 let grid = voxweb_protocol::adapter::nea_chunk_grid();
@@ -1543,6 +1547,8 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                         // view — probing only y+1 left
                                         // the head inside a ceiling,
                                         // rendering black)
+                                        let reset_y = local_pos[1];
+                                        let mut spawn_ground_found = false;
                                         for gy in 0..=128 {
                                             if solid_at(
                                                 &chunk_cells,
@@ -1576,6 +1582,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                                 local_pos[1] =
                                                     gy as f32 + 1.0 + local_body_half_extents[1];
                                                 local_vel[1] = 0.0;
+                                                spawn_ground_found = true;
                                                 // 若本地物理已初始化（地形重建等），同步其位置，
                                                 // 避免旧位置继续主导（悬空/下落）。
                                                 if let Some(p) = local_physics.as_mut() {
@@ -1587,11 +1594,16 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                                 break;
                                             }
                                         }
+                                        if spawn_ground_found || local_pos[1] != reset_y {
+                                            spawn_position = Some(local_pos);
+                                            spawn_area_ready = true;
+                                        }
                                         jslog!(
-                                            "[nea] spawn ground: pos=({:.1},{:.1},{:.1})",
+                                            "[nea] spawn ground: pos=({:.1},{:.1},{:.1}) ready={}",
                                             local_pos[0],
                                             local_pos[1],
-                                            local_pos[2]
+                                            local_pos[2],
+                                            spawn_area_ready
                                         );
                                         let foot_block = block_voxel_at(
                                             &chunk_cells,
@@ -1855,33 +1867,57 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
             if flight_toggle {
                 physics.request_flight_toggle();
             }
-            physics.set_fluid_volume_fraction(fluid_volume_fraction(
-                physics.position,
-                local_body_half_extents,
-                &chunk_cells,
-            ));
-            let support_block = block_voxel_at(
-                &chunk_cells,
-                physics.position[0].floor() as i32,
-                (physics.position[1] - local_body_half_extents[1] - 1.0e-4).floor() as i32,
-                physics.position[2].floor() as i32,
-            );
-            let (surface_friction, surface_restitution) =
-                block_surface_material(support_block, &surface_materials);
-            physics.set_surface_friction(surface_friction);
-            physics.set_surface_restitution(surface_restitution);
-            physics_bodies.clear();
-            physics_bodies.extend_from_slice(&collision_bodies);
-            physics_bodies.extend_from_slice(&static_collision_bodies);
-            physics.step_with_bodies(
-                movement,
-                move_mode,
-                jump_edge,
-                inp.jump,
-                dt,
-                &|x, y, z| solid_voxel_at(&chunk_cells, x, y, z),
-                &mut physics_bodies,
-            );
+            if !spawn_area_ready {
+                // Do not integrate gravity against an empty chunk cache while
+                // the spawn area is still arriving. The first near-chunk
+                // response will place the body on real terrain and open the
+                // local physics loop.
+                physics.position = local_pos;
+                physics.velocity = [0.0, 0.0, 0.0];
+                physics.grounded = true;
+                physics_bodies.clear();
+            } else {
+                physics.set_fluid_volume_fraction(fluid_volume_fraction(
+                    physics.position,
+                    local_body_half_extents,
+                    &chunk_cells,
+                ));
+                let support_block = block_voxel_at(
+                    &chunk_cells,
+                    physics.position[0].floor() as i32,
+                    (physics.position[1] - local_body_half_extents[1] - 1.0e-4).floor() as i32,
+                    physics.position[2].floor() as i32,
+                );
+                let (surface_friction, surface_restitution) =
+                    block_surface_material(support_block, &surface_materials);
+                physics.set_surface_friction(surface_friction);
+                physics.set_surface_restitution(surface_restitution);
+                physics_bodies.clear();
+                physics_bodies.extend_from_slice(&collision_bodies);
+                physics_bodies.extend_from_slice(&static_collision_bodies);
+                physics.step_with_bodies(
+                    movement,
+                    move_mode,
+                    jump_edge,
+                    inp.jump,
+                    dt,
+                    &|x, y, z| solid_voxel_at(&chunk_cells, x, y, z),
+                    &mut physics_bodies,
+                );
+                if physics.position[1] < -16.0 {
+                    if let Some(spawn) = spawn_position {
+                        physics.position = spawn;
+                        physics.velocity = [0.0, 0.0, 0.0];
+                        physics.grounded = true;
+                        jslog!(
+                            "[nea] void respawn: pos=({:.1},{:.1},{:.1})",
+                            spawn[0],
+                            spawn[1],
+                            spawn[2]
+                        );
+                    }
+                }
+            }
             local_pos = physics.position;
             local_vel = physics.velocity;
             player_pos = Some(physics.position);
