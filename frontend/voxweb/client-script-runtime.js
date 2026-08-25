@@ -521,7 +521,9 @@
     emitPointerLockEvent("pointerlockchange", { isLocked: document.pointerLockElement !== null });
   });
   document.addEventListener("pointerlockerror", () => {
-    emitPointerLockEvent("pointerlockerror", undefined);
+    // DAO3 scripts commonly destructure pointer-lock event payloads even
+    // for errors. Keep the callback shape stable instead of passing undefined.
+    emitPointerLockEvent("pointerlockerror", { isLocked: document.pointerLockElement !== null });
   });
   window.addEventListener("resize", () => {
     screenEvents.emit("resize", { screenWidth: window.innerWidth, screenHeight: window.innerHeight });

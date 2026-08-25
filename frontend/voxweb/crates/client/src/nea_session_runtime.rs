@@ -278,14 +278,26 @@ fn raycast_static_entity(
         .filter(|entity| entity.visible && entity.collision)
         .filter_map(|entity| {
             let center = glam::Vec3::from_array(interaction_center(entity));
+            let rotation = glam::Quat::from_xyzw(
+                entity.rotation[0],
+                entity.rotation[1],
+                entity.rotation[2],
+                entity.rotation[3],
+            )
+            .normalize();
+            // Intersect the authored box in model space, then transform the
+            // ray into that same space. This keeps rotated props aligned with
+            // the rendered mesh instead of selecting an axis-aligned box.
+            let local_origin = rotation.inverse() * (origin - center);
+            let local_direction = rotation.inverse() * direction;
             let half = glam::Vec3::from_array(entity.half_extents);
-            let min = center - half;
-            let max = center + half;
+            let min = -half;
+            let max = half;
             let mut near = 0.0f32;
             let mut far = f32::INFINITY;
             for axis in 0..3 {
-                let o = origin[axis];
-                let d = direction[axis];
+                let o = local_origin[axis];
+                let d = local_direction[axis];
                 if d.abs() < 1.0e-8 {
                     if o < min[axis] || o > max[axis] {
                         return None;
@@ -1984,13 +1996,31 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                         inp.local_pitch,
                         inp.local_yaw,
                     );
-                    let ray_delta = glam::Vec3::from_array(ray_target) - glam::Vec3::from_array(ray_origin);
+                    let ray_delta = glam::Vec3::from_array(ray_target)
+                        - glam::Vec3::from_array(ray_origin);
                     let ray_direction = ray_delta.normalize_or_zero();
                     let target = raycast_static_entity(
                         glam::Vec3::from_array(ray_origin),
                         ray_direction,
                         &entity_scene.entities,
-                    );
+                    )
+                    .filter(|(distance, _)| *distance <= 4.5)
+                    .or_else(|| {
+                        // Script-owned Bedwars props use player.onPress rather
+                        // than entity-interact. A small proximity fallback
+                        // keeps right-click usable when the model's thin mesh
+                        // is just outside the exact crosshair ray.
+                        entity_scene
+                            .entities
+                            .iter()
+                            .filter(|entity| {
+                                entity.visible
+                                    && entity.script_interactable
+                                    && interaction_distance(entity, local_pos) <= 4.5
+                            })
+                            .map(|entity| (interaction_distance(entity, local_pos), entity))
+                            .min_by(|left, right| left.0.total_cmp(&right.0))
+                    });
                     let (ray_hit_entity, ray_time) = if let Some((distance, entity)) = target {
                         (entity.id, distance)
                     } else {
@@ -3188,35 +3218,40 @@ fn build_static_entity_collision_bodies(
         .entities
         .iter()
         .filter(|entity| entity.collision)
-        .map(|entity| voxweb_protocol::netstate::RigidBody {
-            id: entity.id,
-            // The physics solver uses bit 16 for fixed bodies. Bit 2 only
-            // enables collision; omitting FIXED lets player impulses move a
-            // model floor as if it were a dynamic rigid body.
-            flags: 2 | if entity.fixed { 16 } else { 64 },
-            group: 0,
-            mass: entity.mass,
-            friction: entity.friction,
-            restitution: entity.restitution,
-            rx: 1.0,
-            ry: 1.0,
-            rz: 1.0,
-            px: entity.position[0],
-            py: entity.position[1],
-            pz: entity.position[2],
-            vx: 0.0,
-            vy: 0.0,
-            vz: 0.0,
-            qx: entity.rotation[0],
-            qy: entity.rotation[1],
-            qz: entity.rotation[2],
-            qw: entity.rotation[3],
-            hsx: entity.half_extents[0],
-            hsy: entity.half_extents[1],
-            hsz: entity.half_extents[2],
-            ax: 0.0,
-            ay: 0.0,
-            az: 0.0,
+        .map(|entity| {
+            let center = interaction_center(entity);
+            voxweb_protocol::netstate::RigidBody {
+                id: entity.id,
+                // The physics solver uses bit 16 for fixed bodies. Bit 2 only
+                // enables collision; omitting FIXED lets player impulses move a
+                // model floor as if it were a dynamic rigid body.
+                flags: 2 | if entity.fixed { 16 } else { 64 },
+                group: 0,
+                mass: entity.mass,
+                friction: entity.friction,
+                restitution: entity.restitution,
+                rx: 1.0,
+                ry: 1.0,
+                rz: 1.0,
+                // Match the renderer's model translation (position + rotated
+                // mesh offset), so collision and visible geometry share an anchor.
+                px: center[0],
+                py: center[1],
+                pz: center[2],
+                vx: 0.0,
+                vy: 0.0,
+                vz: 0.0,
+                qx: entity.rotation[0],
+                qy: entity.rotation[1],
+                qz: entity.rotation[2],
+                qw: entity.rotation[3],
+                hsx: entity.half_extents[0],
+                hsy: entity.half_extents[1],
+                hsz: entity.half_extents[2],
+                ax: 0.0,
+                ay: 0.0,
+                az: 0.0,
+            }
         })
         .collect()
 }
