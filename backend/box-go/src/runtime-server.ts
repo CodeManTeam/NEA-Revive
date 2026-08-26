@@ -121,6 +121,7 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   const wirePlayerIds = new Map<string, number>() // runtime player id -> net-state id
   let nextWirePlayerId = 1
   const pendingClientEvents = new Map<string, unknown[]>() // playerId -> pre-join RemoteChannel events
+  const pendingFlushTimers = new Map<string, { interval: NodeJS.Timeout, timeout: NodeJS.Timeout }>()
   const chatLogIds = new Map<string, number>() // sessionId -> chat log id
   let gameChatProtocolRef: any = null
   let gameTerrainProtocolRef: any = null
@@ -238,6 +239,50 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   if (importedProject.clientUiState) {
     clientScriptModules["__nea_ui_state__"] = JSON.stringify(importedProject.clientUiState)
   }
+
+  function queuePendingClientEvent(playerId: string, event: unknown): void {
+    const events = pendingClientEvents.get(playerId) ?? []
+    const type = typeof event === "object" && event !== null && !Array.isArray(event)
+      ? String((event as { type?: unknown }).type ?? "")
+      : ""
+    // UI visibility is a state, not a replayable action. If a delayed
+    // RemoteChannel reconnects, replaying an obsolete open after a close leaves
+    // the inventory modal visible with no corresponding server state.
+    if (type === "showinventory") {
+      for (let index = events.length - 1; index >= 0; index -= 1) {
+        const previous = events[index]
+        if (typeof previous === "object" && previous !== null && !Array.isArray(previous)
+          && String((previous as { type?: unknown }).type ?? "") === type) {
+          events.splice(index, 1)
+        }
+      }
+    }
+    events.push(structuredClone(event))
+    pendingClientEvents.set(playerId, events.slice(-maxPendingClientEvents))
+  }
+
+  function schedulePendingClientEventFlush(playerId: string): void {
+    if (pendingFlushTimers.has(playerId)) return
+    const interval = setInterval(() => {
+      if (!pendingClientEvents.has(playerId)) {
+        const timer = pendingFlushTimers.get(playerId)
+        if (timer) {
+          clearInterval(timer.interval)
+          clearTimeout(timer.timeout)
+          pendingFlushTimers.delete(playerId)
+        }
+        return
+      }
+      flushPendingClientEvents(playerId)
+    }, 25)
+    const timeout = setTimeout(() => {
+      clearInterval(interval)
+      pendingFlushTimers.delete(playerId)
+    }, 2000)
+    interval.unref?.()
+    timeout.unref?.()
+    pendingFlushTimers.set(playerId, { interval, timeout })
+  }
   const runtimeMeshNames = collectScriptMeshNames(importedProject.serverModules, importedProject.clientModules)
   let nextRuntimeEntityId = 0x30000
 
@@ -305,10 +350,14 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
       }
     },
     sendClientEvent: (playerId: string, event: unknown) => {
-      if (deliverClientEvent(playerId, event)) return
-      const events = pendingClientEvents.get(playerId) ?? []
-      events.push(structuredClone(event))
-      pendingClientEvents.set(playerId, events.slice(-maxPendingClientEvents))
+      // A channel can become usable after the game-net join. Flush any
+      // earlier bootstrap/UI events before delivering the new event so the
+      // client never observes a later close before an earlier open.
+      if (pendingClientEvents.has(playerId)) flushPendingClientEvents(playerId)
+      if (pendingClientEvents.has(playerId) || !deliverClientEvent(playerId, event)) {
+        queuePendingClientEvent(playerId, event)
+        schedulePendingClientEventFlush(playerId)
+      }
     },
     linkPlayer: async (playerId: string, href: string, linkOptions: unknown) => {
       // Historical maps commonly use javascript: links for DAO3 account
@@ -326,9 +375,8 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         ...(typeof localCreateSessionUrl === "string" ? { createSessionUrl: localCreateSessionUrl } : {}),
       }
       if (deliverClientEvent(playerId, event)) return
-      const events = pendingClientEvents.get(playerId) ?? []
-      events.push(event)
-      pendingClientEvents.set(playerId, events.slice(-maxPendingClientEvents))
+      queuePendingClientEvent(playerId, event)
+      schedulePendingClientEventFlush(playerId)
     },
     sendGuiCommand: async (command: any) => {
       if (command.operation === "getAttribute") {
@@ -1048,9 +1096,9 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
           })
         }
         // The game-net join can race the RemoteChannel protocol's client
-        // registration across the three websocket transports.
-        setTimeout(() => flushPendingClientEvents(playerId), 135)
-        setTimeout(() => flushPendingClientEvents(playerId), 165)
+        // registration across the three websocket transports. Keep retrying
+        // briefly instead of replaying a stale UI burst much later.
+        schedulePendingClientEventFlush(playerId)
         setTimeout(() => syncWearableStates(runtime.snapshot()), 145)
         // voxweb 握手：join 后立即发 secret 原始帧（game-net rawId=10）：
         // varint(10) varint(1) 'E' 0 varint(playerId) uint8(5) varint(playerId) uint8(1) varint(playerId)
@@ -1219,6 +1267,13 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
             playerSessions.delete(playerId)
             wirePlayerIds.delete(playerId)
           }
+          const pendingTimer = playerId ? pendingFlushTimers.get(playerId) : undefined
+          if (pendingTimer) {
+            clearInterval(pendingTimer.interval)
+            clearTimeout(pendingTimer.timeout)
+            pendingFlushTimers.delete(playerId as string)
+          }
+          if (playerId) pendingClientEvents.delete(playerId)
           sentWearableStates.delete(client.sessionId)
           sessions.delete(client.sessionId)
           sessionNames.delete(client.sessionId)
