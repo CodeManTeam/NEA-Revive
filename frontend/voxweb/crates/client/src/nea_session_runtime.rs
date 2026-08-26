@@ -2091,7 +2091,9 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                         ray_direction,
                         &entity_scene.entities,
                     )
-                    .filter(|(distance, _)| *distance <= 4.5)
+                    .filter(|(distance, entity)| {
+                        *distance <= 4.5 && (button != 2 || entity.script_interactable)
+                    })
                     .or_else(|| {
                         // Script-owned Bedwars props use player.onPress rather
                         // than entity-interact. A small proximity fallback

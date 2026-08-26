@@ -1377,12 +1377,17 @@
     // layer underneath the script-owned descendants.
     const element = document.createElement(kind === "input" ? "input" : "div");
     const imageElement = kind === "image" ? document.createElement("img") : null;
+    const textElement = kind === "text" ? document.createElement("span") : null;
     element.style.cssText = "position:absolute;box-sizing:border-box;white-space:pre-wrap;color:white;font:16px/1.35 sans-serif;text-shadow:0 1px 2px #000;pointer-events:none";
     element.style.zIndex = "1";
     if (imageElement) {
       imageElement.style.cssText = "position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0";
       imageElement.setAttribute("aria-hidden", "true");
       element.appendChild(imageElement);
+    }
+    if (textElement) {
+      textElement.style.cssText = "position:absolute;inset:0;box-sizing:border-box;pointer-events:none;display:flex";
+      element.appendChild(textElement);
     }
     const childHost = kind === "scroll" ? document.createElement("div") : element;
     if (kind === "scroll") {
@@ -1647,7 +1652,7 @@
       });
     }
     function refresh() {
-      if (kind === "text") renderRichText(element, textContent, richText);
+      if (textElement) renderRichText(textElement, textContent, richText);
       if (kind === "input") { element.value = textContent; element.placeholder = placeholder; }
       element.style.left = uiLength((node.position.ratio.x || 0) * (node.position.scale.x || 1), node.position.offset.x);
       element.style.top = uiLength((node.position.ratio.y || 0) * (node.position.scale.y || 1), node.position.offset.y);
@@ -1674,6 +1679,20 @@
         element.style.backgroundImage = "none";
       }
       element.style.opacity = kind === "image" ? "1" : (rendersImage ? String(clamp(imageOpacity, 0, 1)) : "1");
+      if (textElement) {
+        textElement.style.font = element.style.font;
+        textElement.style.fontFamily = element.style.fontFamily;
+        textElement.style.fontSize = element.style.fontSize;
+        textElement.style.lineHeight = element.style.lineHeight;
+        textElement.style.color = element.style.color;
+        textElement.style.textAlign = element.style.textAlign;
+        textElement.style.justifyContent = element.style.justifyContent;
+        textElement.style.alignItems = element.style.alignItems;
+        textElement.style.whiteSpace = element.style.whiteSpace;
+        textElement.style.opacity = element.style.opacity;
+        textElement.style.webkitTextStroke = `${textStrokeThickness}px ${rgba(node.textStrokeColor, textStrokeOpacity)}`;
+        textElement.style.display = visible ? "flex" : "none";
+      }
       if (imageElement) {
         imageElement.style.display = imageMissing ? "none" : "block";
         imageElement.style.opacity = String(clamp(imageOpacity, 0, 1));

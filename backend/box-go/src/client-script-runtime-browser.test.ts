@@ -689,7 +689,10 @@ try {
       "config.js": config,
       __nea_ui_state__: ui,
     }))
-    ;(window as any).__neaClientRuntimeReceive(JSON.stringify({ type: "draw" }))
+    ;(window as any).__neaClientRuntimeReceive(JSON.stringify({
+      type: "draw",
+      args: { dateNum: "08/26/26", beds: [true, true, true, true], players: [1, 2, 3, 4] },
+    }))
     document.dispatchEvent(new Event("pointerlockchange"))
     // Reinstall the same map after a completed draw. Pointer-lock changes
     // during the new script's setup must wait until its draw handler has
@@ -702,7 +705,10 @@ try {
       __nea_ui_state__: ui,
     }))
     document.dispatchEvent(new Event("pointerlockchange"))
-    ;(window as any).__neaClientRuntimeReceive(JSON.stringify({ type: "draw" }))
+    ;(window as any).__neaClientRuntimeReceive(JSON.stringify({
+      type: "draw",
+      args: { dateNum: "08/26/26", beds: [true, true, true, true], players: [1, 2, 3, 4] },
+    }))
     const sidebarBeforeInventory = document.querySelector('[data-nea-name="sidebar"]') as HTMLElement
     if (sidebarBeforeInventory && getComputedStyle(sidebarBeforeInventory).display === "none") {
       ;(window as any).__neaClientRuntimeReceive(JSON.stringify({
@@ -733,6 +739,8 @@ try {
       scoreboard: {
         tag: sidebar?.tagName,
         display: sidebarEntry ? getComputedStyle(sidebarEntry).display : "none",
+        values: ["redNum", "blueNum", "greenNum", "yellowNum", "kills", "finalkills", "breakBeds"]
+          .map(name => document.querySelector(`[data-nea-name="${name}"]`)?.textContent ?? ""),
       },
       shop: {
         width: shop?.getBoundingClientRect().width ?? 0,
@@ -745,6 +753,7 @@ try {
   assert.ok(bedwarsDraw.uiNodeCount > 20)
   assert.equal(bedwarsDraw.scoreboard.tag, "DIV")
   assert.notEqual(bedwarsDraw.scoreboard.display, "none")
+  assert.deepEqual(bedwarsDraw.scoreboard.values, ["1", "2", "3", "4", "0", "0", "0"])
   assert.ok(bedwarsDraw.shop.width > 0)
   assert.equal(bedwarsDraw.shop.visibleItems, 7)
   assert.ok(bedwarsDraw.outbound.some((event: { type?: string }) => event.type === "buy"))
