@@ -128,6 +128,10 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
         vec3<f32>(0.1255, 0.6314, 0.8549),
     );
     color = normal_light(color, vec4<f32>(noon_tint.rgb, noon_tint.a));
-    let pre_display = revert_tone_mapping(color) / g.fog_color_exposure.w / 1.5;
+    // The recovered sky palette is already in display-referred space.  The
+    // eye exposure is used by voxel/entity pipelines, but applying it here
+    // would divide by Bedwars' very small indoor/global-light exposure and
+    // clamp the whole sky to white.
+    let pre_display = revert_tone_mapping(color) / 1.5;
     return vec4<f32>(pow(clamp(pre_display, vec3<f32>(0.0), vec3<f32>(1.0)), vec3<f32>(1.0 / 1.3)), 1.0);
 }

@@ -31,7 +31,8 @@ impl SkyboxPass {
         .unwrap_or_else(|error| panic!("skybox WGSL validation failed: {error:#?}"));
         assert!(NEA_SKYBOX_WGSL.contains("fn revert_tone_mapping"));
         assert!(NEA_SKYBOX_WGSL.contains("revert_tone_mapping(color)"));
-        assert!(NEA_SKYBOX_WGSL.contains("/ g.fog_color_exposure.w / 1.5"));
+        assert!(NEA_SKYBOX_WGSL.contains("revert_tone_mapping(color) / 1.5"));
+        assert!(!NEA_SKYBOX_WGSL.contains("/ g.fog_color_exposure.w / 1.5"));
     }
 
     pub fn new(device: &wgpu::Device, color_format: wgpu::TextureFormat) -> Self {

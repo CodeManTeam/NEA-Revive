@@ -72,7 +72,9 @@ try {
   net.server.message.join()
   await waitFor(() => Boolean(reset))
   assert.deepEqual([reset.nx, reset.ny, reset.nz], [128, 128, 128])
-  assert.deepEqual([reset.positionX, reset.positionY, reset.positionZ], [63.5, 59, 63.5])
+  assert.equal(reset.positionX, 63.5)
+  assert.equal(reset.positionZ, 63.5)
+  assert.ok(reset.positionY <= 59 && reset.positionY > 57, `lobby spawn should settle on its platform (y=${reset.positionY})`)
   assert.equal(server.runtime.snapshot().players.length, 1)
   await waitFor(() => events.some(event => event.type === "draw"))
   await waitFor(() => group.get(config.sessionId) !== undefined)
@@ -161,6 +163,8 @@ try {
       assert.equal(setYou.args.v, true)
       assert.ok([0, 1, 2, 3].includes(setYou.args.team))
       const mainPlayer = mainServer.runtime.snapshot().players[0]
+      assert.deepEqual([mainReset.positionX, mainReset.positionY, mainReset.positionZ], mainPlayer.position,
+        "main-map terrain reset should use the assigned team spawn")
       assert.deepEqual(mainPlayer.spawnPoint, [
         [224.5, 43, 127.5],
         [127.5, 43, 224.5],

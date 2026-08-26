@@ -655,7 +655,9 @@
   }
 
   function resolvePictureUrl(name) {
-    const asset = uiPictureAssets[String(name || "")];
+    const raw = String(name || "");
+    if (/^(?:https?:|data:|blob:)/i.test(raw)) return raw;
+    const asset = uiPictureAssets[raw];
     const hash = typeof asset?.hash === "string" ? asset.hash : "";
     if (!/^[A-Za-z0-9_-]{43}$/.test(hash)) return null;
     try {
@@ -1642,7 +1644,18 @@
       element.addEventListener("focus", () => node.events.emit("focus", { target: node }));
       element.addEventListener("blur", () => node.events.emit("blur", { target: node }));
     }
-    if (imageElement) imageElement.addEventListener("load", () => node.events.emit("load", { target: node }));
+    if (imageElement) {
+      imageElement.addEventListener("load", () => node.events.emit("load", { target: node }));
+      imageElement.addEventListener("error", () => {
+        // Historical UI metadata can reference an omitted archive entry. Do
+        // not leave a broken-image glyph or a colored slot on screen.
+        imageMissing = true;
+        imageElement.removeAttribute("src");
+        element.style.backgroundColor = "transparent";
+        element.style.backgroundImage = "none";
+        element.style.opacity = "0";
+      });
+    }
     if (kind === "scroll") {
       element.style.overflow = "auto";
       element.addEventListener("scroll", () => {

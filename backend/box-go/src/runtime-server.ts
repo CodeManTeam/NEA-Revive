@@ -932,11 +932,11 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
     return boxes
   }
 
-  function terrainResetPayload() {
+  function terrainResetPayload(position: [number, number, number] = VIEW_SPAWN) {
     return {
-      positionX: VIEW_SPAWN[0],
-      positionY: VIEW_SPAWN[1],
-      positionZ: VIEW_SPAWN[2],
+      positionX: position[0],
+      positionY: position[1],
+      positionZ: position[2],
       resetCounter: 1,
       nx: sourceShape[0],
       ny: sourceShape[1],
@@ -1049,9 +1049,9 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         }
         // The game-net join can race the RemoteChannel protocol's client
         // registration across the three websocket transports.
-        setTimeout(() => flushPendingClientEvents(playerId), 45)
-        setTimeout(() => flushPendingClientEvents(playerId), 75)
-        setTimeout(() => syncWearableStates(runtime.snapshot()), 85)
+        setTimeout(() => flushPendingClientEvents(playerId), 135)
+        setTimeout(() => flushPendingClientEvents(playerId), 165)
+        setTimeout(() => syncWearableStates(runtime.snapshot()), 145)
         // voxweb 握手：join 后立即发 secret 原始帧（game-net rawId=10）：
         // varint(10) varint(1) 'E' 0 varint(playerId) uint8(5) varint(playerId) uint8(1) varint(playerId)
         const secret = encodeAnonymousPlayerSecret(wirePlayerId)
@@ -1066,7 +1066,10 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
             }
           }, 5)
         }
-        // net-state 帧：replica.players（avatarSkin）+ state.players（位置）
+        // net-state 帧：replica.players（avatarSkin）+ state.players（位置）。
+        // BedWars' playerJoin handler assigns the team spawn asynchronously;
+        // wait for that handler before publishing the bootstrap position so
+        // the client does not start on the map manifest's lobby spawn.
         setTimeout(() => {
           const netClient = gameNetClients()[client.sessionId]
           if (netClient) {
@@ -1080,12 +1083,17 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
             netClient.sendRaw(packet, false)
             log(`[session] sent net-state frame to ${client.sessionId}`)
           }
-        }, 10)
-        // 延迟一拍发地形 reset（确保 secret 先到）
+        }, 110)
+        // 延迟发地形 reset（确保 secret 和 team assignment 先到）。
         setTimeout(() => {
           const terrainClient = gameTerrainClients()[client.sessionId]
-          if (terrainClient) terrainClient.message.reset(terrainResetPayload())
-        }, 20)
+          if (!terrainClient) return
+          const player = runtime.snapshot().players.find((entry: any) => entry.id === playerId)
+          const position = Array.isArray(player?.position) && player.position.length === 3
+            ? player.position as [number, number, number]
+            : VIEW_SPAWN
+          terrainClient.message.reset(terrainResetPayload(position))
+        }, 125)
       }
     }
 
