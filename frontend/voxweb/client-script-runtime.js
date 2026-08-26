@@ -551,6 +551,11 @@
       pointerLockEvents.removeAll();
       screenEvents.removeAll();
       clientWorld.events.removeAll();
+      // A project reload starts a fresh client draw lifecycle. Keeping the
+      // previous map's ready flag lets pointer-lock events reach the new
+      // script before its draw handler has created cloned UI nodes.
+      clientDrawReady = false;
+      pendingPointerLockEvents.length = 0;
       runtime.modules = Object.assign(Object.create(null), modules);
       runtime.cache = Object.create(null);
       uiPictureAssets = uiState?.pictureAssets && typeof uiState.pictureAssets === "object"

@@ -686,6 +686,17 @@ try {
     }))
     ;(window as any).__neaClientRuntimeReceive(JSON.stringify({ type: "draw" }))
     document.dispatchEvent(new Event("pointerlockchange"))
+    // Reinstall the same map after a completed draw. Pointer-lock changes
+    // during the new script's setup must wait until its draw handler has
+    // cloned the chat rows; otherwise the historical Bedwars callback reads
+    // contentList/titleList entries that do not exist yet.
+    ;(window as any).__neaClientRuntimeInstall(JSON.stringify({
+      "clientIndex.js": client,
+      "cilentConfig.js": config,
+      __nea_ui_state__: ui,
+    }))
+    document.dispatchEvent(new Event("pointerlockchange"))
+    ;(window as any).__neaClientRuntimeReceive(JSON.stringify({ type: "draw" }))
     return {
       errors,
       uiNodeCount: document.querySelectorAll("#nea-client-ui *").length,
