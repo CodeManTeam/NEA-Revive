@@ -1462,12 +1462,23 @@ function buildStaticEntityScene(
         + (renderBoxOffset[axis] ?? 0)) * (entityScale[axis] ?? 1),
     )
     if (entity.__meshOnly) continue
+    const authoredOrientation = (entity.source?.orientation ?? [0, 0, 0, 1]).map(Number)
+    // DAO3/source entity JSON stores quaternions as [w, x, y, z]. VoxWeb's
+    // StaticEntityInstance and glam::Quat::from_xyzw consume [x, y, z, w].
+    // Convert once at the scene boundary so rendered meshes, OBB collision,
+    // and the pointer ray all share the authored orientation.
+    const rotation = [
+      authoredOrientation[1] ?? 0,
+      authoredOrientation[2] ?? 0,
+      authoredOrientation[3] ?? 0,
+      authoredOrientation[0] ?? 1,
+    ]
     instances.push({
       id: sourceIndex + 0x10000,
       mesh,
       position: entity.position.map(Number),
       scale: entityScale,
-      rotation: (entity.source?.orientation ?? [0, 0, 0, 1]).map(Number),
+      rotation,
       meshOffset,
       collision: Boolean(entity.source?.collision ?? true),
       fixed: Boolean(entity.source?.fixed ?? false),

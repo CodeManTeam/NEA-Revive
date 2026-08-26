@@ -108,6 +108,13 @@ try {
     const mainScene = await fetch(`http://${mainServer.host}:${mainServer.port}/api/map/entities`, { headers: { "accept-encoding": "gzip" } }).then(response => response.json() as Promise<any>)
     const lobbyScene = await fetch(`http://${server.host}:${server.port}/api/map/entities`, { headers: { "accept-encoding": "gzip" } }).then(response => response.json() as Promise<any>)
     assert.ok(mainScene.entities.some((entity: any) => entity.nameplate?.text === "商店"))
+    const mainShopSceneEntity = mainScene.entities.find((entity: any) => entity.scriptInteractHint === "商店")
+    assert.deepEqual(mainShopSceneEntity?.rotation, [
+      -0.70703125,
+      0,
+      0.70703125,
+      0,
+    ], "static entity scene must expose quaternions as xyzw for VoxWeb")
     const joinGame = lobbyScene.entities.find((entity: any) => entity.scriptInteractHint === "加入游戏")
     assert.deepEqual({ scriptInteractable: joinGame?.scriptInteractable, nameplate: joinGame?.nameplate }, {
       scriptInteractable: true,
