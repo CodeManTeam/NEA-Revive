@@ -23,15 +23,19 @@ const archivedData = await readFile(
   "utf8",
 )
 const bedwarsUi = await readFile(
-  "D:/Projects/Gaming/NEA-Revive/packages/bedwars-s2/source/ui.json",
+  "D:/Projects/Gaming/NEA-Revive/packages/bedwars-s2-main/source/ui.json",
   "utf8",
 )
 const bedwarsClient = await readFile(
-  "D:/Projects/Gaming/NEA-Revive/packages/bedwars-s2/scripts/clientIndex.js",
+  "D:/Projects/Gaming/NEA-Revive/packages/bedwars-s2-main/scripts/clientIndex.js",
   "utf8",
 )
 const bedwarsClientConfig = await readFile(
-  "D:/Projects/Gaming/NEA-Revive/packages/bedwars-s2/scripts/cilentConfig.js",
+  "D:/Projects/Gaming/NEA-Revive/packages/bedwars-s2-main/scripts/config.js",
+  "utf8",
+)
+const bedwarsClientData = await readFile(
+  "D:/Projects/Gaming/NEA-Revive/packages/bedwars-s2-main/scripts/cilentData.js",
   "utf8",
 )
 const minecraftHydratedUi = await readFile(
@@ -449,7 +453,7 @@ try {
     }))
     const layer = document.querySelector("#nea-damage-feedback") as HTMLElement
     return {
-      healthSrc: (layer.querySelector('#health_bar') as HTMLImageElement)?.src,
+      healthSrc: (layer.querySelector('#health_bar img') as HTMLImageElement)?.src,
       amount: layer.querySelector(".nea-damage-number")?.textContent,
       shadow: layer.style.boxShadow,
     }
@@ -676,12 +680,13 @@ try {
   const bedwarsPage = await browser.newPage()
   await bedwarsPage.setContent("<html><body><canvas id=\"game\"></canvas></body></html>")
   await bedwarsPage.addScriptTag({ content: runtimeSource })
-  const bedwarsDraw = await bedwarsPage.evaluate(({ ui, client, config }) => {
+  const bedwarsDraw = await bedwarsPage.evaluate(({ ui, client, config, data }) => {
     const errors: string[] = []
     window.addEventListener("error", event => errors.push(String(event.error ?? event.message)))
     ;(window as any).__neaClientRuntimeInstall(JSON.stringify({
       "clientIndex.js": client,
-      "cilentConfig.js": config,
+      "cilentData.js": data,
+      "config.js": config,
       __nea_ui_state__: ui,
     }))
     ;(window as any).__neaClientRuntimeReceive(JSON.stringify({ type: "draw" }))
@@ -692,18 +697,57 @@ try {
     // contentList/titleList entries that do not exist yet.
     ;(window as any).__neaClientRuntimeInstall(JSON.stringify({
       "clientIndex.js": client,
-      "cilentConfig.js": config,
+      "cilentData.js": data,
+      "config.js": config,
       __nea_ui_state__: ui,
     }))
     document.dispatchEvent(new Event("pointerlockchange"))
     ;(window as any).__neaClientRuntimeReceive(JSON.stringify({ type: "draw" }))
+    const sidebarBeforeInventory = document.querySelector('[data-nea-name="sidebar"]') as HTMLElement
+    if (sidebarBeforeInventory && getComputedStyle(sidebarBeforeInventory).display === "none") {
+      ;(window as any).__neaClientRuntimeReceive(JSON.stringify({
+        type: "showUI",
+        args: { type: "sidebar" },
+      }))
+    }
+    ;(window as any).__neaClientRuntimeReceive(JSON.stringify({
+      type: "showinventory",
+      args: { show: true, type: "shop" },
+    }))
+    const sidebar = document.querySelector('[data-nea-name="sidebar"]') as HTMLElement
+    const sidebarEntry = sidebar?.querySelector('[data-nea-name="RED"]') as HTMLElement
+    const shop = [...document.querySelectorAll('[data-nea-name="shopImage"]')]
+      .map(node => node as HTMLElement)
+      .find(node => node.getBoundingClientRect().width > 0)
+    const visibleShopItems = [...document.querySelectorAll('[data-nea-name="shopItem"]')]
+      .filter(node => (node as HTMLElement).getBoundingClientRect().width > 0)
+      .filter(node => getComputedStyle(node).display !== "none") as HTMLElement[]
+    visibleShopItems[0]?.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }))
+    const products = [...document.querySelectorAll('[data-nea-name="shopItem"]')]
+      .filter(node => (node as HTMLElement).getBoundingClientRect().width > 0)
+      .filter(node => getComputedStyle(node).display !== "none") as HTMLElement[]
+    products[7]?.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }))
     return {
       errors,
       uiNodeCount: document.querySelectorAll("#nea-client-ui *").length,
+      scoreboard: {
+        tag: sidebar?.tagName,
+        display: sidebarEntry ? getComputedStyle(sidebarEntry).display : "none",
+      },
+      shop: {
+        width: shop?.getBoundingClientRect().width ?? 0,
+        visibleItems: visibleShopItems.length,
+      },
+      outbound: JSON.parse((window as any).__neaClientRuntimeDrain()),
     }
-  }, { ui: bedwarsUi, client: bedwarsClient, config: bedwarsClientConfig })
+  }, { ui: bedwarsUi, client: bedwarsClient, config: bedwarsClientConfig, data: bedwarsClientData })
   assert.deepEqual(bedwarsDraw.errors, [])
   assert.ok(bedwarsDraw.uiNodeCount > 20)
+  assert.equal(bedwarsDraw.scoreboard.tag, "DIV")
+  assert.notEqual(bedwarsDraw.scoreboard.display, "none")
+  assert.ok(bedwarsDraw.shop.width > 0)
+  assert.equal(bedwarsDraw.shop.visibleItems, 7)
+  assert.ok(bedwarsDraw.outbound.some((event: { type?: string }) => event.type === "buy"))
   await bedwarsPage.close()
   console.log("client script browser runtime smoke passed")
 } finally {

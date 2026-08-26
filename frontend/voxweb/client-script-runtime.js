@@ -1371,9 +1371,19 @@
   }
 
   function createUiNode(kind) {
-    const element = document.createElement(kind === "image" ? "img" : kind === "input" ? "input" : "div");
+    // Images can own child controls in recovered DAO3 UI trees (the Bedwars
+    // scoreboard background is one example). An <img> cannot render child
+    // elements, so use a positioned wrapper and keep the bitmap in a private
+    // layer underneath the script-owned descendants.
+    const element = document.createElement(kind === "input" ? "input" : "div");
+    const imageElement = kind === "image" ? document.createElement("img") : null;
     element.style.cssText = "position:absolute;box-sizing:border-box;white-space:pre-wrap;color:white;font:16px/1.35 sans-serif;text-shadow:0 1px 2px #000;pointer-events:none";
     element.style.zIndex = "1";
+    if (imageElement) {
+      imageElement.style.cssText = "position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0";
+      imageElement.setAttribute("aria-hidden", "true");
+      element.appendChild(imageElement);
+    }
     const childHost = kind === "scroll" ? document.createElement("div") : element;
     if (kind === "scroll") {
       element.dataset.neaScroll = "true";
@@ -1560,14 +1570,14 @@
       textStrokeOpacity: { get: () => textStrokeOpacity, set(value) { textStrokeOpacity = Number(value) || 0; refresh(); } },
       textStrokeThickness: { get: () => textStrokeThickness, set(value) { textStrokeThickness = clamp(Number(value) || 0, 0, 25); refresh(); } },
       image: {
-        get: () => kind === "image" ? (element.getAttribute("src") || "") : (element.dataset.neaImage || ""),
+        get: () => kind === "image" ? (imageElement?.getAttribute("src") || "") : (element.dataset.neaImage || ""),
         set(value) {
           const src = String(value || "");
           const resolved = resolvePictureUrl(src);
           imageMissing = Boolean(src) && !resolved;
           if (kind === "image") {
-            if (resolved) element.src = resolved;
-            else element.removeAttribute("src");
+            if (resolved && imageElement) imageElement.src = resolved;
+            else imageElement?.removeAttribute("src");
           }
           else {
             // Dump Player UI declares health_bar as a text node, then the
@@ -1583,7 +1593,7 @@
       },
       imageOpacity: { get: () => imageOpacity, set(value) { imageOpacity = Number(value) || 0; refresh(); } },
       imageDisplayMode: { get: () => imageDisplayMode, set(value) { imageDisplayMode = Number(value) || 0; refresh(); } },
-      complete: { get: () => kind !== "image" || element.complete },
+      complete: { get: () => kind !== "image" || Boolean(imageElement?.complete) },
       placeholder: { get: () => placeholder, set(value) { placeholder = String(value ?? ""); refresh(); } },
       placeholderColor: { get: () => placeholderColor },
       placeholderOpacity: { get: () => placeholderOpacity, set(value) { placeholderOpacity = clamp(Number(value), 0, 1); refresh(); } },
@@ -1627,7 +1637,7 @@
       element.addEventListener("focus", () => node.events.emit("focus", { target: node }));
       element.addEventListener("blur", () => node.events.emit("blur", { target: node }));
     }
-    if (kind === "image") element.addEventListener("load", () => node.events.emit("load", { target: node }));
+    if (imageElement) imageElement.addEventListener("load", () => node.events.emit("load", { target: node }));
     if (kind === "scroll") {
       element.style.overflow = "auto";
       element.addEventListener("scroll", () => {
@@ -1663,8 +1673,12 @@
         element.style.backgroundColor = "transparent";
         element.style.backgroundImage = "none";
       }
-      element.style.opacity = rendersImage ? String(clamp(imageOpacity, 0, 1)) : "1";
-      if (kind === "image") element.style.objectFit = imageDisplayMode === 1 ? "contain" : imageDisplayMode === 2 ? "cover" : imageDisplayMode === 3 ? "none" : "fill";
+      element.style.opacity = kind === "image" ? "1" : (rendersImage ? String(clamp(imageOpacity, 0, 1)) : "1");
+      if (imageElement) {
+        imageElement.style.display = imageMissing ? "none" : "block";
+        imageElement.style.opacity = String(clamp(imageOpacity, 0, 1));
+        imageElement.style.objectFit = imageDisplayMode === 1 ? "contain" : imageDisplayMode === 2 ? "cover" : imageDisplayMode === 3 ? "none" : "fill";
+      }
       if (kind === "text") element.style.webkitTextStroke = `${textStrokeThickness}px ${rgba(node.textStrokeColor, textStrokeOpacity)}`;
       if (kind === "input") element.style.setProperty("--nea-placeholder-color", rgba(placeholderColor, placeholderOpacity));
       if (kind === "scroll") {
