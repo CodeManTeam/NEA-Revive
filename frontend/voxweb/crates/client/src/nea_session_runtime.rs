@@ -2620,6 +2620,17 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     }
                 }
             }
+            // BedWars lobby presentation: keep the spawn architecture crisp,
+            // then let distant islands and the sky fall gently out of focus.
+            // The resolve pass runs before egui, so HUD text remains pixel sharp.
+            let focus_distance = (22.0 + (eye[1] - 64.0) * 0.06).clamp(18.0, 30.0);
+            t.fluid_pipeline.set_post_process(
+                &dc.queue,
+                focus_distance,
+                38.0,
+                1.05,
+                0.12,
+            );
             t.fluid_pipeline.resolve(&mut encoder, &view, &depth_view);
             dc.queue.submit(Some(encoder.finish()));
             frame.present();

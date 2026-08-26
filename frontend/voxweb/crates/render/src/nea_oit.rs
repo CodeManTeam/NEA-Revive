@@ -11,7 +11,12 @@ const BAND_COUNT: usize = 3;
 struct OitUniform {
     viewport: [f32; 2],
     node_buffer_bytes: f32,
-    _padding: f32,
+    near_clip: f32,
+    far_clip: f32,
+    focus_distance: f32,
+    focus_range: f32,
+    blur_strength: f32,
+    vignette_strength: f32,
 }
 
 pub struct NeaOit {
@@ -27,10 +32,13 @@ pub struct NeaOit {
     #[allow(dead_code)]
     nodes: [wgpu::Buffer; BAND_COUNT],
     offsets: [wgpu::Buffer; BAND_COUNT],
+    uniform_buffer: wgpu::Buffer,
+    node_buffer_bytes: u64,
     layout: wgpu::BindGroupLayout,
     group: wgpu::BindGroup,
     resolve_pipeline: wgpu::RenderPipeline,
     background_layout: wgpu::BindGroupLayout,
+    background_sampler: wgpu::Sampler,
 }
 
 impl NeaOit {
@@ -82,7 +90,12 @@ impl NeaOit {
         let uniform = OitUniform {
             viewport: [width as f32, height as f32],
             node_buffer_bytes: node_bytes as f32,
-            _padding: 0.0,
+            near_clip: 0.1,
+            far_clip: 2000.0,
+            focus_distance: 24.0,
+            focus_range: 40.0,
+            blur_strength: 1.15,
+            vignette_strength: 0.14,
         };
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("nea.oit.uniform"),
@@ -110,7 +123,7 @@ impl NeaOit {
                     binding: 0,
                     visibility: wgpu::ShaderStages::FRAGMENT,
                     ty: wgpu::BindingType::Texture {
-                        sample_type: wgpu::TextureSampleType::Float { filterable: false },
+                        sample_type: wgpu::TextureSampleType::Float { filterable: true },
                         view_dimension: wgpu::TextureViewDimension::D2,
                         multisampled: false,
                     },
@@ -126,7 +139,23 @@ impl NeaOit {
                     },
                     count: None,
                 },
+                wgpu::BindGroupLayoutEntry {
+                    binding: 2,
+                    visibility: wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                    count: None,
+                },
             ],
+        });
+        let background_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            label: Some("nea.oit.background-sampler"),
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Linear,
+            mipmap_filter: wgpu::MipmapFilterMode::Nearest,
+            ..Default::default()
         });
         let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
             label: Some("nea.oit.resolve-shader"),
@@ -170,10 +199,13 @@ impl NeaOit {
             opaque_view,
             nodes,
             offsets,
+            uniform_buffer,
+            node_buffer_bytes: node_bytes,
             layout,
             group,
             resolve_pipeline,
             background_layout,
+            background_sampler,
         }
     }
 
@@ -205,6 +237,10 @@ impl NeaOit {
                     binding: 1,
                     resource: wgpu::BindingResource::TextureView(depth),
                 },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::Sampler(&self.background_sampler),
+                },
             ],
         });
         {
@@ -232,6 +268,30 @@ impl NeaOit {
         for offsets in &self.offsets {
             encoder.clear_buffer(offsets, 0, None);
         }
+    }
+
+    /// Update cinematic focus controls used by the resolve pass. Values are
+    /// intentionally world-space so a map can tune the look without knowing
+    /// the projection's non-linear depth range.
+    pub fn set_post_process(
+        &self,
+        queue: &wgpu::Queue,
+        focus_distance: f32,
+        focus_range: f32,
+        blur_strength: f32,
+        vignette_strength: f32,
+    ) {
+        let uniform = OitUniform {
+            viewport: [self.width as f32, self.height as f32],
+            node_buffer_bytes: self.node_buffer_bytes.min(f32::MAX as u64) as f32,
+            near_clip: 0.1,
+            far_clip: 2000.0,
+            focus_distance: focus_distance.max(0.1),
+            focus_range: focus_range.max(1.0),
+            blur_strength: blur_strength.clamp(0.0, 2.0),
+            vignette_strength: vignette_strength.clamp(0.0, 0.5),
+        };
+        queue.write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(&uniform));
     }
 }
 
@@ -272,7 +332,16 @@ fn buffer_entry<'a>(binding: u32, buffer: &'a wgpu::Buffer) -> wgpu::BindGroupEn
 }
 
 pub const OIT_STORAGE_WGSL: &str = r#"
-struct OitUniform { viewport: vec2f, node_buffer_bytes: f32, padding: f32 }
+struct OitUniform {
+  viewport: vec2f,
+  node_buffer_bytes: f32,
+  near_clip: f32,
+  far_clip: f32,
+  focus_distance: f32,
+  focus_range: f32,
+  blur_strength: f32,
+  vignette_strength: f32,
+}
 struct FragmentData { color: u32, depth: f32 }
 struct StaticNode { data: FragmentData, next: u32 }
 @group(1) @binding(0) var<uniform> oit: OitUniform;
@@ -311,11 +380,21 @@ fn oit_store(color: vec4f, position: vec4f) {
 "#;
 
 const OIT_RESOLVE_WGSL: &str = r#"
-struct OitUniform { viewport: vec2f, node_buffer_bytes: f32, padding: f32 }
+struct OitUniform {
+  viewport: vec2f,
+  node_buffer_bytes: f32,
+  near_clip: f32,
+  far_clip: f32,
+  focus_distance: f32,
+  focus_range: f32,
+  blur_strength: f32,
+  vignette_strength: f32,
+}
 struct FragmentData { color: u32, depth: f32 }
 struct StaticNode { data: FragmentData, next: u32 }
 @group(0) @binding(0) var background: texture_2d<f32>;
 @group(0) @binding(1) var background_depth: texture_depth_2d;
+@group(0) @binding(2) var background_sampler: sampler;
 @group(1) @binding(0) var<uniform> oit: OitUniform;
 @group(1) @binding(1) var<storage, read_write> nodes0: array<StaticNode>;
 @group(1) @binding(2) var<storage, read_write> offsets0: array<atomic<u32>>;
@@ -330,10 +409,39 @@ struct StaticNode { data: FragmentData, next: u32 }
 fn unpack_color(value: u32) -> vec4f {
   return vec4f(f32(value & 255u), f32((value >> 8u) & 255u), f32((value >> 16u) & 255u), f32(value >> 24u)) / 255.0;
 }
+fn linear_depth(depth: f32) -> f32 {
+  return (oit.near_clip * oit.far_clip) /
+    max(oit.far_clip - depth * (oit.far_clip - oit.near_clip), 0.0001);
+}
+fn grade(color: vec3f, uv: vec2f) -> vec3f {
+  let luma = dot(color, vec3f(0.2126, 0.7152, 0.0722));
+  var graded = mix(vec3f(luma), color, 1.08);
+  graded = (graded - vec3f(0.5)) * 1.045 + vec3f(0.5);
+  let edge = distance(uv, vec2f(0.5)) * 1.4142;
+  let vignette = 1.0 - smoothstep(0.35, 0.92, edge) * oit.vignette_strength;
+  return clamp(graded * vignette, vec3f(0.0), vec3f(1.0));
+}
 @fragment fn fs_main(@builtin(position) position: vec4f) -> @location(0) vec4f {
   let pixel = vec2u(position.xy);
-  var color = textureLoad(background, pixel, 0);
+  let uv = (position.xy + vec2f(0.5)) / oit.viewport;
+  let center = textureLoad(background, pixel, 0);
+  var color = center;
   let opaque_depth = textureLoad(background_depth, pixel, 0);
+  let distance = linear_depth(opaque_depth);
+  let coc = clamp(abs(distance - oit.focus_distance) / oit.focus_range * oit.blur_strength, 0.0, 1.0);
+  if (coc > 0.02) {
+    let radius = mix(0.75, 3.25, coc);
+    let taps = array<vec2f, 8>(
+      vec2f(1.0, 0.0), vec2f(-1.0, 0.0), vec2f(0.0, 1.0), vec2f(0.0, -1.0),
+      vec2f(0.7071, 0.7071), vec2f(-0.7071, 0.7071),
+      vec2f(0.7071, -0.7071), vec2f(-0.7071, -0.7071));
+    var blur = center.rgb;
+    for (var i = 0u; i < 8u; i++) {
+      let sample_uv = uv + taps[i] * radius / oit.viewport;
+      blur += textureSampleLevel(background, background_sampler, sample_uv, 0.0).rgb;
+    }
+    color = vec4f(mix(center.rgb, blur / 9.0, smoothstep(0.02, 0.8, coc)), center.a);
+  }
   let per_h = u32(oit.viewport.y) / 3u;
   let band = min(u32(position.y) / max(per_h, 1u), 2u);
   let local_y = u32(position.y) - band * per_h;
@@ -370,7 +478,7 @@ fn unpack_color(value: u32) -> vec4f {
       color = vec4f(color.rgb * (1.0 - rgba.a) + rgba.rgb * rgba.a, color.a);
     }
   }
-  return color;
+  return vec4f(grade(color.rgb, uv), color.a);
 }
 "#;
 
@@ -400,5 +508,12 @@ mod tests {
     fn resolve_rejects_transparency_behind_opaque_depth() {
         assert!(OIT_RESOLVE_WGSL.contains("texture_depth_2d"));
         assert!(OIT_RESOLVE_WGSL.contains("fragment_depth <= opaque_depth"));
+    }
+
+    #[test]
+    fn cinematic_resolve_uses_linear_depth_and_neighbor_blur() {
+        assert!(OIT_RESOLVE_WGSL.contains("fn linear_depth"));
+        assert!(OIT_RESOLVE_WGSL.contains("textureSampleLevel(background"));
+        assert!(OIT_RESOLVE_WGSL.contains("vignette_strength"));
     }
 }

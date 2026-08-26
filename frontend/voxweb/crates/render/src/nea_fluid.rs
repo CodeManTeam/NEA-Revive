@@ -322,6 +322,25 @@ impl NeaFluidPipeline {
         self.oit.opaque_view()
     }
 
+    /// Configure the lightweight cinematic resolve: focus distance/range are
+    /// world units, while blur and vignette are normalized artistic controls.
+    pub fn set_post_process(
+        &self,
+        queue: &wgpu::Queue,
+        focus_distance: f32,
+        focus_range: f32,
+        blur_strength: f32,
+        vignette_strength: f32,
+    ) {
+        self.oit.set_post_process(
+            queue,
+            focus_distance,
+            focus_range,
+            blur_strength,
+            vignette_strength,
+        );
+    }
+
     pub fn oit(&self) -> &NeaOit {
         &self.oit
     }
