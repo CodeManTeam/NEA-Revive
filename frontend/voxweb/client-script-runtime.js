@@ -84,6 +84,10 @@
   });
   const ui = createUiRoot();
   let scriptUi = ui;
+  // Recovered maps that provide their own health_bar own the player HUD. The
+  // engine fallback remains available for maps without a historical HUD, but
+  // must not paint a second bar on top of the map's canonical one.
+  let engineHealthFallbackEnabled = true;
   const engineHost = { element: engineUiRoot };
   // 伤害反馈层：全屏，承载血条/死亡提示/伤害数字，全部用引擎 UI API 实现。
   const damageLayer = createUiNode("box");
@@ -400,6 +404,13 @@
   };
   let inventoryControls = null;
   function installInventoryControls() {
+    // Bedwars' clientIndex.js creates and owns these controls. Installing the
+    // compatibility layer as well creates duplicate clones and competing
+    // pointer/close handlers, which can replay a window after it is closed.
+    if (typeof runtime?.modules?.["clientIndex.js"] === "string") {
+      inventoryControls = null;
+      return;
+    }
     const bagButton = findDescendantByName(ui, "bagButton");
     const cameraButton = findDescendantByName(ui, "cameraButton");
     const inventoryImage = findDescendantByName(ui, "inventoryImage");
@@ -615,7 +626,10 @@
     const frame = Math.ceil(Math.max(hp, 0) + 1);
     const image = `picture/health_bar${frame}.png`;
     const imageUrl = resolvePictureUrl(image);
-    if (imageUrl) {
+    if (!engineHealthFallbackEnabled) {
+      healthBar.visible = false;
+      extraHpBar.visible = false;
+    } else if (imageUrl) {
       healthBar.image = imageUrl;
       extraHpBar.image = imageUrl;
       healthBar.visible = hp > 20 ? false : true;
@@ -1128,6 +1142,7 @@
   }
 
   function installUiState(state) {
+    engineHealthFallbackEnabled = true;
     for (const child of [...ui.children]) child.parent = null;
     scriptUi = ui;
     if (!state?.uiTree || typeof state.uiTree !== "object") return;
@@ -1160,6 +1175,7 @@
     scriptUi = nodes.get(String(state.defaultScreenId))?.node
       || [...nodes.values()].map(entry => entry.node).find(node => node.kind === "screen")
       || ui;
+    engineHealthFallbackEnabled = !findDescendantByName(ui, "health_bar");
     // Older dump Player packages carried chat children at screen scope while
     // clientIndex.js expects the historical scrollBox container. Reconstruct
     // that harmless structural wrapper so the original script can run.

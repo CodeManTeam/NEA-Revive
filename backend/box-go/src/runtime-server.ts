@@ -1083,6 +1083,9 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
           client.message.syncClientScriptModules(clientScriptModules)
         }
         runtime.addPlayer({ id: playerId, name: sessionNames.get(client.sessionId) ?? "Player", position: spawn })
+        // Covers the opposite ordering where RemoteChannel was connected
+        // before game-net.join created the runtime player.
+        flushPendingClientEvents(playerId)
         for (const entity of runtime.entityInteractionStates()) {
           deliverClientEvent(playerId, {
             type: "nea-revive:entity-state",
@@ -1244,6 +1247,13 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
       message: handlers as any,
       raw: () => undefined,
       connect: (client) => {
+        if (schema === remoteChannel) {
+          // Flush queued RemoteChannel events as soon as its websocket is
+          // registered; fixed-delay retries can otherwise replay UI in a
+          // burst after the player has already moved away.
+          const playerId = sessions.get(client.sessionId)
+          if (playerId) queueMicrotask(() => flushPendingClientEvents(playerId))
+        }
         if (schema === box3Protocols[0]) {
           log(`[session] connected ${client.sessionId}`)
           // voxweb 前端在收到第一个可解析 client 方向帧后才会发 gameNet.join
