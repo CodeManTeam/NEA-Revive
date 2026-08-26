@@ -151,6 +151,7 @@ try {
       })
       mainNet.server.message.join()
       await waitFor(() => Boolean(mainReset))
+      await waitFor(() => mainEvents.some(event => event.type === "draw"))
       assert.ok(mainEvents.some(event => event.type === "draw"), "main map playerJoin should initialize HUD")
       assert.ok(mainEvents.some(event => event.type === "setYou"), "main map playerJoin should initialize player state")
 

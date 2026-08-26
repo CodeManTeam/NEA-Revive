@@ -3733,12 +3733,12 @@ fn wearable_body_part_anchor(body_part: &str) -> [f32; 3] {
     match body_part {
         "head" => [0.0, 2.15, 0.0],
         "torso" => [0.0, 1.05, 0.0],
-        "leftShoulder" | "leftUpperArm" => [-0.52, 1.25, 0.0],
-        "rightShoulder" | "rightUpperArm" => [0.52, 1.25, 0.0],
-        "leftHand" => [-0.62, 0.75, 0.0],
-        "rightHand" => [0.62, 0.75, 0.0],
-        "leftFoot" | "leftLowerLeg" | "leftUpperLeg" => [-0.22, 0.15, 0.0],
-        "rightFoot" | "rightLowerLeg" | "rightUpperLeg" => [0.22, 0.15, 0.0],
+        "leftShoulder" | "leftUpperArm" | "left_upper_arm" => [-0.52, 1.25, 0.0],
+        "rightShoulder" | "rightUpperArm" | "right_upper_arm" => [0.52, 1.25, 0.0],
+        "leftHand" | "left_hand" => [-0.62, 0.75, 0.0],
+        "rightHand" | "right_hand" => [0.62, 0.75, 0.0],
+        "leftFoot" | "leftLowerLeg" | "leftUpperLeg" | "left_foot" | "left_lower_leg" | "left_upper_leg" => [-0.22, 0.15, 0.0],
+        "rightFoot" | "rightLowerLeg" | "rightUpperLeg" | "right_foot" | "right_lower_leg" | "right_upper_leg" => [0.22, 0.15, 0.0],
         _ => [0.0, 1.05, 0.0],
     }
 }
@@ -5675,6 +5675,7 @@ mod tests {
         recovered_fluid_height, recovered_fluid_info, recovered_player_state,
         raycast_static_entity, recovered_rotated_face_rects, recovered_voxel_face_visible,
         recovered_walk_phase_delta, apply_player_wearables_event,
+        wearable_body_part_anchor,
         should_apply_authoritative_respawn, LOCAL_VOID_RESPAWN_Y, PLAYER_FLAG_SPECTATOR,
         write_recovered_texture_rotation,
     };
@@ -6045,6 +6046,13 @@ mod tests {
             &pit,
         );
         assert!(physics.position[1] > 42.1, "jump should leave the resource pit");
+    }
+
+    #[test]
+    fn wearable_anchors_accept_recovered_snake_case_body_parts() {
+        assert_eq!(wearable_body_part_anchor("left_upper_arm"), [-0.52, 1.25, 0.0]);
+        assert_eq!(wearable_body_part_anchor("right_foot"), [0.22, 0.15, 0.0]);
+        assert_eq!(wearable_body_part_anchor("rightHand"), [0.62, 0.75, 0.0]);
     }
 
     #[test]

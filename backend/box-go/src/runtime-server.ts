@@ -1025,6 +1025,15 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         sessions.set(client.sessionId, playerId)
         playerSessions.set(playerId, client.sessionId)
         flushPendingClientEvents(playerId)
+        // Sync the recovered client modules before starting the map player.
+        // BedWars emits its draw/HUD bootstrap from onPlayerJoin; running it
+        // first would queue draw ahead of syncClientScriptModules, causing a
+        // subsequent install to discard the initialized scoreboard and input
+        // handlers.
+        if (Object.keys(clientScriptModules).length > 0
+          && typeof client.message?.syncClientScriptModules === "function") {
+          client.message.syncClientScriptModules(clientScriptModules)
+        }
         runtime.addPlayer({ id: playerId, name: sessionNames.get(client.sessionId) ?? "Player", position: spawn })
         for (const entity of runtime.entityInteractionStates()) {
           deliverClientEvent(playerId, {
@@ -1040,9 +1049,9 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         }
         // The game-net join can race the RemoteChannel protocol's client
         // registration across the three websocket transports.
-        setTimeout(() => flushPendingClientEvents(playerId), 0)
-        setTimeout(() => flushPendingClientEvents(playerId), 25)
-        setTimeout(() => syncWearableStates(runtime.snapshot()), 30)
+        setTimeout(() => flushPendingClientEvents(playerId), 45)
+        setTimeout(() => flushPendingClientEvents(playerId), 75)
+        setTimeout(() => syncWearableStates(runtime.snapshot()), 85)
         // voxweb 握手：join 后立即发 secret 原始帧（game-net rawId=10）：
         // varint(10) varint(1) 'E' 0 varint(playerId) uint8(5) varint(playerId) uint8(1) varint(playerId)
         const secret = encodeAnonymousPlayerSecret(wirePlayerId)
@@ -1056,14 +1065,6 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
               modelsClient.message.appendSkinPartHashes(skinPartHashes)
             }
           }, 5)
-        }
-        if (Object.keys(clientScriptModules).length > 0) {
-          setTimeout(() => {
-            const netClient = gameNetClients()[client.sessionId]
-            if (netClient && typeof netClient.message?.syncClientScriptModules === "function") {
-              netClient.message.syncClientScriptModules(clientScriptModules)
-            }
-          }, 7)
         }
         // net-state 帧：replica.players（avatarSkin）+ state.players（位置）
         setTimeout(() => {
