@@ -167,28 +167,32 @@ impl SessionDriver {
                 *x = self.last_server_tick + 1;
             }
             if let crate::Value::Array(events) = &mut fields[2] {
-                *events = input.events.iter().map(|event| {
-                    crate::Value::Struct(vec![
-                        crate::Value::Quantized(event.ray_time),
-                        crate::Value::Quantized(event.tick),
-                        crate::Value::Varint(event.ray_hit_entity),
-                        crate::Value::Varint(event.ray_hit_voxel[0]),
-                        crate::Value::Varint(event.ray_hit_voxel[1]),
-                        crate::Value::Varint(event.ray_hit_voxel[2]),
-                        crate::Value::U8(event.button_state),
-                        crate::Value::U8(event.prev_button_state),
-                        crate::Value::Quantized(event.position[0]),
-                        crate::Value::Quantized(event.position[1]),
-                        crate::Value::Quantized(event.position[2]),
-                        crate::Value::Quantized(event.ray_direction[0]),
-                        crate::Value::Quantized(event.ray_direction[1]),
-                        crate::Value::Quantized(event.ray_direction[2]),
-                        crate::Value::CubeAxis(event.ray_hit_normal),
-                        crate::Value::Quantized(event.ray_origin[0]),
-                        crate::Value::Quantized(event.ray_origin[1]),
-                        crate::Value::Quantized(event.ray_origin[2]),
-                    ])
-                }).collect();
+                *events = input
+                    .events
+                    .iter()
+                    .map(|event| {
+                        crate::Value::Struct(vec![
+                            crate::Value::Quantized(event.ray_time),
+                            crate::Value::Quantized(event.tick),
+                            crate::Value::Varint(event.ray_hit_entity),
+                            crate::Value::Varint(event.ray_hit_voxel[0]),
+                            crate::Value::Varint(event.ray_hit_voxel[1]),
+                            crate::Value::Varint(event.ray_hit_voxel[2]),
+                            crate::Value::U8(event.button_state),
+                            crate::Value::U8(event.prev_button_state),
+                            crate::Value::Quantized(event.position[0]),
+                            crate::Value::Quantized(event.position[1]),
+                            crate::Value::Quantized(event.position[2]),
+                            crate::Value::Quantized(event.ray_direction[0]),
+                            crate::Value::Quantized(event.ray_direction[1]),
+                            crate::Value::Quantized(event.ray_direction[2]),
+                            crate::Value::CubeAxis(event.ray_hit_normal),
+                            crate::Value::Quantized(event.ray_origin[0]),
+                            crate::Value::Quantized(event.ray_origin[1]),
+                            crate::Value::Quantized(event.ray_origin[2]),
+                        ])
+                    })
+                    .collect();
             }
             if let crate::Value::Struct(input_v) = &mut fields[3] {
                 // NetClientInputSchema: inputState(u16), inputAngle(u8),

@@ -16,6 +16,7 @@ import { importMapProject } from "../../demo-map/src/import-project.mjs"
 import { buildProjectAssetResolver, isSafeLogicalAssetName } from "../../demo-map/src/project-asset-resolver.mjs"
 import { loadPreservedBlockCatalog } from "../../local-player/src/block-info.mjs"
 import { encodeNetPublicPacket, LOCAL_AVATAR_SKIN_PART_IDS } from "./netstate"
+import type { NetPlayerState } from "./netstate"
 import { encodeEmptyAvatarPart, EMPTY_PARTS } from "./empty-avatar"
 import { readFileSync, existsSync, createReadStream } from "node:fs"
 import { join, resolve } from "node:path"
@@ -308,12 +309,14 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
     logger: options.quiet
       ? { info() {}, warn() {}, error() {} }
       : { info: (m: string) => log(`[script] ${m}`), warn: (m: string) => log(`[script] ${m}`), error: (m: string) => log(`[script] ${m}`) },
-    sendChatMessage: (_sessionId, message) => {
+    sendChatMessage: (_sessionId: unknown, message: any) => {
       const text = String(message?.text ?? "")
       if (!text) return
       // world.say 即时投递（sessionId undefined → 广播）；
       // 玩家 directMessage 的 sessionId 是 runtime playerId → 映射回 WS sessionId
-      const targetSession = _sessionId === undefined ? undefined : (playerSessions.get(_sessionId) ?? _sessionId)
+      const targetSession = _sessionId === undefined || typeof _sessionId !== "string"
+        ? undefined
+        : (playerSessions.get(_sessionId) ?? _sessionId)
       if (targetSession !== undefined) {
         sendChatLog(targetSession, text)
         // Some clients establish the entity-interact/remote-channel sockets
@@ -330,7 +333,7 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         for (const sessionId of Object.keys(gameChatClients())) sendChatLog(sessionId, text)
       }
     },
-    sendChatMessages: (deliveries) => {
+    sendChatMessages: (deliveries: any[]) => {
       for (const delivery of deliveries) {
         const text = String(delivery.message?.text ?? "")
         if (!text) continue
@@ -480,7 +483,7 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
       dead: Boolean(player.dead),
     }))
   }
-  function netStatePlayers(snap: any): Array<Record<string, unknown>> {
+  function netStatePlayers(snap: any): NetPlayerState[] {
     return (snap.players ?? []).map((player: any) => ({
       id: wirePlayerIdFor(String(player.id)),
       position: player.position,
@@ -1210,8 +1213,8 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         const rpcId = Number(data ?? 0)
         const index = pending.findIndex(entry => entry.rpcId === rpcId)
         if (index < 0) return
-        const [cancelled] = pending.splice(index, 1)
-        cancelled.reject(new Error("dialog cancelled"))
+        const cancelled = pending.splice(index, 1)[0]
+        if (cancelled) cancelled.reject(new Error("dialog cancelled"))
         if (pending.length === 0) pendingDialogs.delete(playerId)
         else pendingDialogs.set(playerId, pending)
       }

@@ -81,7 +81,11 @@ impl InputState {
     }
 
     pub(crate) fn record_historical_key(&mut self, pressed: bool, key_code: u8) {
-        if !self.historical_key_events.iter().any(|(state, code)| *state == pressed && *code == key_code) {
+        if !self
+            .historical_key_events
+            .iter()
+            .any(|(state, code)| *state == pressed && *code == key_code)
+        {
             self.historical_key_events.push((pressed, key_code));
         }
     }

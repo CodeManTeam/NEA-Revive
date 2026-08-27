@@ -22,7 +22,8 @@ impl InteractionOverlay {
 
     pub fn set(&self, prompt: Option<(&str, &str)>) {
         if let Some((control, hint)) = prompt {
-            self.root.set_text_content(Some(&format!("[{control}] {hint}")));
+            self.root
+                .set_text_content(Some(&format!("[{control}] {hint}")));
             let _ = self.root.set_attribute("style", "position:fixed;left:50%;top:76px;transform:translateX(-50%);z-index:25;pointer-events:none;color:white;background:rgba(0,0,0,.62);padding:6px 12px;border-radius:3px;font:600 14px Arial,sans-serif;text-shadow:0 1px 2px #000;display:block;white-space:nowrap");
         } else {
             let _ = self.root.set_attribute("style", "display:none");

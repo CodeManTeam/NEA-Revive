@@ -43,7 +43,7 @@ export const netLog = {
     log: new MuStruct({
       level: new MuUint8(),
       message: new MuUTF8(),
-      prefix: new MuArray(new MuASCII()),
+      prefix: new MuArray(new MuASCII(), 16),
       timestamp: new MuDate(),
       uuid: new MuASCII()
     }),
@@ -52,12 +52,12 @@ export const netLog = {
     log: new MuStruct({
       level: new MuVarint(),
       message: new MuUTF8(),
-      prefix: new MuArray(new MuASCII())
+      prefix: new MuArray(new MuASCII(), 16)
     }),
     logASCII: new MuStruct({
       level: new MuVarint(),
       message: new MuASCII(),
-      prefix: new MuArray(new MuASCII())
+      prefix: new MuArray(new MuASCII(), 16)
     }),
     logPino: new MuJSON(),
   },
@@ -84,7 +84,7 @@ export const models = {
       renderBoxOffsetZ: new MuQuantizedFloat(1, 64),
       hash: new MuASCII(),
       hashType: new MuUTF8()
-    })),
+    }), 4096),
     appendSkinHashes: new MuArray(new MuStruct({
       hash: new MuASCII(),
       parts: new MuStruct({
@@ -107,11 +107,11 @@ export const models = {
         rightUpperLeg: new MuASCII(),
         torso: new MuASCII()
       })
-    })),
+    }), 256),
     appendSkinPartHashes: new MuSortedArray(new MuStruct({
       id: new MuVarint(),
       hash: new MuASCII()
-    })),
+    }), 4096),
   },
   server: {},
 }
@@ -124,17 +124,17 @@ export const gameNet = {
   client: {
     scriptEvents: new MuStruct({
       damage: new MuStruct({
-        die: new MuArray(new MuVarint()),
+        die: new MuArray(new MuVarint(), 1024),
         hurt: new MuArray(new MuStruct({
           damage: new MuVarint(),
           id: new MuVarint()
-        })),
-        respawn: new MuArray(new MuVarint())
+        }), 1024),
+        respawn: new MuArray(new MuVarint(), 1024)
       })
     }),
     exceedUserLimit: new MuVarint(),
     kickSessionReason: new MuUint8(),
-    syncClientScriptModules: new MuDictionary(new MuUTF8()),
+    syncClientScriptModules: new MuDictionary(new MuUTF8(), 256),
   },
   server: {
     join: new MuVoid(),
@@ -158,7 +158,7 @@ export const gameNet = {
         rayDirection: new MuQuantizedVec3(0.0009765625, [0, 0, 0]),
         rayHitNormal: new MuCubeAxis(),
         rayOrigin: new MuQuantizedVec3(0.00390625, [0, 0, 0])
-      })),
+      }), 32),
       input: new MuStruct({
         inputState: new MuUint16(),
         inputAngle: new MuUint8(),
@@ -172,14 +172,14 @@ export const gameNet = {
           vy: new MuQuantizedFloat(0.00390625, 0),
           vz: new MuQuantizedFloat(0.00390625, 0),
           id: new MuVarint()
-        }))
+        }), 1024)
       })
     }),
     sendKeyBoardEvent: new MuStruct({
       id: new MuVarint(),
       tick: new MuVarint(),
-      keyDownState: new MuArray(new MuUint8()),
-      prevKeyDownState: new MuArray(new MuUint8())
+      keyDownState: new MuArray(new MuUint8(), 256),
+      prevKeyDownState: new MuArray(new MuUint8(), 256)
     }),
   },
 }
@@ -220,7 +220,7 @@ export const input = {
 export const sound = {
   name: 'sound',
   client: {
-    resetDictionary: new MuArray(new MuASCII()),
+    resetDictionary: new MuArray(new MuASCII(), 4096),
     play: new MuStruct({
       gain: new MuQuantizedFloat(0.00390625, 1),
       pitch: new MuQuantizedFloat(0.00390625, 1),
@@ -265,13 +265,13 @@ export const gameTerrain = {
       nz: new MuUint16(),
       innerAO: new MuBoolean(),
       blocks: new MuASCII(),
-      hashes: new MuArray(new MuASCII())
+      hashes: new MuArray(new MuASCII(), 65536)
     }),
     voxelChange: new MuArray(new MuStruct({
       block: new MuRelativeVarint(),
       count: new MuVarint(),
       offset: new MuVarint()
-    })),
+    }), 262144),
     chunkResponse: new MuStruct({
       rpcId: new MuVarint(),
       boxes: new MuSortedArray(new MuStruct({
@@ -293,8 +293,8 @@ export const gameTerrain = {
       chunksInfo: new MuArray(new MuStruct({
         idx: new MuVarint(),
         hash: new MuASCII()
-      })),
-      dirtyChunks: new MuArray(new MuVarint())
+      }), 65536),
+      dirtyChunks: new MuArray(new MuVarint(), 65536)
     }),
   },
   server: {
@@ -308,8 +308,8 @@ export const gameTerrain = {
       startI: new MuVarint(),
       startJ: new MuVarint(),
       startK: new MuVarint(),
-      chunkIds: new MuArray(new MuVarint()),
-      dirtyChunks: new MuArray(new MuVarint())
+      chunkIds: new MuArray(new MuVarint(), 65536),
+      dirtyChunks: new MuArray(new MuVarint(), 65536)
     }),
   },
 }
@@ -459,7 +459,7 @@ export const dialog = {
         }),
         select: new MuStruct({
           common: dialogCommon,
-          options: new MuArray(new MuUTF8())
+          options: new MuArray(new MuUTF8(), 64)
         }),
       })
     }),
@@ -642,7 +642,7 @@ export const market = {
   name: 'market',
   client: {
     openMarketplace: new MuStruct({
-      productIds: new MuArray(new MuUTF8())
+      productIds: new MuArray(new MuUTF8(), 512)
     }),
   },
   server: {},
@@ -816,10 +816,10 @@ function createGameUIProtocol() {
           width: new MuInt32(),
           hash: new MuASCII(),
           metadataHash: new MuASCII()
-        })),
+        }), 4096),
         uiTree: new MuDictionary(new MuStruct({
           type: new MuVarint(),
-          childrenIds: new MuArray(new MuASCII()),
+          childrenIds: new MuArray(new MuASCII(), 64),
           id: new MuASCII(),
           name: new MuUTF8(),
           parentId: new MuASCII(),
@@ -827,7 +827,7 @@ function createGameUIProtocol() {
             screen: screenSchema,
             element: elementUnion,
           }))
-        }))
+        }), 65536)
       }),
     },
     server: {},
@@ -881,13 +881,13 @@ export const box3Protocols = [
 // （chunkResponse boxes 的 wire 编码依赖它，defaultCompare 对对象恒等会破坏 diff）
 export function compareTerrainBoxes(a: Record<string, number>, b: Record<string, number>): number {
   return (
-    a.minZ - b.minZ ||
-    a.minY - b.minY ||
-    a.minX - b.minX ||
-    a.maxX - b.maxX ||
-    a.maxY - b.maxY ||
-    a.maxZ - b.maxZ ||
-    a.block - b.block ||
-    a.faces - b.faces
+    (a.minZ ?? 0) - (b.minZ ?? 0) ||
+    (a.minY ?? 0) - (b.minY ?? 0) ||
+    (a.minX ?? 0) - (b.minX ?? 0) ||
+    (a.maxX ?? 0) - (b.maxX ?? 0) ||
+    (a.maxY ?? 0) - (b.maxY ?? 0) ||
+    (a.maxZ ?? 0) - (b.maxZ ?? 0) ||
+    (a.block ?? 0) - (b.block ?? 0) ||
+    (a.faces ?? 0) - (b.faces ?? 0)
   )
 }

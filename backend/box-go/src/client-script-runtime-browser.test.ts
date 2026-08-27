@@ -219,7 +219,7 @@ try {
     }))
     const root = document.querySelector("#nea-client-ui") as HTMLElement
     const screen = root.firstElementChild as HTMLElement
-    const [title, field, scroll] = [...screen.children] as HTMLElement[]
+    const [title, field, scroll] = [...screen.children] as [HTMLElement, HTMLElement, HTMLElement]
     return {
       title: title.textContent,
       titleMarkup: title.innerHTML,
@@ -376,7 +376,7 @@ try {
     return [...document.querySelectorAll("#nea-client-ui [data-nea-name]")]
       .filter(element => ["Shie", "LShie"].includes((element as HTMLElement).dataset.neaName || ""))
       .map(element => ({ name: (element as HTMLElement).dataset.neaName, transform: (element as HTMLElement).style.transform }))
-      .sort((left, right) => left.name.localeCompare(right.name))
+      .sort((left, right) => String(left.name).localeCompare(String(right.name)))
   }, minecraftHydratedUi)
   assert.deepEqual(importedRotation, [
     { name: "LShie", transform: "translate(0%, 0%) rotate(14.9954deg) scale(1)" },
@@ -625,7 +625,7 @@ try {
   const localLink = await linkPage.evaluate(() => {
     let opened: string | undefined
     const originalOpen = window.open
-    window.open = (url: string | URL) => { opened = String(url); return null }
+    window.open = (url?: string | URL) => { opened = url === undefined ? undefined : String(url); return null }
     ;(window as any).__neaClientRuntimeReceive(JSON.stringify({
       type: "nea-revive:link",
       href: "https://dao3.fun/play/original-map",

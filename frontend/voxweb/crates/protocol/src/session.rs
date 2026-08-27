@@ -57,7 +57,12 @@ pub enum Outbound {
     /// remote-channel.sendServerEvent {tick,args(JSON)}.
     RemoteServerEvent { tick: u32, event: serde_json::Value },
     /// game-net.sendKeyBoardEvent transition for recovered map scripts.
-    KeyBoardEvent { id: u32, tick: u32, key_down: Vec<u8>, previous: Vec<u8> },
+    KeyBoardEvent {
+        id: u32,
+        tick: u32,
+        key_down: Vec<u8>,
+        previous: Vec<u8>,
+    },
 }
 
 /// A minimal transport abstraction (reliable binary + text frames).
@@ -279,7 +284,12 @@ pub fn encode_outbound(table: &ProtocolTable, msg: &Outbound) -> Result<Vec<u8>,
             let payload = Value::Struct(vec![Value::Varint(*tick), Value::UTF8(args)]);
             table.encode_server_message("remote-channel", "sendServerEvent", &payload)
         }
-        Outbound::KeyBoardEvent { id, tick, key_down, previous } => {
+        Outbound::KeyBoardEvent {
+            id,
+            tick,
+            key_down,
+            previous,
+        } => {
             let payload = Value::Struct(vec![
                 Value::Varint(*id),
                 Value::Varint(*tick),

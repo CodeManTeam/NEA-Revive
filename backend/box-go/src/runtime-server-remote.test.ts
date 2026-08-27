@@ -90,14 +90,19 @@ function waitFor(predicate: () => boolean, timeoutMs = 8000): Promise<void> {
 }
 
 try {
-  await new Promise<void>((resolve, reject) => client.start({
-    ready: resolve,
-    close: error => reject(new Error(String(error ?? "MuDB client closed"))),
-  }))
+  let rejectStart: ((reason: unknown) => void) | undefined
+  const startPromise = new Promise<void>((resolve: () => void, reject: (reason: unknown) => void) => {
+    rejectStart = reject
+    client.start({
+      ready: resolve,
+      close: () => { rejectStart?.(new Error("MuDB client closed")) },
+    })
+  })
+  await startPromise
   netProtocol.server.message.join()
   await waitFor(() => server.runtime.snapshot().players.length === 1)
   await waitFor(() => clientModules !== null)
-  assert.match(clientModules!["clientIndex.js"], /parkour client runtime panel loaded/)
+  assert.match(String(clientModules!["clientIndex.js"] ?? ""), /parkour client runtime panel loaded/)
   await waitFor(() => received.some(item => item.event.type === "server:joined"))
   assert.equal(received[0].event.type, "server:joined")
   assert.equal(received[0].tick, 1)

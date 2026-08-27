@@ -1763,7 +1763,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     }
                 }
             }
-        Err(error) => jslog!("[nea] client script drain failed: {error}"),
+            Err(error) => jslog!("[nea] client script drain failed: {error}"),
         }
         let wearable_local_id = driver.borrow().player_id;
         let wearable_local_yaw = input.borrow().local_yaw;
@@ -2075,66 +2075,69 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     let d = driver.borrow();
                     (d.player_id, d.last_server_tick)
                 };
-                let action_wire_events = action_events.into_iter().map(|(button, pressed)| {
-                    let (ray_origin, ray_target) = voxweb_protocol::player::fps_camera(
-                        local_pos,
-                        local_body_half_extents[1],
-                        inp.crouching,
-                        inp.local_pitch,
-                        inp.local_yaw,
-                    );
-                    let ray_delta = glam::Vec3::from_array(ray_target)
-                        - glam::Vec3::from_array(ray_origin);
-                    let ray_direction = ray_delta.normalize_or_zero();
-                    let target = raycast_static_entity(
-                        glam::Vec3::from_array(ray_origin),
-                        ray_direction,
-                        &entity_scene.entities,
-                    )
-                    .filter(|(distance, entity)| {
-                        *distance <= 4.5 && (button != 2 || entity.script_interactable)
+                let action_wire_events = action_events
+                    .into_iter()
+                    .map(|(button, pressed)| {
+                        let (ray_origin, ray_target) = voxweb_protocol::player::fps_camera(
+                            local_pos,
+                            local_body_half_extents[1],
+                            inp.crouching,
+                            inp.local_pitch,
+                            inp.local_yaw,
+                        );
+                        let ray_delta =
+                            glam::Vec3::from_array(ray_target) - glam::Vec3::from_array(ray_origin);
+                        let ray_direction = ray_delta.normalize_or_zero();
+                        let target = raycast_static_entity(
+                            glam::Vec3::from_array(ray_origin),
+                            ray_direction,
+                            &entity_scene.entities,
+                        )
+                        .filter(|(distance, entity)| {
+                            *distance <= 4.5 && (button != 2 || entity.script_interactable)
+                        })
+                        .or_else(|| {
+                            // Script-owned Bedwars props use player.onPress rather
+                            // than entity-interact. A small proximity fallback
+                            // keeps right-click usable when the model's thin mesh
+                            // is just outside the exact crosshair ray.
+                            entity_scene
+                                .entities
+                                .iter()
+                                .filter(|entity| {
+                                    entity.visible
+                                        && entity.script_interactable
+                                        && interaction_distance(entity, local_pos) <= 4.5
+                                })
+                                .map(|entity| (interaction_distance(entity, local_pos), entity))
+                                .min_by(|left, right| left.0.total_cmp(&right.0))
+                        });
+                        let (ray_hit_entity, ray_time) = if let Some((distance, entity)) = target {
+                            (entity.id, distance)
+                        } else {
+                            (0, -1.0)
+                        };
+                        jslog!(
+                            "[nea] input {} {} target={} distance={:.2}",
+                            if pressed { "press" } else { "release" },
+                            if button == 1 { "action0" } else { "action1" },
+                            ray_hit_entity,
+                            ray_time,
+                        );
+                        voxweb_protocol::player::ClientInputEvent {
+                            tick: tick_now as f32,
+                            ray_time,
+                            ray_hit_entity,
+                            ray_hit_voxel: [0, 0, 0],
+                            button_state: if pressed { button } else { 0 },
+                            prev_button_state: if pressed { 0 } else { button },
+                            position: local_pos,
+                            ray_direction: ray_direction.to_array(),
+                            ray_hit_normal: 0,
+                            ray_origin,
+                        }
                     })
-                    .or_else(|| {
-                        // Script-owned Bedwars props use player.onPress rather
-                        // than entity-interact. A small proximity fallback
-                        // keeps right-click usable when the model's thin mesh
-                        // is just outside the exact crosshair ray.
-                        entity_scene
-                            .entities
-                            .iter()
-                            .filter(|entity| {
-                                entity.visible
-                                    && entity.script_interactable
-                                    && interaction_distance(entity, local_pos) <= 4.5
-                            })
-                            .map(|entity| (interaction_distance(entity, local_pos), entity))
-                            .min_by(|left, right| left.0.total_cmp(&right.0))
-                    });
-                    let (ray_hit_entity, ray_time) = if let Some((distance, entity)) = target {
-                        (entity.id, distance)
-                    } else {
-                        (0, -1.0)
-                    };
-                    jslog!(
-                        "[nea] input {} {} target={} distance={:.2}",
-                        if pressed { "press" } else { "release" },
-                        if button == 1 { "action0" } else { "action1" },
-                        ray_hit_entity,
-                        ray_time,
-                    );
-                    voxweb_protocol::player::ClientInputEvent {
-                        tick: tick_now as f32,
-                        ray_time,
-                        ray_hit_entity,
-                        ray_hit_voxel: [0, 0, 0],
-                        button_state: if pressed { button } else { 0 },
-                        prev_button_state: if pressed { 0 } else { button },
-                        position: local_pos,
-                        ray_direction: ray_direction.to_array(),
-                        ray_hit_normal: 0,
-                        ray_origin,
-                    }
-                }).collect();
+                    .collect();
                 let ci = voxweb_protocol::player::ClientInput {
                     events: action_wire_events,
                     input_state: state,
@@ -2198,7 +2201,9 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                             key_down: if pressed { vec![key_code] } else { Vec::new() },
                             previous: if pressed { Vec::new() } else { vec![key_code] },
                         };
-                        if let Ok(frame) = voxweb_protocol::session::encode_outbound(&table, &outbound) {
+                        if let Ok(frame) =
+                            voxweb_protocol::session::encode_outbound(&table, &outbound)
+                        {
                             let _ = sockets.send_reliable(&frame);
                         }
                     }
@@ -3373,9 +3378,7 @@ fn apply_entity_state_event(
         let Some(mesh) = entity.get("mesh").and_then(serde_json::Value::as_str) else {
             return false;
         };
-        if !scene.meshes.contains_key(mesh)
-            || scene.entities.iter().any(|entry| entry.id == id)
-        {
+        if !scene.meshes.contains_key(mesh) || scene.entities.iter().any(|entry| entry.id == id) {
             return false;
         }
         let position = json_vec3(entity.get("position")).unwrap_or([0.0; 3]);
@@ -3385,19 +3388,40 @@ fn apply_entity_state_event(
             .get("meshOrientation")
             .and_then(serde_json::Value::as_array)
             .filter(|values| values.len() >= 4)
-            .map(|values| [
-                json_f32(values.get(1)),
-                json_f32(values.get(2)),
-                json_f32(values.get(3)),
-                json_f32(values.first()),
-            ])
+            .map(|values| {
+                [
+                    json_f32(values.get(1)),
+                    json_f32(values.get(2)),
+                    json_f32(values.get(3)),
+                    json_f32(values.first()),
+                ]
+            })
             .unwrap_or([0.0, 0.0, 0.0, 1.0]);
-        let collision = entity.get("collides").and_then(serde_json::Value::as_bool).unwrap_or(true);
-        let fixed = entity.get("fixed").and_then(serde_json::Value::as_bool).unwrap_or(false);
-        let mass = entity.get("mass").and_then(serde_json::Value::as_f64).unwrap_or(1.0).max(0.001);
-        let friction = entity.get("friction").and_then(serde_json::Value::as_f64).unwrap_or(0.0).max(0.0);
-        let restitution = entity.get("restitution").and_then(serde_json::Value::as_f64).unwrap_or(0.0).max(0.0);
-        let half_extents = [0, 1, 2].map(|axis| (bounds[axis].abs() * scale[axis].abs() / 2.0).max(0.01));
+        let collision = entity
+            .get("collides")
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(true);
+        let fixed = entity
+            .get("fixed")
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(false);
+        let mass = entity
+            .get("mass")
+            .and_then(serde_json::Value::as_f64)
+            .unwrap_or(1.0)
+            .max(0.001);
+        let friction = entity
+            .get("friction")
+            .and_then(serde_json::Value::as_f64)
+            .unwrap_or(0.0)
+            .max(0.0);
+        let restitution = entity
+            .get("restitution")
+            .and_then(serde_json::Value::as_f64)
+            .unwrap_or(0.0)
+            .max(0.0);
+        let half_extents =
+            [0, 1, 2].map(|axis| (bounds[axis].abs() * scale[axis].abs() / 2.0).max(0.01));
         let instance_value = serde_json::json!({
             "id": id,
             "mesh": mesh,
@@ -3592,8 +3616,7 @@ fn apply_player_wearables_event(
     scene: &mut StaticEntityScene,
     states: &mut HashMap<u32, PlayerWearableState>,
 ) -> bool {
-    if event.get("type").and_then(serde_json::Value::as_str)
-        != Some("nea-revive:player-wearables")
+    if event.get("type").and_then(serde_json::Value::as_str) != Some("nea-revive:player-wearables")
     {
         return false;
     }
@@ -3605,7 +3628,10 @@ fn apply_player_wearables_event(
         .get("revision")
         .and_then(serde_json::Value::as_u64)
         .unwrap_or(0) as u32;
-    if states.get(&player_id).is_some_and(|state| revision < state.revision) {
+    if states
+        .get(&player_id)
+        .is_some_and(|state| revision < state.revision)
+    {
         return false;
     }
     let wearables = event
@@ -3613,7 +3639,9 @@ fn apply_player_wearables_event(
         .cloned()
         .and_then(|value| serde_json::from_value::<Vec<PlayerWearable>>(value).ok())
         .unwrap_or_default();
-    scene.entities.retain(|entity| entity.wearable_owner != Some(player_id));
+    scene
+        .entities
+        .retain(|entity| entity.wearable_owner != Some(player_id));
     for (slot, wearable) in wearables.iter().enumerate() {
         if !scene.meshes.contains_key(&wearable.mesh) {
             jslog!("[nea] wearable mesh unavailable: {}", wearable.mesh);
@@ -3687,10 +3715,16 @@ fn update_player_wearable_transforms(
 ) -> bool {
     let samples = remote_players.sample(now_ms);
     let mut changed = false;
-    for entity in scene.entities.iter_mut().filter(|entity| entity.wearable_owner.is_some()) {
+    for entity in scene
+        .entities
+        .iter_mut()
+        .filter(|entity| entity.wearable_owner.is_some())
+    {
         let owner = entity.wearable_owner.unwrap_or_default();
         let (position, yaw) = if owner == local_player_id {
-            let Some(position) = local_position else { continue };
+            let Some(position) = local_position else {
+                continue;
+            };
             (position, local_yaw)
         } else {
             let Some(player) = samples.iter().find(|player| player.id == owner) else {
@@ -3709,7 +3743,8 @@ fn update_player_wearable_transforms(
         };
         let anchor = wearable_body_part_anchor(&entity.wearable_body_part);
         let yaw_rotation = glam::Quat::from_rotation_y(yaw);
-        let next_position = glam::Vec3::from_array(position) + yaw_rotation * glam::Vec3::from_array(anchor);
+        let next_position =
+            glam::Vec3::from_array(position) + yaw_rotation * glam::Vec3::from_array(anchor);
         let next_rotation = (yaw_rotation
             * glam::Quat::from_xyzw(
                 entity.wearable_rotation[0],
@@ -3737,8 +3772,10 @@ fn wearable_body_part_anchor(body_part: &str) -> [f32; 3] {
         "rightShoulder" | "rightUpperArm" | "right_upper_arm" => [0.52, 1.25, 0.0],
         "leftHand" | "left_hand" => [-0.62, 0.75, 0.0],
         "rightHand" | "right_hand" => [0.62, 0.75, 0.0],
-        "leftFoot" | "leftLowerLeg" | "leftUpperLeg" | "left_foot" | "left_lower_leg" | "left_upper_leg" => [-0.22, 0.15, 0.0],
-        "rightFoot" | "rightLowerLeg" | "rightUpperLeg" | "right_foot" | "right_lower_leg" | "right_upper_leg" => [0.22, 0.15, 0.0],
+        "leftFoot" | "leftLowerLeg" | "leftUpperLeg" | "left_foot" | "left_lower_leg"
+        | "left_upper_leg" => [-0.22, 0.15, 0.0],
+        "rightFoot" | "rightLowerLeg" | "rightUpperLeg" | "right_foot" | "right_lower_leg"
+        | "right_upper_leg" => [0.22, 0.15, 0.0],
         _ => [0.0, 1.05, 0.0],
     }
 }
@@ -4335,13 +4372,7 @@ impl RenderTerrain {
             changed_count,
             now_ms().saturating_sub(remesh_start),
         );
-        self.rebuild_terrain_batches(
-            device,
-            atlas,
-            material_atlas,
-            bump_atlas,
-            surface_format,
-        );
+        self.rebuild_terrain_batches(device, atlas, material_atlas, bump_atlas, surface_format);
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -5178,8 +5209,8 @@ fn install_keyboard(
     // Suppress immediate retries so the rejection cannot break input.
     let lock_cooldown_until_ms = Rc::new(Cell::new(0u32));
     let lock_cooldown_for_click = Rc::clone(&lock_cooldown_until_ms);
-    let on_click =
-        Closure::<dyn FnMut(web_sys::MouseEvent)>::new(move |ev: web_sys::MouseEvent| {
+    let on_click = Closure::<dyn FnMut(web_sys::MouseEvent)>::new(
+        move |ev: web_sys::MouseEvent| {
             // Modal dialogs own the click. Do not let the window-level canvas
             // handler reacquire pointer lock while the browser is completing
             // the unlock caused by opening the dialog.
@@ -5215,7 +5246,8 @@ fn install_keyboard(
                 lock_canvas.request_pointer_lock();
             }
             ev.prevent_default();
-        });
+        },
+    );
     let lock_document = mouse_document.clone();
     let lock_cooldown_for_change = Rc::clone(&lock_cooldown_until_ms);
     let on_lock_change = Closure::<dyn FnMut()>::new(move || {
@@ -5226,8 +5258,8 @@ fn install_keyboard(
             lock_cooldown_for_change.set(now_ms().saturating_add(500));
         }
     });
-    let on_down =
-        Closure::<dyn FnMut(web_sys::KeyboardEvent)>::new(move |ev: web_sys::KeyboardEvent| {
+    let on_down = Closure::<dyn FnMut(web_sys::KeyboardEvent)>::new(
+        move |ev: web_sys::KeyboardEvent| {
             let code = ev.code();
             // Historical dialogs own keyboard focus. Do not leak E/Space or
             // movement edges into the game while a modal is visible; doing so
@@ -5327,7 +5359,8 @@ fn install_keyboard(
             } else {
                 ev.prevent_default();
             }
-        });
+        },
+    );
     let on_up =
         Closure::<dyn FnMut(web_sys::KeyboardEvent)>::new(move |ev: web_sys::KeyboardEvent| {
             let mut s = match up_state.try_borrow_mut() {
@@ -5384,8 +5417,8 @@ fn install_keyboard(
     // press/release during pointer lock is reported to the server.
     let action_down_state = Rc::clone(input);
     let action_up_state = Rc::clone(input);
-    let on_action_down =
-        Closure::<dyn FnMut(web_sys::MouseEvent)>::new(move |ev: web_sys::MouseEvent| {
+    let on_action_down = Closure::<dyn FnMut(web_sys::MouseEvent)>::new(
+        move |ev: web_sys::MouseEvent| {
             let ui_target = ev
                 .target()
                 .and_then(|target| target.dyn_into::<web_sys::Element>().ok())
@@ -5404,14 +5437,21 @@ fn install_keyboard(
                 Err(_) => return,
             };
             match ev.button() {
-                0 => { s.action0 = true; s.record_action_event(1, true); }
-                2 => { s.action1 = true; s.record_action_event(2, true); }
+                0 => {
+                    s.action0 = true;
+                    s.record_action_event(1, true);
+                }
+                2 => {
+                    s.action1 = true;
+                    s.record_action_event(2, true);
+                }
                 _ => {}
             }
             ev.prevent_default();
-        });
-    let on_action_up =
-        Closure::<dyn FnMut(web_sys::MouseEvent)>::new(move |ev: web_sys::MouseEvent| {
+        },
+    );
+    let on_action_up = Closure::<dyn FnMut(web_sys::MouseEvent)>::new(
+        move |ev: web_sys::MouseEvent| {
             let ui_target = ev
                 .target()
                 .and_then(|target| target.dyn_into::<web_sys::Element>().ok())
@@ -5430,12 +5470,19 @@ fn install_keyboard(
                 Err(_) => return,
             };
             match ev.button() {
-                0 => { s.action0 = false; s.record_action_event(1, false); }
-                2 => { s.action1 = false; s.record_action_event(2, false); }
+                0 => {
+                    s.action0 = false;
+                    s.record_action_event(1, false);
+                }
+                2 => {
+                    s.action1 = false;
+                    s.record_action_event(2, false);
+                }
                 _ => {}
             }
             ev.prevent_default();
-        });
+        },
+    );
     // Register on window so the loading overlay does not swallow the user's
     // initial activation click. The handler always locks the game canvas.
     let r0 = window.add_event_listener_with_callback("click", on_click.as_ref().unchecked_ref());
@@ -5666,19 +5713,18 @@ fn yield_animation_frame() -> js_sys::Promise {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
     use super::{
-        AvatarRollState, EntityInteractionIndex, InputState, RuntimeCameraState, StaticEntityScene,
-        apply_entity_state_event, apply_runtime_camera_state, block_is_solid,
+        AvatarRollState, EntityInteractionIndex, InputState, LOCAL_VOID_RESPAWN_Y,
+        PLAYER_FLAG_SPECTATOR, RuntimeCameraState, StaticEntityScene, apply_entity_state_event,
+        apply_player_wearables_event, apply_runtime_camera_state, block_is_solid,
         build_static_entity_collision_bodies, fluid_volume_fraction, make_camera,
-        network_tick_is_newer, normalize_player_collision_half_extents, recovered_avatar_yaw,
-        recovered_fluid_height, recovered_fluid_info, recovered_player_state,
-        raycast_static_entity, recovered_rotated_face_rects, recovered_voxel_face_visible,
-        recovered_walk_phase_delta, apply_player_wearables_event,
-        wearable_body_part_anchor,
-        should_apply_authoritative_respawn, LOCAL_VOID_RESPAWN_Y, PLAYER_FLAG_SPECTATOR,
+        network_tick_is_newer, normalize_player_collision_half_extents, raycast_static_entity,
+        recovered_avatar_yaw, recovered_fluid_height, recovered_fluid_info, recovered_player_state,
+        recovered_rotated_face_rects, recovered_voxel_face_visible, recovered_walk_phase_delta,
+        should_apply_authoritative_respawn, wearable_body_part_anchor,
         write_recovered_texture_rotation,
     };
+    use std::collections::HashMap;
     use voxweb_physics::NeaPlayerPhysics;
     use voxweb_protocol::player::MoveMode;
     use voxweb_render::nea_mesh::{FLOATS_PER_VERTEX, MeshBuffers};
@@ -5741,12 +5787,14 @@ mod tests {
                 "restitution": 0.0,
                 "enableInteract": false
             }]
-        })).expect("raycast fixture");
+        }))
+        .expect("raycast fixture");
         let hit = raycast_static_entity(
             glam::Vec3::new(0.0, 0.0, 0.0),
             glam::Vec3::new(0.0, 0.0, 1.0),
             &scene.entities,
-        ).expect("entity hit");
+        )
+        .expect("entity hit");
         assert_eq!(hit.1.id, 99);
         assert!((hit.0 - 3.0).abs() < 1.0e-5);
     }
@@ -5914,7 +5962,11 @@ mod tests {
                 "material": {"color": [1.0, 0.2, 0.1], "metalness": 1.0, "emissive": 0.0, "shininess": 0.0}
             }]
         });
-        assert!(apply_player_wearables_event(&event, &mut scene, &mut states));
+        assert!(apply_player_wearables_event(
+            &event,
+            &mut scene,
+            &mut states
+        ));
         assert_eq!(scene.entities.len(), 1);
         assert_eq!(scene.entities[0].wearable_owner, Some(3));
         assert_eq!(scene.entities[0].wearable_body_part, "rightHand");
@@ -5936,7 +5988,10 @@ mod tests {
 
     #[test]
     fn wearable_body_part_anchor_places_hand_items_at_player_side() {
-        assert_eq!(super::wearable_body_part_anchor("rightHand"), [0.62, 0.75, 0.0]);
+        assert_eq!(
+            super::wearable_body_part_anchor("rightHand"),
+            [0.62, 0.75, 0.0]
+        );
         assert_eq!(super::wearable_body_part_anchor("head"), [0.0, 2.15, 0.0]);
     }
 
@@ -6031,26 +6086,26 @@ mod tests {
 
     #[test]
     fn one_block_resource_pit_floor_keeps_jump_available() {
-        let pit = |x: i32, y: i32, z: i32| {
-            y == 40 && x == 227 && (126..=128).contains(&z)
-        };
+        let pit = |x: i32, y: i32, z: i32| y == 40 && x == 227 && (126..=128).contains(&z);
         let mut physics = NeaPlayerPhysics::new([227.5, 42.1, 127.5]);
         physics.observe(&pit);
-        assert!(physics.grounded, "resource pit floor should support the player");
-        physics.step(
-            [0.0, 0.0],
-            MoveMode::Walk,
-            false,
-            true,
-            0.05,
-            &pit,
+        assert!(
+            physics.grounded,
+            "resource pit floor should support the player"
         );
-        assert!(physics.position[1] > 42.1, "jump should leave the resource pit");
+        physics.step([0.0, 0.0], MoveMode::Walk, false, true, 0.05, &pit);
+        assert!(
+            physics.position[1] > 42.1,
+            "jump should leave the resource pit"
+        );
     }
 
     #[test]
     fn wearable_anchors_accept_recovered_snake_case_body_parts() {
-        assert_eq!(wearable_body_part_anchor("left_upper_arm"), [-0.52, 1.25, 0.0]);
+        assert_eq!(
+            wearable_body_part_anchor("left_upper_arm"),
+            [-0.52, 1.25, 0.0]
+        );
         assert_eq!(wearable_body_part_anchor("right_foot"), [0.22, 0.15, 0.0]);
         assert_eq!(wearable_body_part_anchor("rightHand"), [0.62, 0.75, 0.0]);
     }
