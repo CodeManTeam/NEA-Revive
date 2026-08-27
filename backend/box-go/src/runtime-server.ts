@@ -1465,18 +1465,8 @@ function buildStaticEntityScene(
         + (renderBoxOffset[axis] ?? 0)) * (entityScale[axis] ?? 1),
     )
     if (entity.__meshOnly) continue
-    // The source-format identity quaternion is [w, x, y, z].
-    const authoredOrientation = (entity.source?.orientation ?? [1, 0, 0, 0]).map(Number)
-    // DAO3/source entity JSON stores quaternions as [w, x, y, z]. VoxWeb's
-    // StaticEntityInstance and glam::Quat::from_xyzw consume [x, y, z, w].
-    // Convert once at the scene boundary so rendered meshes, OBB collision,
-    // and the pointer ray all share the authored orientation.
-    const rotation = [
-      authoredOrientation[1] ?? 0,
-      authoredOrientation[2] ?? 0,
-      authoredOrientation[3] ?? 0,
-      authoredOrientation[0] ?? 1,
-    ]
+    // Source orientation is already XYZW; VoxWeb consumes it unchanged.
+    const rotation = (entity.source?.orientation ?? [0, 0, 0, 1]).map(Number)
     instances.push({
       id: sourceIndex + 0x10000,
       mesh,
