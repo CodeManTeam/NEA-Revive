@@ -3388,12 +3388,13 @@ fn apply_entity_state_event(
             .get("meshOrientation")
             .and_then(serde_json::Value::as_array)
             .filter(|values| values.len() >= 4)
+            // Runtime entity state uses DAO3's [w, x, y, z] quaternion order.
             .map(|values| {
                 [
+                    json_f32(values.first()),
                     json_f32(values.get(1)),
                     json_f32(values.get(2)),
                     json_f32(values.get(3)),
-                    json_f32(values.first()),
                 ]
             })
             .unwrap_or([0.0, 0.0, 0.0, 1.0]);
@@ -3509,11 +3510,12 @@ fn apply_entity_state_event(
         .and_then(serde_json::Value::as_array)
     {
         if orientation.len() >= 4 {
+            // Runtime entity state uses DAO3's [w, x, y, z] quaternion order.
             let rotation = [
+                json_f32(orientation.first()),
                 json_f32(orientation.get(1)),
                 json_f32(orientation.get(2)),
                 json_f32(orientation.get(3)),
-                json_f32(orientation.first()),
             ];
             if let Some(body) = bodies.iter_mut().find(|body| body.id == id) {
                 [body.qx, body.qy, body.qz, body.qw] = rotation;
@@ -3666,11 +3668,13 @@ fn apply_player_wearables_event(
             scale: wearable
                 .scale
                 .map(|value| (value.abs() * (1.0 / 64.0)).max(0.0001)),
+            // Backend wearable snapshots preserve DAO3's [w, x, y, z] order;
+            // convert once here for glam::Quat::from_xyzw.
             rotation: [
+                wearable.orientation[0],
                 wearable.orientation[1],
                 wearable.orientation[2],
                 wearable.orientation[3],
-                wearable.orientation[0],
             ],
             collision: false,
             fixed: true,
@@ -3693,10 +3697,10 @@ fn apply_player_wearables_event(
             script_interact_hint: String::new(),
             wearable_owner: Some(player_id),
             wearable_rotation: [
+                wearable.orientation[0],
                 wearable.orientation[1],
                 wearable.orientation[2],
                 wearable.orientation[3],
-                wearable.orientation[0],
             ],
             wearable_body_part: wearable.body_part.clone(),
         });
@@ -5971,6 +5975,10 @@ mod tests {
         assert_eq!(scene.entities[0].wearable_owner, Some(3));
         assert_eq!(scene.entities[0].wearable_body_part, "rightHand");
         assert_eq!(scene.entities[0].mesh, "mesh/wooden-sword.vb");
+        // Snapshot [w,x,y,z]=[1,0,0,0] is identity. Preserving component
+        // order proves the fixture is not silently reinterpreted as XYZW.
+        assert_eq!(scene.entities[0].rotation, [1.0, 0.0, 0.0, 0.0]);
+        assert_eq!(scene.entities[0].wearable_rotation, [1.0, 0.0, 0.0, 0.0]);
         assert_eq!(states.get(&3).map(|state| state.revision), Some(1));
         assert!(!apply_player_wearables_event(
             &serde_json::json!({"type": "nea-revive:player-wearables", "playerId": 3, "revision": 0, "wearables": []}),
