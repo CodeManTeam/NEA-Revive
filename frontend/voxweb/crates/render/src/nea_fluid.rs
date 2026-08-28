@@ -349,9 +349,10 @@ impl NeaFluidPipeline {
         &self,
         encoder: &mut wgpu::CommandEncoder,
         output: &wgpu::TextureView,
-        depth: &wgpu::TextureView,
+        depth: &wgpu::Texture,
+        depth_size: wgpu::Extent3d,
     ) {
-        self.oit.resolve(encoder, output, depth);
+        self.oit.resolve(encoder, output, depth, depth_size);
     }
 }
 

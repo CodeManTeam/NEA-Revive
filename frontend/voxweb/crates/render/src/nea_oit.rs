@@ -34,6 +34,8 @@ pub struct NeaOit {
     offsets: [wgpu::Buffer; BAND_COUNT],
     uniform_buffer: wgpu::Buffer,
     node_buffer_bytes: u64,
+    depth_texture: wgpu::Texture,
+    depth_copy_view: wgpu::TextureView,
     layout: wgpu::BindGroupLayout,
     group: wgpu::BindGroup,
     resolve_pipeline: wgpu::RenderPipeline,
@@ -87,6 +89,24 @@ impl NeaOit {
             view_formats: &[],
         });
         let opaque_view = opaque_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        // WebGPU forbids binding a texture as both an attachment and a
+        // readable texture in the same command buffer. The resolve pass reads
+        // the depth buffer, so copy it through this intermediate resource.
+        let depth_texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("nea.oit.depth-copy"),
+            size: wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Depth32Float,
+            usage: wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::TEXTURE_BINDING,
+            view_formats: &[],
+        });
+        let depth_copy_view = depth_texture.create_view(&wgpu::TextureViewDescriptor::default());
         let uniform = OitUniform {
             viewport: [width as f32, height as f32],
             node_buffer_bytes: node_bytes as f32,
@@ -201,6 +221,8 @@ impl NeaOit {
             offsets,
             uniform_buffer,
             node_buffer_bytes: node_bytes,
+            depth_texture,
+            depth_copy_view,
             layout,
             group,
             resolve_pipeline,
@@ -223,8 +245,24 @@ impl NeaOit {
         &self,
         encoder: &mut wgpu::CommandEncoder,
         output: &wgpu::TextureView,
-        depth: &wgpu::TextureView,
+        depth: &wgpu::Texture,
+        depth_size: wgpu::Extent3d,
     ) {
+        encoder.copy_texture_to_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture: depth,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::DepthOnly,
+            },
+            wgpu::TexelCopyTextureInfo {
+                texture: &self.depth_texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::DepthOnly,
+            },
+            depth_size,
+        );
         let background = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("nea.oit.background-depth-group"),
             layout: &self.background_layout,
@@ -235,7 +273,7 @@ impl NeaOit {
                 },
                 wgpu::BindGroupEntry {
                     binding: 1,
-                    resource: wgpu::BindingResource::TextureView(depth),
+                    resource: wgpu::BindingResource::TextureView(&self.depth_copy_view),
                 },
                 wgpu::BindGroupEntry {
                     binding: 2,
