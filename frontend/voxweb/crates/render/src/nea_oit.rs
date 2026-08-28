@@ -17,6 +17,7 @@ struct OitUniform {
     focus_range: f32,
     blur_strength: f32,
     vignette_strength: f32,
+    _pad: [f32; 1],
 }
 
 pub struct NeaOit {
@@ -116,11 +117,12 @@ impl NeaOit {
             focus_range: 40.0,
             blur_strength: 1.15,
             vignette_strength: 0.14,
+            _pad: [0.0],
         };
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("nea.oit.uniform"),
             contents: bytemuck::bytes_of(&uniform),
-            usage: wgpu::BufferUsages::UNIFORM,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
         let layout = create_oit_layout(device);
         let group = device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -328,6 +330,7 @@ impl NeaOit {
             focus_range: focus_range.max(1.0),
             blur_strength: blur_strength.clamp(0.0, 2.0),
             vignette_strength: vignette_strength.clamp(0.0, 0.5),
+            _pad: [0.0],
         };
         queue.write_buffer(&self.uniform_buffer, 0, bytemuck::bytes_of(&uniform));
     }
