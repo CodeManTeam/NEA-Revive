@@ -427,11 +427,11 @@ fn grade(color: vec3f, uv: vec2f) -> vec3f {
   let center = textureLoad(background, pixel, 0);
   var color = center;
   let opaque_depth = textureLoad(background_depth, pixel, 0);
-  let distance = linear_depth(opaque_depth);
-  let coc = clamp(abs(distance - oit.focus_distance) / oit.focus_range * oit.blur_strength, 0.0, 1.0);
+  let view_distance = linear_depth(opaque_depth);
+  let coc = clamp(abs(view_distance - oit.focus_distance) / oit.focus_range * oit.blur_strength, 0.0, 1.0);
   if (coc > 0.02) {
     let radius = mix(0.75, 3.25, coc);
-    let taps = array<vec2f, 8>(
+    var taps = array<vec2f, 8>(
       vec2f(1.0, 0.0), vec2f(-1.0, 0.0), vec2f(0.0, 1.0), vec2f(0.0, -1.0),
       vec2f(0.7071, 0.7071), vec2f(-0.7071, 0.7071),
       vec2f(0.7071, -0.7071), vec2f(-0.7071, -0.7071));
