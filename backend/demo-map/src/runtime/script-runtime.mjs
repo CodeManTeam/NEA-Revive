@@ -21,7 +21,7 @@ import { GameAnimation } from "./game-animation.mjs";
 import { normalizeEntitySound, normalizePlayerSound, normalizeWorldSound, Sound } from "./game-sound.mjs";
 import { GameBodyPart } from "./game-body-part.mjs";
 import { raycastWorld, RuntimeRaycastResult } from "./game-raycast.mjs";
-import { searchRuntimeEntities } from "./entity-bounds.mjs";
+import { runtimeEntityHalfExtents, searchRuntimeEntities } from "./entity-bounds.mjs";
 import { entityLookAtQuaternion, rotateEntityLocal, scaleEntityLocal } from "./entity-look-at.mjs";
 import { matchesGameSelector } from "./game-selector.mjs";
 import { EntityBackendBridge } from "./entity-backend-bridge.mjs";
@@ -269,6 +269,7 @@ export class ScriptRuntime {
         tags: [...new Set([...sourceTags, ...packageTags])],
         mesh: entity.mesh ?? entity.source?.mesh,
         bounds: entity.bounds ?? entity.source?.bounds,
+        _boundsModelSpace: true,
         meshScale: entity.meshScale ?? entity.source?.scale,
         meshOrientation: entity.meshOrientation ?? entity.source?.orientation,
         collides: entity.collides ?? entity.source?.collision,
@@ -445,7 +446,7 @@ export class ScriptRuntime {
       ];
       for (const entity of this.#entities.values()) {
         if (entity.destroyed || entity._collides !== true) continue;
-        const half = entity._bounds;
+        const half = runtimeEntityHalfExtents(entity);
         const entityMin = [
           entity._position.x - half.x,
           entity._position.y - half.y,
@@ -1651,6 +1652,7 @@ export function createRuntimeEntity(input, runtime = null) {
     _lastAttacker: null,
     _lastDamageType: "",
     _bounds: requirePositiveVector3(input.bounds ?? input.source?.bounds ?? [1, 1, 1], "entity bounds"),
+    _boundsModelSpace: input._boundsModelSpace === true,
     mesh: input.mesh ?? input.source?.mesh ?? "",
     _meshInvisible: Boolean(input.meshInvisible ?? false),
     _meshScale: requireBoundedVector3(input.meshScale ?? [1 / 64, 1 / 64, 1 / 64], "entity meshScale"),

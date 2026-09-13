@@ -96,6 +96,25 @@ test("raycast skips an entity containing the origin and preserves the native no-
   assert.deepEqual(result.voxelIndex.toArray(), [0, 0, 0]);
 });
 
+test("raycast scales model bounds into world-space half extents", () => {
+  const result = raycastWorld({
+    origin: [0, 0, 0],
+    direction: [1, 0, 0],
+    options: { ignoreVoxel: true },
+    voxels: createVoxels(),
+    entities: [{
+      id: "scaled",
+      position: [8, 0, 0],
+      bounds: [64, 16, 16],
+      _boundsModelSpace: true,
+      meshScale: [1 / 64, 1 / 64, 1 / 64],
+    }],
+    matchesSelector: () => false,
+  });
+  assert.equal(result.hitEntity?.id, "scaled");
+  assert.equal(result.distance, 7.5);
+});
+
 test("raycast uses the recovered Infinity default and preserves zero direction", () => {
   const voxels = createVoxels();
   voxels.setVoxelId(7, 1, 1, solid.id);
