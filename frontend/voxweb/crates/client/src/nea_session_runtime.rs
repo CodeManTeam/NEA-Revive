@@ -49,6 +49,7 @@ const CHUNK_SIZE: usize = 16 * 256 * 16;
 // Bedwars server scripts damage players below Y=-32. Keep the local safety
 // net on the same boundary so the client does not visibly respawn early.
 const LOCAL_VOID_RESPAWN_Y: f32 = -32.0;
+const LOCAL_MOVEMENT_BOUND_MIN: f32 = -50.0;
 const PLAYER_FLAG_SPECTATOR: u64 = 1;
 use crate::nea_session_context::{
     AvatarRollState, RECOVERED_WALK_VELOCITY_PER_TICK, RuntimeCameraState,
@@ -328,6 +329,13 @@ fn should_apply_authoritative_respawn(
     let dy = local[1] - authoritative[1];
     let dz = local[2] - authoritative[2];
     dx * dx + dy * dy + dz * dz > 4.0
+}
+
+fn is_outside_runtime_movement_bounds(position: [f32; 3]) -> bool {
+    let upper = voxweb_protocol::adapter::nea_chunk_grid().map(|value| value as f32 * 32.0 + 1.0);
+    position.iter().enumerate().any(|(axis, value)| {
+        !value.is_finite() || *value < LOCAL_MOVEMENT_BOUND_MIN || *value > upper[axis]
+    })
 }
 
 fn raycast_static_entity(
@@ -2007,7 +2015,20 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     &|x, y, z| solid_voxel_at(&chunk_cells, x, y, z),
                     &mut physics_bodies,
                 );
-                if physics.position[1] < LOCAL_VOID_RESPAWN_Y {
+                if is_outside_runtime_movement_bounds(physics.position) {
+                    if let Some(spawn) = spawn_position {
+                        physics.position = spawn;
+                        physics.velocity = [0.0, 0.0, 0.0];
+                        physics.grounded = true;
+                        unsubmitted_jump_edge = false;
+                        jslog!(
+                            "[nea] movement-bound respawn: pos=({:.1},{:.1},{:.1})",
+                            spawn[0],
+                            spawn[1],
+                            spawn[2]
+                        );
+                    }
+                } else if physics.position[1] < LOCAL_VOID_RESPAWN_Y {
                     if let Some(spawn) = spawn_position {
                         physics.position = spawn;
                         physics.velocity = [0.0, 0.0, 0.0];
@@ -5791,14 +5812,16 @@ fn yield_animation_frame() -> js_sys::Promise {
 #[cfg(test)]
 mod tests {
     use super::{
-        AvatarRollState, EntityInteractionIndex, InputState, LOCAL_VOID_RESPAWN_Y,
+        AvatarRollState, EntityInteractionIndex, InputState, LOCAL_MOVEMENT_BOUND_MIN,
+        LOCAL_VOID_RESPAWN_Y,
         PLAYER_FLAG_SPECTATOR, RuntimeCameraState, StaticEntityScene, apply_entity_state_event,
         apply_player_wearables_event, apply_runtime_camera_state, block_is_solid,
         build_static_entity_collision_bodies, fluid_volume_fraction, make_camera,
         network_tick_is_newer, normalize_player_collision_half_extents, raycast_static_entity,
         recovered_avatar_yaw, recovered_fluid_height, recovered_fluid_info, recovered_player_state,
         recovered_rotated_face_rects, recovered_voxel_face_visible, recovered_walk_phase_delta,
-        should_apply_authoritative_respawn, wearable_body_part_pose,
+        should_apply_authoritative_respawn, is_outside_runtime_movement_bounds,
+        wearable_body_part_pose,
         write_recovered_texture_rotation,
     };
     use std::collections::HashMap;
@@ -6249,6 +6272,18 @@ mod tests {
     #[test]
     fn local_void_boundary_matches_bedwars_server_rule() {
         assert_eq!(LOCAL_VOID_RESPAWN_Y, -32.0);
+    }
+
+    #[test]
+    fn local_movement_bounds_match_runtime_safety_bounds() {
+        let upper = voxweb_protocol::adapter::nea_chunk_grid().map(|value| value as f32 * 32.0 + 1.0);
+        assert!(is_outside_runtime_movement_bounds([
+            LOCAL_MOVEMENT_BOUND_MIN - 0.1,
+            40.0,
+            127.0
+        ]));
+        assert!(is_outside_runtime_movement_bounds([127.0, 40.0, upper[2] + 0.1]));
+        assert!(!is_outside_runtime_movement_bounds([127.0, 40.0, 127.0]));
     }
 
     #[test]
