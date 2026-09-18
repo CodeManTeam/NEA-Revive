@@ -1,6 +1,6 @@
 # NEA-Revive 项目复活开发计划
 
-> 版本日期：2026-08-19  
+> 版本日期：2026-08-25
 > 首个正式内容目标：`packages/there-is-backroom`  
 > 技术回归项目：`packages/parkour`  
 > 大地图与性能验证项目：`packages/minecraft`
@@ -90,6 +90,25 @@ NEA-Revive 是 DAO3/box3 历史项目的本地复活运行器。输入是包含�
 - `backend/demo-map` 的 `npm test` 引用缺失的 `tools/build-mudb.mjs`；`node --test`
   可通过，但标准入口需修复。
 - `backend/box-go` 的 TypeScript typecheck 尚未通过。
+
+### 3.3 Bedwars 无人值守阶段验收（2026-08-25）
+
+Bedwars S2 已完成一轮可重复的运行时闭环开发，提交链为：
+
+- `f5421a9`：分队出生、资源坑区块、商店/末影箱事件和虚空回生 smoke。
+- `3f96ae6`、`cfaa84f`、`2a6b3a8`：wearable/手持物状态投影、人物挂接和 `.vb` 缩放校准。
+- `edf25e0`：保留历史 remote-channel 参数顺序，修复 `Object.values(event.args)` 事件错位。
+- `f8e051c`、`3dc0cba`：按世界尺寸推导 movement bounds，并断言 Bedwars 远端出生点不被边界截断。
+- `f1d0e92`：死亡远端玩家不再绘制模型和名牌。
+
+自动化验收结果：
+
+- `backend/box-go` 全量 runtime 测试：12 项通过。
+- `backend/demo-map` 全量测试：355 项通过。
+- `voxweb-protocol`：85 项通过；`voxweb-client`：167 项通过。
+- `trunk build --release`：通过。
+
+上述状态为 `verified`，尚未宣称 `accepted`：真实浏览器首次加载、pointer-lock、视觉装备对齐和双会话战斗仍需在固定浏览器环境中采集截图/控制台结果后确认。
 
 ## 四、开发主线和里程碑
 

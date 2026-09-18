@@ -2,7 +2,15 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { ScriptRuntime } from "../src/runtime/script-runtime.mjs";
 
-function makeRuntime() {
+function makeRuntime(entity = {
+  id: "trigger-box",
+  name: "Trigger",
+  position: [0, 0, 0],
+  bounds: [10, 10, 10],
+  meshScale: [1, 1, 1],
+  collides: true,
+  fixed: true,
+}) {
   return new ScriptRuntime({
     projectRoot: process.cwd(),
     projectName: "world-entity-contact-test",
@@ -31,14 +39,7 @@ function makeRuntime() {
     blockCatalog: [{ id: 1, name: "air" }],
     voxels: [],
     validatedSkinIds: {},
-    entities: [{
-      id: "trigger-box",
-      name: "Trigger",
-      position: [0, 0, 0],
-      bounds: [10, 10, 10],
-      collides: true,
-      fixed: true,
-    }],
+    entities: [entity],
   });
 }
 
@@ -54,7 +55,31 @@ test("world entity contact and separate events follow overlap edges", async () =
   runtime.tick();
   assert.equal(runtime.snapshot().messages.length, 1, "contact is edge-triggered");
 
-  player.position = [12, 2, 12];
+  player.position = [7, 2, 7];
   runtime.tick();
   assert.deepEqual(runtime.snapshot().messages.map(message => message.text), ["listeners-registered"]);
+});
+
+test("scaled model bounds do not create distant entity contacts", async () => {
+  const runtime = makeRuntime({
+    id: "scaled-prop",
+    name: "Scaled Prop",
+    position: [8, 0, 0],
+    bounds: [64, 16, 16],
+    _boundsModelSpace: true,
+    meshScale: [1 / 64, 1 / 64, 1 / 64],
+    collides: true,
+    fixed: true,
+  });
+  await runtime.start();
+  runtime.stop();
+  const player = runtime.addPlayer({ id: "p1", position: [0, 0, 0] });
+
+  runtime.tick();
+  assert.deepEqual(
+    runtime.snapshot().messages.map(message => message.text),
+    ["listeners-registered"],
+    "raw model-space bounds must not create a distant contact",
+  );
+  assert.deepEqual(player.entityContacts, []);
 });

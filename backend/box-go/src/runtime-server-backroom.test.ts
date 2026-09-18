@@ -77,7 +77,12 @@ try {
   netProtocol.server.message.join()
   await waitFor(() => Boolean(reset))
   assert.deepEqual([reset.nx, reset.ny, reset.nz], [160, 128, 192])
-  assert.deepEqual([reset.positionX, reset.positionY, reset.positionZ], [98, 11, 158])
+  assert.equal(reset.positionX, 98)
+  assert.equal(reset.positionZ, 158)
+  assert.ok(
+    reset.positionY <= 11 && reset.positionY > 8,
+    `backroom spawn should settle near its ground level (y=${reset.positionY})`,
+  )
   const joinedState = server.runtime.snapshot()
   assert.equal(joinedState.players.length, 1, "Backroom join should create one runtime player")
   assert.equal(joinedState.players[0].position[0], 98)

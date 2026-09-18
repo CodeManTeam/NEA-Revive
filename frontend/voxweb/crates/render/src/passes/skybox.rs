@@ -7,8 +7,10 @@ use bytemuck::{Pod, Zeroable};
 pub struct SkyboxGlobals {
     pub inv_view_proj: [[f32; 4]; 4],
     pub sun_dir_time: [f32; 4],
-    pub fog_color: [f32; 4],
+    pub fog_color_exposure: [f32; 4],
 }
+
+pub const NEA_SKYBOX_WGSL: &str = include_str!("../shaders/skybox.wgsl");
 
 pub struct SkyboxPass {
     pub pipeline: wgpu::RenderPipeline,
@@ -17,6 +19,22 @@ pub struct SkyboxPass {
 }
 
 impl SkyboxPass {
+    #[cfg(test)]
+    pub fn validate_preserved_display_chain() {
+        let module = wgpu::naga::front::wgsl::parse_str(NEA_SKYBOX_WGSL)
+            .unwrap_or_else(|error| panic!("skybox WGSL parse failed: {error}"));
+        wgpu::naga::valid::Validator::new(
+            wgpu::naga::valid::ValidationFlags::all(),
+            wgpu::naga::valid::Capabilities::all(),
+        )
+        .validate(&module)
+        .unwrap_or_else(|error| panic!("skybox WGSL validation failed: {error:#?}"));
+        assert!(NEA_SKYBOX_WGSL.contains("fn revert_tone_mapping"));
+        assert!(NEA_SKYBOX_WGSL.contains("revert_tone_mapping(color)"));
+        assert!(NEA_SKYBOX_WGSL.contains("revert_tone_mapping(color) / 1.5"));
+        assert!(!NEA_SKYBOX_WGSL.contains("/ g.fog_color_exposure.w / 1.5"));
+    }
+
     pub fn new(device: &wgpu::Device, color_format: wgpu::TextureFormat) -> Self {
         let layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             label: Some("skybox.globals_layout"),
@@ -84,5 +102,15 @@ impl SkyboxPass {
             globals_buffer,
             globals_bind_group,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn preserved_display_chain_parses() {
+        SkyboxPass::validate_preserved_display_chain();
     }
 }

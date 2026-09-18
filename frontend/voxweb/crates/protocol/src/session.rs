@@ -56,6 +56,13 @@ pub enum Outbound {
     EntityInteract { tick: f32, id: u32 },
     /// remote-channel.sendServerEvent {tick,args(JSON)}.
     RemoteServerEvent { tick: u32, event: serde_json::Value },
+    /// game-net.sendKeyBoardEvent transition for recovered map scripts.
+    KeyBoardEvent {
+        id: u32,
+        tick: u32,
+        key_down: Vec<u8>,
+        previous: Vec<u8>,
+    },
 }
 
 /// A minimal transport abstraction (reliable binary + text frames).
@@ -277,6 +284,20 @@ pub fn encode_outbound(table: &ProtocolTable, msg: &Outbound) -> Result<Vec<u8>,
             let payload = Value::Struct(vec![Value::Varint(*tick), Value::UTF8(args)]);
             table.encode_server_message("remote-channel", "sendServerEvent", &payload)
         }
+        Outbound::KeyBoardEvent {
+            id,
+            tick,
+            key_down,
+            previous,
+        } => {
+            let payload = Value::Struct(vec![
+                Value::Varint(*id),
+                Value::Varint(*tick),
+                Value::Array(key_down.iter().copied().map(Value::U8).collect()),
+                Value::Array(previous.iter().copied().map(Value::U8).collect()),
+            ]);
+            table.encode_server_message("game-net", "sendKeyBoardEvent", &payload)
+        }
     }
 }
 
@@ -334,6 +355,23 @@ mod tests {
             Value::UTF8("{".to_string()),
         ]))
         .is_err());
+    }
+
+    #[test]
+    fn remote_channel_event_preserves_historical_argument_order() {
+        let decoded = decode_remote_client_event(&Value::Struct(vec![
+            Value::Varint(12),
+            Value::UTF8(
+                r#"{"type":"changePlayers","args":{"index":2,"allplayers":[1,0,3,0],"single":true}}"#
+                    .to_string(),
+            ),
+        ]))
+        .expect("decode ordered remote event");
+
+        assert_eq!(
+            decoded.event.to_string(),
+            r#"{"type":"changePlayers","args":{"index":2,"allplayers":[1,0,3,0],"single":true}}"#
+        );
     }
 
     #[test]

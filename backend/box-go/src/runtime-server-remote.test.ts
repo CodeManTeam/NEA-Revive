@@ -15,9 +15,35 @@ await mkdir(sourceRoot, { recursive: true })
 await cp(`${root}/packages/parkour`, sourceRoot, { recursive: true })
 await writeFile(`${sourceRoot}/scripts/server.js`, `
 world.onPlayerJoin(({ entity }) => {
+  entity.enableDamage = true
+  entity.player.addWearable({
+    bodyPart: GameBodyPart.RIGHT_HAND,
+    mesh: "mesh/test-sword.vb",
+    offset: new GameVector3(0, -0.2, 0.5),
+    orientation: new GameQuaternion(1, 0, 0, 0),
+    scale: new GameVector3(0.5, 0.5, 0.5),
+    color: new GameRGBColor(1, 0, 0),
+    metalness: 1,
+  })
   remoteChannel.sendClientEvent(entity, { type: "server:joined", playerId: entity.id })
 })
 remoteChannel.onServerEvent(({ entity, args }) => {
+  if (args?.type === "hurt-self") {
+    entity.damage(5)
+    return
+  }
+  if (args?.type === "add-wearable") {
+    entity.player.addWearable({
+      bodyPart: GameBodyPart.LEFT_HAND,
+      mesh: "mesh/test-sword.vb",
+      offset: new GameVector3(0, -0.2, -0.5),
+      orientation: new GameQuaternion(1, 0, 0, 0),
+      scale: new GameVector3(0.25, 0.25, 0.25),
+      color: new GameRGBColor(0, 0, 1),
+      emissive: 0.2,
+    })
+    return
+  }
   remoteChannel.sendClientEvent(entity, { type: "server:pong", echo: args })
 })
 `, "utf8")
@@ -64,17 +90,47 @@ function waitFor(predicate: () => boolean, timeoutMs = 8000): Promise<void> {
 }
 
 try {
-  await new Promise<void>((resolve, reject) => client.start({
-    ready: resolve,
-    close: error => reject(new Error(String(error ?? "MuDB client closed"))),
-  }))
+  let rejectStart: ((reason: unknown) => void) | undefined
+  const startPromise = new Promise<void>((resolve: () => void, reject: (reason: unknown) => void) => {
+    rejectStart = reject
+    client.start({
+      ready: resolve,
+      close: () => { rejectStart?.(new Error("MuDB client closed")) },
+    })
+  })
+  await startPromise
   netProtocol.server.message.join()
   await waitFor(() => server.runtime.snapshot().players.length === 1)
   await waitFor(() => clientModules !== null)
-  assert.match(clientModules!["clientIndex.js"], /parkour client runtime panel loaded/)
+  assert.match(String(clientModules!["clientIndex.js"] ?? ""), /parkour client runtime panel loaded/)
   await waitFor(() => received.some(item => item.event.type === "server:joined"))
   assert.equal(received[0].event.type, "server:joined")
   assert.equal(received[0].tick, 1)
+  await waitFor(() => received.some(item => item.event.type === "nea-revive:player-wearables"))
+  const wearableState = received.find(item => item.event.type === "nea-revive:player-wearables")!.event
+  assert.equal(wearableState.playerId, 1)
+  assert.equal(wearableState.revision, 1)
+  assert.deepEqual(wearableState.wearables, [{
+    id: `${server.runtime.snapshot().players[0].id}:0`,
+    bodyPart: "rightHand",
+    mesh: "mesh/test-sword.vb",
+    offset: [0, -0.2, 0.5],
+    orientation: [1, 0, 0, 0],
+    scale: [0.5, 0.5, 0.5],
+    material: { color: [1, 0, 0], metalness: 1, emissive: 0, shininess: 0 },
+  }])
+
+  remoteProtocol.server.message.sendServerEvent({ tick: 42, args: JSON.stringify({ type: "add-wearable" }) })
+  await waitFor(() => received.some(item => item.event.type === "nea-revive:player-wearables" && item.event.revision === 2))
+  const revisedWearableState = received.find(item => item.event.type === "nea-revive:player-wearables" && item.event.revision === 2)!.event
+  assert.equal(revisedWearableState.wearables.length, 2)
+  assert.equal(revisedWearableState.wearables[1].bodyPart, "leftHand")
+
+  remoteProtocol.server.message.sendServerEvent({ tick: 43, args: JSON.stringify({ type: "hurt-self" }) })
+  await waitFor(() => received.some(item => item.event.type === "nea-revive:damage-state" && item.event.events?.hurt === 5))
+  const damageState = received.find(item => item.event.type === "nea-revive:damage-state" && item.event.events?.hurt === 5)!.event
+  assert.equal(damageState.target.playerId, server.runtime.snapshot().players[0].id)
+  assert.equal(damageState.state.hp, 95)
 
   remoteProtocol.server.message.sendServerEvent({ tick: 41, args: JSON.stringify({ type: "client:ping", value: 9 }) })
   await waitFor(() => received.some(item => item.event.type === "server:pong"))

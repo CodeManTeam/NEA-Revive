@@ -1,113 +1,73 @@
-# NEA Project Recode
+# VoxWeb
 
-NEA Project Recode is a self-hostable Rust/WebAssembly compatibility runtime
-for voxel maps and multiplayer sessions. The browser client uses WebGPU, a
-local authoritative compatibility backend, deterministic anonymous textures,
-and an optional local asset-replacement boundary.
+VoxWeb 是 NEA-Revive 的 Rust workspace。它编译为 WASM/WebGPU 浏览器 player，负责协议
+消费、地形/实体/avatar 渲染、输入、预测和 NEA smoke 会话。
 
-This public repository contains only implementation code, tests, neutral
-fixtures, and configuration templates. It does not contain preservation dumps,
-private maps, captured browser state, credentials, original runtime bundles, or
-original texture assets.
+## 要求
 
-## Current status
+- Rust toolchain（项目使用 edition 2024）；
+- wasm32-unknown-unknown target；
+- Trunk；
+- 支持 WebGPU 的桌面浏览器。
 
-The project currently provides:
+~~~powershell
+rustup target add wasm32-unknown-unknown
+cargo install trunk --locked
+~~~
 
-- a WebGPU terrain, transparent-fluid, avatar, shadow, and sky rendering path;
-- third-person camera and pointer-lock input;
-- local prediction and authoritative correction;
-- recovered-compatible player collision and locomotion behavior;
-- 18-part avatar IK with walk, run, jump, land, crouch, swim, and roll blending;
-- deterministic anonymous terrain, material, bump, water, and avatar palettes;
-- an optional same-origin interface for licensed third-party asset packs;
-- WebSocket session bootstrap and compatibility protocol handling.
+## 构建和运行
 
-Compatibility is still incomplete. Dynamic sky resources, full foot planting,
-all historical script APIs, and production multiplayer deployment remain active
-work.
+~~~powershell
+cd frontend\voxweb
+cargo test --workspace
+cargo check --workspace --target wasm32-unknown-unknown
+trunk build --release
+~~~
 
-## Requirements
+trunk build --release 产出 dist/。在完整 NEA 栈中，根目录静态服务器通过 18082 提供它；
+只使用 Trunk 开发服务器时，默认端口见 trunk.toml，不要与后端端口混用。
 
-- Rust 1.96.0
-- the wasm32-unknown-unknown target
-- [Trunk](https://trunkrs.dev/)
-- a current desktop browser with WebGPU
+~~~powershell
+# 完整地图运行（推荐）
+cd ..\..
+node scripts\serve.mjs --map there-is-backroom
 
-## Build
+# 入口
+# http://127.0.0.1:18082/start.html?nea=http://127.0.0.1:18081/api/createSession
+~~~
 
-    rustup target add wasm32-unknown-unknown
-    cargo install trunk --locked
-    trunk build --release
+?nea= 是 NEA 专用激活路径。未提供该参数时，页面仍可用于普通 VoxWeb 本地开发，但不会
+启动地图会话。
 
-For local development:
+## 验证重点
 
-    trunk serve
+~~~powershell
+cd frontend\voxweb
+cargo fmt --all -- --check
+cargo test -p voxweb-protocol
+cargo test -p voxweb-client
+cargo test -p voxweb-render
+cargo check --workspace --target wasm32-unknown-unknown
+trunk build --release
+~~~
 
-The compatibility session URL is supplied through the nea query parameter:
+协议消费和后端 wire 的对应测试在 backend/box-go/src/；前端 NEA 握手入口在
+crates/client/src/nea_smoke.rs，加载状态在 nea_loading.rs，协议表在 crates/protocol/。
 
-    http://127.0.0.1:8080/start.html?nea=http://127.0.0.1:18080/api/createSession
+浏览器 smoke 至少检查 loading 状态、console/pageerror、canvas 非空、spawn、实体、avatar、
+输入和实际加载的 dist/。WASM 构建成功不等于浏览器已加载新产物，改动后必要时硬刷新。
 
-The backend/session service must be hosted separately. For deployment, replace
-the local signaling URL in `start.html` with the public WebSocket endpoint.
+## crate 责任
 
-## Validation
-
-    cargo fmt --all -- --check
-    cargo test --workspace
-    cargo check --workspace --target wasm32-unknown-unknown
-
-CI runs formatting, native tests, WASM checks, and a release web build. Tagged
-versions publish the compiled web bundle as a GitHub Release artifact.
-
-## Local third-party assets
-
-Copy asset-overrides/manifest.example.json to
-asset-overrides/manifest.json and place licensed files under
-asset-overrides/files/. Both real locations are ignored by Git.
-
-Supported slots include:
-
-- terrain.color.N
-- terrain.material.N
-- terrain.bump.N
-- water.bump
-- avatar.PART
-
-Only same-origin paths under /asset-overrides/files/ are accepted. Remote URLs,
-query strings, fragments, backslashes, and parent traversal are rejected.
-
-Without a manifest, the client generates anonymous textures locally. No
-historical texture bundle is required.
-
-## Repository layout
-
-| Path | Responsibility |
+| Crate | 责任 |
 | --- | --- |
-| crates/client | Browser session, input, prediction, and integration |
-| crates/render | WebGPU pipelines, terrain, avatar, shadows, and sky |
-| crates/protocol | Compatibility schemas, decoding, and neutral catalogs |
-| crates/server | Authoritative voxel runtime |
-| crates/net | Multiplayer transport |
-| crates/core | Shared world and simulation types |
-| signaling | Optional signaling service |
-| asset-overrides | Public template for local licensed assets |
-| docs | Architecture and implementation notes |
+| crates/client | 浏览器会话、NEA smoke、输入和客户端整合 |
+| crates/render | WebGPU 地形、透明材质、avatar、阴影和天空 |
+| crates/protocol | wire schema、编码/解码和中立协议目录 |
+| crates/server | 本地权威体素运行时 |
+| crates/net | 网络传输 |
+| crates/physics | 碰撞和运动 |
+| crates/core | 共用世界和模拟类型 |
 
-## Publication policy
-
-Do not commit:
-
-- dumps, archived bundles, capture output, or deobfuscation workspaces;
-- private maps, browser profiles, tokens, credentials, or local environment
-  files;
-- original or unlicensed textures, models, audio, or UI assets;
-- generated build output, caches, or runtime logs.
-
-New third-party assets must remain local unless their license and redistribution
-terms have been reviewed.
-
-## License
-
-See [LICENSE](LICENSE). Third-party dependencies and locally supplied asset
-packs retain their own licenses.
+历史素材不作为 VoxWeb 的默认依赖。需要使用已授权的本地覆盖时，参见
+asset-overrides/README.md；未配置覆盖时使用本地默认资源。

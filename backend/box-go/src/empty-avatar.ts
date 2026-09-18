@@ -6,10 +6,10 @@ import { MuWriteStream } from "mudb/stream"
 
 // 与 voxweb avatar_part.rs 的 avatar_part_schema 对称
 function faceSchema() {
-  const varintArray = () => new MuArray(new MuVarint())
+  const varintArray = () => new MuArray(new MuVarint(), 65536)
   return new MuStruct({
     sizes: varintArray(),
-    uvFlags: new MuArray(new MuUint8()),
+    uvFlags: new MuArray(new MuUint8(), 65536),
     uvs: varintArray(),
     vertices: varintArray(),
   })
@@ -17,14 +17,14 @@ function faceSchema() {
 function textureSchema() {
   return new MuStruct({
     width: new MuVarint(),
-    data: new MuArray(new MuVarint()),
-    palette: new MuArray(new MuUint32()),
+    data: new MuArray(new MuVarint(), 1048576),
+    palette: new MuArray(new MuUint32(), 4096),
   })
 }
 const avatarPartSchema = new MuStruct({
   partId: new MuUint8(),
   bindMat: new MuVector(new MuFloat32(), 16),
-  mesh: new MuArray(faceSchema()),
+  mesh: new MuArray(faceSchema(), 1048576),
   texture: textureSchema(),
 })
 
@@ -42,10 +42,11 @@ const PART_IDS = {
   rightUpperArm: 15, rightUpperLeg: 16, torso: 17,
 }
 
-export function encodeEmptyAvatarPart(partName, partId) {
+export function encodeEmptyAvatarPart(partName: string, partId: number) {
   const value = avatarPartSchema.clone(avatarPartSchema.identity)
   value.partId = partId
-  value.bindMat = identityMatrix()
+  const mat = identityMatrix()
+  value.bindMat.set(mat)
   value.mesh = []
   value.texture = { width: 0, data: [], palette: [] }
   const stream = new MuWriteStream(128)

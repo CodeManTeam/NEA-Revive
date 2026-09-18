@@ -166,9 +166,24 @@ pub struct ClientInputBody {
     pub id: u64,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct ClientInputEvent {
+    pub tick: f32,
+    pub ray_time: f32,
+    pub ray_hit_entity: u32,
+    pub ray_hit_voxel: [u32; 3],
+    pub button_state: u8,
+    pub prev_button_state: u8,
+    pub position: [f32; 3],
+    pub ray_direction: [f32; 3],
+    pub ray_hit_normal: u8,
+    pub ray_origin: [f32; 3],
+}
+
 /// NetClientInputSchema (client -> server).
 #[derive(Clone, Debug, PartialEq)]
 pub struct ClientInput {
+    pub events: Vec<ClientInputEvent>,
     pub input_state: u16,
     pub input_angle: u8,
     pub input_camera_angle: u8,
@@ -430,6 +445,7 @@ mod tests {
     #[test]
     fn input_bits_layout_matches_net_input() {
         let mut input = ClientInput {
+            events: vec![],
             input_state: 0,
             input_angle: 0,
             input_camera_angle: 0,

@@ -35,6 +35,7 @@ struct VsOut {
   @location(0) world_pos: vec3f,
   @location(1) face_normal: vec3f,
   @location(2) fog: vec4f,
+  @location(3) ambient_occlusion: f32,
 };
 
 fn pow5(x: f32) -> f32 {
@@ -103,6 +104,7 @@ fn vs_main(
     fluid_info.rgb * globals.light_color_global.rgb,
     fluid_info.a,
   );
+  out.ambient_occlusion = floor(fluid_info.a * 255.0 / 8.0) / 32.0;
   return out;
 }
 
@@ -125,15 +127,16 @@ fn fs_main(in: VsOut) {
   ));
   let view_direction = -incident_direction;
   let reflection_direction = reflect(incident_direction, fragment_normal);
-  let reflection_color = directional_sky(reflection_direction);
+  let reflection_color = in.ambient_occlusion * directional_sky(reflection_direction);
   let optical_depth = 18.0 - 4.0 * height;
   let specular = (68.0 / (3.14159265 * 8.0)) *
+    in.ambient_occlusion *
     pow(clamp(dot(reflection_direction, globals.light_direction_gamma.xyz), 0.0, 1.0), 60.0);
   let extinction = clamp(1.0 - exp(-0.1 * optical_depth * in.fog.a), 0.0, 1.0);
   let view_cosine = max(0.0, dot(fragment_normal, view_direction));
   // Schlick approximation with a 0.35 normal-incidence reflectance. It must
   // increase toward 1.0 at grazing angles rather than the other way around.
-  let fresnel = 0.35 + 0.65 * pow5(1.0 - view_cosine);
+  let fresnel = 1.0 - 0.65 * pow5(1.0 - view_cosine);
   let color =
     specular * globals.light_color_global.rgb +
     fresnel * reflection_color +
@@ -141,7 +144,10 @@ fn fs_main(in: VsOut) {
   let mapped = aces_tone_map(globals.eye_exposure.w * color);
   // 原版 outputFragment：pow(rgb, 1/gamma)，gamma=1.3 → pow(x, 1/1.3)≈pow(x,0.769)
   // （sRGB surface 上最终显示 = shader 输出值，故原版为提亮方向；此前 pow(2.2) 压暗方向相反）
-  oit_store(vec4f(pow(mapped, vec3f(1.0 / 1.3)), extinction), in.position);
+  oit_store(
+    vec4f(pow(mapped, vec3f(1.0 / max(globals.light_direction_gamma.w, 0.001))), extinction),
+    in.position,
+  );
 }
 "#;
 
@@ -363,9 +369,16 @@ mod tests {
         assert!(NEA_FLUID_WGSL.contains("-0.09034713652888932"));
         assert!(NEA_FLUID_WGSL.contains("optical_depth = 18.0 - 4.0 * height"));
         assert!(NEA_FLUID_WGSL.contains("68.0 / (3.14159265 * 8.0)"));
-        assert!(NEA_FLUID_WGSL.contains("0.35 + 0.65 * pow5"));
+        assert!(NEA_FLUID_WGSL.contains("1.0 - 0.65 * pow5"));
+        assert!(NEA_FLUID_WGSL.contains("@location(3) ambient_occlusion: f32"));
+        assert!(NEA_FLUID_WGSL.contains("floor(fluid_info.a * 255.0 / 8.0) / 32.0"));
+        assert!(
+            NEA_FLUID_WGSL.contains("in.ambient_occlusion * directional_sky(reflection_direction)")
+        );
         assert!(NEA_FLUID_WGSL.contains("let view_direction = -incident_direction"));
-        assert!(NEA_FLUID_WGSL
-            .contains("max(abs(direction.x) + abs(direction.y) + abs(direction.z), 0.000001)"));
+        assert!(
+            NEA_FLUID_WGSL
+                .contains("max(abs(direction.x) + abs(direction.y) + abs(direction.z), 0.000001)")
+        );
     }
 }

@@ -75,8 +75,8 @@ try {
   // rawFrames[0] = secret payload（1 'E' 0 playerId ...）
   // rawFrames[1] = net-state 帧（tick*2 varint 开头，非 secret）
   await waitFor(() => rawFrames.length >= 2)
-  const secret = rawFrames[0]
-  const netstate = rawFrames[1]
+  const secret = rawFrames[0]!
+  const netstate = rawFrames[1]!
   console.log("[ok] secret payload:", Buffer.from(secret).toString("hex"))
   assert.equal(secret[0], 1)
   assert.equal(secret[1], 69)

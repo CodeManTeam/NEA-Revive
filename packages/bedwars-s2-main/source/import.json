@@ -1,0 +1,15 @@
+{
+  "format": "dao3-standard-export/v1",
+  "source": "D:\\Projects\\Gaming\\NEA-Revive\\reference\\起床战争·S2赛季_100207687_QmanVp7Yi5y2BBki8xKSc9cKFg4SscjfHBVKQSjiEFACrN\\256x64x256_100368279_QmPVwvjt9MvV8dHjmzyoDJdJ8VQBG6ALEDfkqmbayzDNjb",
+  "importedAt": "2026-08-25T08:47:50.929Z",
+  "terrainBoxes": 7778,
+  "entities": 26,
+  "serverModules": 9,
+  "clientModules": 2,
+  "recoveredScripts": [
+    "cilentData.js",
+    "config.js",
+    "remoteChannel.js"
+  ],
+  "assets": 385
+}

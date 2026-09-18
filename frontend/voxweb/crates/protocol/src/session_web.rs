@@ -76,7 +76,7 @@ impl NeaSessionHandle {
         let mut out = Vec::new();
         let mut inner = self.inner.borrow_mut();
         if let Some(session) = inner.as_mut() {
-            for evt in session.sockets.poll() {
+            for evt in session.sockets.poll_limited(usize::MAX) {
                 match evt {
                     crate::browser::SessionEvent::ReliableOpen => {
                         let frames = session.driver.on_reliable_open(

@@ -1,78 +1,87 @@
-# 项目包格式（packages/<map>/）
+# 项目包格式
 
-一个「项目包」是可在 NEA-Revive 后端 + 前端本地化运行的完整地图单元。
+packages/<map>/ 是地图的可移植源包。运行时只接收一个包目录和一个独立的 build root，
+不会依赖特定地图名称，也不会把生成文件写回源包。
 
-## 目录结构
+## 源包布局
 
-```
+~~~text
 packages/<map>/
-├── nea.map.json        # 项目包清单（格式版本、世界、脚本、能力）
-├── world/
-│   ├── terrain.json    # 地形（boxes 盒式 + voxels 点式，导入时展开）
-│   ├── entities.json   # 实体（存档点、触发器等）
-│   └── physics.json    # 物理（材质、碰撞体、触发器）
-├── scripts/
-│   ├── server.js       # 权威逻辑（服务端执行，ScriptRuntime）
-│   └── client.js       # 客户端表现
-└── assets/             # 素材清单（可选；缺省用 archive 共享素材）
-    └── manifest.json   # { blockCatalog, avatar, audio } 引用
-```
+├── nea.map.json             必需：nea-map/v1 清单
+├── world/                   terrain、entities、physics、environment
+├── scripts/                 server/client 入口和原始模块
+├── source/                  可选的标准导出源数据
+└── assets/                  可选的地图专属 mesh/audio/bootstrap
+~~~
 
-## nea.map.json 字段
+实际包可以比示例包含更多导出文件，例如 source/ui.json、source/player.json 或
+assets/mesh/*.vb。它们由导入器按索引读取，不要求每个包拥有完全相同的文件集合。
 
-| 字段 | 说明 |
-|------|------|
-| `formatVersion` | `nea-map/v1` |
-| `id` | 地图唯一 id |
-| `display.name` / `display.description` | 展示名/描述 |
-| `runtime.tickRate` | 逻辑 tick（Hz，通常 20） |
-| `runtime.serverContract` | 服务端运行时契约（`nea-server-runtime/v1`） |
-| `world.shape` | [x, y, z] 体素尺寸 |
-| `world.spawn` | 出生点 [x, y, z] |
-| `world.terrain` / `world.entities` / `world.physics` | 相对路径 |
-| `scripts.server` / `scripts.client` | 脚本入口 |
-| `scripts.serverCapabilities` | 服务端能力门禁列表 |
-| `scripts.clientCapabilities` | 客户端能力列表 |
+## nea.map.json
 
-## 素材（assets/manifest.json）
+当前源格式为 nea-map/v1。常用字段如下：
 
-地图专属素材清单。未声明的素材回退到共享 archive
-（`backend/local-player/archive`：block 贴图、avatar 模型、engine 资源）。
+| 字段 | 作用 |
+| --- | --- |
+| formatVersion | 必须是 nea-map/v1 |
+| id | 包内唯一的地图 id |
+| display | 展示名和描述 |
+| runtime.tickRate | 逻辑 tick 频率，通常为 20 |
+| runtime.serverContract | 服务端运行时契约版本 |
+| world.shape | [x, y, z] 体素空间尺寸 |
+| world.spawn | [x, y, z] 出生点，使用世界坐标 |
+| world.terrain / entities / physics | 相对于包根的世界文件 |
+| scripts.server | 服务端入口模块 |
+| scripts.client | 客户端入口模块，可选 |
+| scripts.serverCapabilities | 服务端能力门禁 |
+| scripts.clientCapabilities | 客户端能力门禁 |
 
-```json
-{
-  "format": "nea-project-assets/v1",
-  "blockCatalog": "world-bedwars.json",
-  "avatar": { "skinPartHashBatches": "project/bedwars/bootstrap/bootstrap.json" },
-  "audio": []
-}
-```
+world.shape 是体素数据边界，不会自动限制实体坐标；标准导出中实体位于边界之外是合法
+情况。地形文件使用的 box/voxel 语义由导入器统一展开，前端从 terrain reset 帧获取最终
+shape，不应硬编码地图尺寸。
 
-## 导入流程（后端）
+## 导入和生成物
 
-1. `importMapProject(sourceRoot, buildRoot)` 读取 nea.map.json + world/scripts，
-   展开 terrain（boxes → voxels），生成 dao3.project.json + capabilities manifest。
-2. `ScriptRuntime.load(buildRoot, { blockCatalog, ... })` 加载并执行 server 脚本。
-3. runtime-server 走 mudb 握手（createSession → join → secret → reset → fetchChunk）。
+backend/demo-map/src/import-project.mjs 执行以下工作：
 
-## DAO3 标准导出
+1. 校验源清单和相对路径；
+2. 读取 terrain、entities、physics、UI、脚本和可声明素材；
+3. 将需要展开的地形盒转换为运行时使用的体素/盒数据；
+4. 在指定 build root 生成 dao3.project.json、capabilities 和 assets index。
 
-`reference/<map>` 目录视为只读标准源。所有地图使用同一导入器生成
-`packages/<map-id>`，运行时不为具体地图增加转换特例：
+主服务的调用方式是：
 
-```powershell
-node backend/demo-map/tools/import-standard-export.mjs `
-  "D:/path/to/standard-export" `
-  "D:/Projects/Gaming/NEA-Revive/packages/<map-id>"
-node scripts/serve.mjs --map <map-id>
-```
+~~~powershell
+node scripts\serve.mjs --map there-is-backroom
+~~~
 
-标准源包括 `voxel-sparse.gz`、`voxels.json`、`entitiesTree.json`、
-`physics.json`、`player.json`、`environment.json`、`uiTree.json`、
-`scriptAssets.json`、`scriptIndex.json`、`scripts/` 以及可选素材目录。
-体素 shape 只约束稀疏体素数据；实体允许位于该包围盒之外，这是标准导出的合法坐标语义。
+需要单独导入或校验时：
 
-## 非净室说明
+~~~powershell
+cd backend\demo-map
+npm run validate
+npm run build
+~~~
 
-地形/代码直接来自 DAO3 dump（用户授权）。parkour 项目包的 `scripts/server.js`
-是真实地图脚本；terrain/entities 是从 dump 还原的地图数据。
+.build/ 是生成目录，测试使用 .build/<name> 前缀。生成的 dao3.project.json 是兼容运行时
+输入，不是新的手工编辑格式。
+
+## 资源解析
+
+地图资源优先从生成包的 assets index 解析；缺失的 block/avatar/engine 资源回退到
+backend/local-player/archive 提供的共享目录。项目资源路径必须是包内的安全相对路径；
+runtime-server 会拒绝绝对路径、路径穿越和未声明资源。
+
+导出的历史图片通常以 image/<name> 保存，而 UI 仍可能引用 picture/<name>。导入器和
+runtime-server 对此做格式级的名称回退，不为单张地图增加映射分支。
+
+## 当前包
+
+- there-is-backroom：首个正式内容目标，160 x 128 x 192，脚本和大量 mesh/audio 素材。
+- parkour：256 x 64 x 256，协议、渲染和 ScriptRuntime 回归地图。
+- minecraft：256 x 128 x 256，稀疏大地图和性能验证。
+- bedwars-s2 / bedwars-s2-main：标准导入和场景/UI/脚本恢复实验。
+- api-acceptance、model-lab 等：测试或专项实验包，不是默认启动目标。
+
+部分地图包和 reference/ 原始导出受 .gitignore 保护，只存在于授权的本地工作区；文档
+记录它们的运行语义，不承诺干净 checkout 包含所有内容。

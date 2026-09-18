@@ -1,7 +1,7 @@
 struct Globals {
     inv_view_proj: mat4x4<f32>,
     sun_dir_time: vec4<f32>,
-    fog_color: vec4<f32>,
+    fog_color_exposure: vec4<f32>,
 };
 
 @group(0) @binding(0) var<uniform> g: Globals;
@@ -26,6 +26,38 @@ fn vs_main(@builtin(vertex_index) vi: u32) -> VsOut {
 
 fn recovered_band(left: vec3<f32>, right: vec3<f32>, amount: f32) -> vec3<f32> {
     return mix(left, right, amount);
+}
+
+fn lerp_color(left: vec3<f32>, right: vec3<f32>, amount: f32) -> vec3<f32> {
+    return (1.0 - amount) * left + amount * right;
+}
+
+fn normal_light(base: vec3<f32>, overlay: vec4<f32>) -> vec3<f32> {
+    return base * (1.0 - overlay.a) + overlay.rgb * overlay.a;
+}
+
+fn smooth_transparent(lower: f32, upper: f32, value: f32) -> f32 {
+    if value < lower {
+        return 0.0;
+    }
+    if value > upper {
+        return 1.0;
+    }
+    let amount = (value - lower) / (upper - lower);
+    if amount < 0.66 {
+        return amount * 0.45;
+    }
+    return (amount - 0.66) * 2.05 + 0.3;
+}
+
+fn get_tint(ray: vec3<f32>, direction: vec3<f32>, inner: vec3<f32>, outer: vec3<f32>) -> vec4<f32> {
+    let in_sky = smoothstep(0.0, 0.02, ray.y);
+    let direction_dot = dot(ray, direction);
+    let alpha = smooth_transparent(0.995, 0.9975, direction_dot) * in_sky;
+    let inner_step = smoothstep(0.9965, 0.9975, direction_dot);
+    let white_step = smoothstep(0.9975, 0.9976, direction_dot);
+    let color = lerp_color(lerp_color(outer, inner, inner_step), vec3<f32>(1.0), white_step);
+    return vec4<f32>(color, alpha);
 }
 
 fn recovered_default_sky(ray_y: f32) -> vec3<f32> {
@@ -66,19 +98,40 @@ fn recovered_default_sky(ray_y: f32) -> vec3<f32> {
     return mix(sky2, sky, smoothstep(0.2, 1.0, ray_y));
 }
 
+fn revert_tone_mapping(color: vec3<f32>) -> vec3<f32> {
+    let a = 2.43 * color - 2.51;
+    let b = 0.59 * color - 0.03;
+    let c = 0.14 * color;
+    let determinant = sqrt(max(b * b - 4.0 * a * c, vec3<f32>(0.0)));
+    return (-b - determinant) / (2.0 * a);
+}
+
 @fragment
 fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
-    if g.sun_dir_time.w < 0.0 { return vec4<f32>(g.fog_color.rgb, 1.0); }
+    if g.sun_dir_time.w < 0.0 { return vec4<f32>(g.fog_color_exposure.rgb, 1.0); }
     let near = g.inv_view_proj * vec4<f32>(in.ndc, 0.0, 1.0);
     let far = g.inv_view_proj * vec4<f32>(in.ndc, 1.0, 1.0);
     let ray = normalize((far.xyz / far.w) - (near.xyz / near.w));
 
     var color = recovered_default_sky(ray.y);
     let sun_dir = normalize(g.sun_dir_time.xyz);
-    let sun_dot = max(dot(ray, sun_dir), 0.0);
-    let sun_core = pow(sun_dot, 520.0);
-    let sun_glow = pow(sun_dot, 18.0);
-    color += sun_core * vec3<f32>(1.0, 0.91, 0.70);
-    color += sun_glow * vec3<f32>(0.24, 0.16, 0.07);
-    return vec4<f32>(color, 1.0);
+    let morning_tint = get_tint(
+        ray,
+        sun_dir,
+        vec3<f32>(1.0, 0.9569, 0.4627),
+        vec3<f32>(1.0, 0.6627, 0.4078),
+    );
+    let noon_tint = get_tint(
+        ray,
+        sun_dir,
+        vec3<f32>(0.4824, 0.8863, 1.0),
+        vec3<f32>(0.1255, 0.6314, 0.8549),
+    );
+    color = normal_light(color, vec4<f32>(noon_tint.rgb, noon_tint.a));
+    // The recovered sky palette is already in display-referred space.  The
+    // eye exposure is used by voxel/entity pipelines, but applying it here
+    // would divide by Bedwars' very small indoor/global-light exposure and
+    // clamp the whole sky to white.
+    let pre_display = revert_tone_mapping(color) / 1.5;
+    return vec4<f32>(pow(clamp(pre_display, vec3<f32>(0.0), vec3<f32>(1.0)), vec3<f32>(1.0 / 1.3)), 1.0);
 }

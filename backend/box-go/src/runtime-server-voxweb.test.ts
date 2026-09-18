@@ -93,7 +93,7 @@ try {
   // 由服务端 sendRaw 前缀 varint(rawId=10) 组成，voxweb 前端按 id=10 解析）
   netProtocol.server.message.join()
   await waitFor(() => rawFrames.length > 0)
-  const secret = rawFrames[0]
+  const secret = rawFrames[0]!
   console.log("[ok] secret payload received:", Buffer.from(secret).toString("hex"))
   // voxweb 前端解析完整帧：[10] [1] 'E' [0] [playerId] ...
   // mudb raw handler 剥离 id 后 payload = [1, 'E', 0, playerId, 5, playerId, 1, playerId]
@@ -110,7 +110,7 @@ try {
   assert.equal(reset.ny, 64)
   assert.equal(reset.nz, 256)
   assert.equal(reset.positionX, 115)
-  assert.equal(reset.positionY, 11)
+  assert.ok(reset.positionY <= 11 && reset.positionY > 10, `parkour spawn should settle onto terrain (y=${reset.positionY})`)
   assert.equal(reset.positionZ, 154)
 
   // Parkour startup script must have committed its water fill before the

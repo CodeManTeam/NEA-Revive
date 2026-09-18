@@ -147,9 +147,16 @@ impl BrowserSockets {
         })
     }
 
-    /// Drain queued events.
+    /// Drain queued events without starving the browser frame budget.
     pub fn poll(&self) -> Vec<SessionEvent> {
-        self.inbox.borrow_mut().drain(..).collect()
+        self.poll_limited(MAX_EVENTS_PER_FRAME)
+    }
+
+    /// Drain at most `max_events` queued events.
+    pub fn poll_limited(&self, max_events: usize) -> Vec<SessionEvent> {
+        let mut inbox = self.inbox.borrow_mut();
+        let count = max_events.min(inbox.len());
+        inbox.drain(..count).collect()
     }
 
     /// Send a binary frame on the reliable socket (binary_type is
@@ -184,6 +191,8 @@ impl BrowserSockets {
         }
     }
 }
+
+const MAX_EVENTS_PER_FRAME: usize = 4;
 
 /// Convenience: build the ws URL with the session id.
 pub fn socket_url_with_sid(base: &str, session_id: &str) -> String {

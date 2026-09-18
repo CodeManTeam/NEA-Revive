@@ -15,7 +15,7 @@ const server = await startRuntimeServer({
   sourceRoot,
   assetRoot,
   buildRoot,
-  spawn: [64, 3, 48],
+  spawn: [64, 40, 64],
   quiet: true,
 })
 
@@ -92,23 +92,30 @@ try {
   assert.equal(reset.ny, 128)
   assert.equal(reset.nz, 256)
   assert.equal(reset.positionX, 64)
-  assert.equal(reset.positionY, 3)
-  assert.equal(reset.positionZ, 48)
+  // BedWars-style maps can create their play surface with scripts; terrain
+  // physics still needs a safe manifest spawn before that setup completes.
+  assert.ok(
+    reset.positionY <= 40 && reset.positionY > 36,
+    `minecraft spawn should settle onto terrain (y=${reset.positionY})`,
+  )
+  assert.equal(reset.positionZ, 64)
 
-  // spawn chunk: spawn [64,3,48] -> cx=2, cy=0, cz=1 -> chunkId = 2 + 8*(0 + 4*1) = 34
-  const chunkId = 2 + 8 * (0 + 4 * 1)
+  // fetchChunk covers static imported terrain. Chunk 66 is the known nonempty
+  // ground layer around x/y/z=(32..63,0..31,32..63), independent of runtime
+  // script entities spawned above it.
+  const chunkId = 2 + 8 * (0 + 4 * 2)
   terrainProtocol.server.message.fetchChunk({ chunkId, rpcId: 1 })
   await waitFor(() => chunks.length > 0)
 
-  const chunk = chunks[0]
+  const chunk = chunks[0]!
   console.log(`[chunk ${chunkId}] boxes=${chunk.boxes.length}`)
   assert.ok(chunk.boxes.length > 0, "spawn chunk should contain terrain")
 
   // 统计方块 ID（box.block & 0x3fff），确认是 minecraft 的方块目录
   const blocks = new Set<number>()
-  for (const box of chunk.boxes) blocks.add(box.block & 0x3fff)
+  for (const box of chunk.boxes) blocks.add((box.block ?? 0) & 0x3fff)
   console.log(`[chunk ${chunkId}] blockIds=${[...blocks].sort((a, b) => a - b).join(",")}`)
-  // spawn 地面 y=2 是 dirt(125)，y=0 底层 barrier(650)
+  // 地面包含 dirt/grass，底层 barrier(650)；block ID 只用于方块目录回归。
   assert.ok([...blocks].some((id) => id === 125 || id === 650 || id === 129 || id === 389 || id === 107),
     "chunk should contain known minecraft blocks")
 

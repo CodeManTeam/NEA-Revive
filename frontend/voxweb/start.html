@@ -178,9 +178,6 @@
     })();
   </script>
 
-  <!-- 构建时复制 index.html -->
-  <link data-trunk rel="copy-file" href="index.html" />
-
   <!-- trunk 入口：编译期注入 wasm-bindgen 生成的 JS 胶水 + WASM 二进制 -->
   <link data-trunk rel="rust" href="Cargo.toml" data-type="main"
         data-wasm-opt="z"

@@ -618,6 +618,45 @@ test("provides recovered player-local events, stable identity, wearables, and di
   assert.ok(snapshot.messages.some(message => message.playerId === "stable-player" && message.text === "ready message"));
 });
 
+test("projects mutable player wearables into a renderer-ready snapshot", async () => {
+  const source = resolve(fileURLToPath(new URL("../project", import.meta.url)));
+  const output = join(await mkdtemp(join(tmpdir(), "nea-runtime-wearable-snapshot-")), "project");
+  await importMapProject(source, output);
+  await writeFile(join(output, "scripts", "server.js"), "", "utf8");
+  const runtime = await ScriptRuntime.load(output, { blockCatalog, logger: { info() {}, warn() {}, error() {} } });
+  await runtime.start();
+  const player = runtime.addPlayer({ id: "wearable-player" });
+  const wearable = player.addWearable({
+    bodyPart: "rightHand",
+    mesh: "mesh/wooden-sword.vb",
+    offset: { x: 0, y: -0.2, z: 0.5 },
+    orientation: { w: 0.5, x: 0, y: 0.5, z: 0 },
+    scale: [0.5, 0.5, 0.5],
+    color: { r: 0.9, g: 0.4, b: 1.5 },
+    metalness: 1,
+  });
+  let snapshot = runtime.snapshot().players[0];
+  assert.deepEqual(snapshot.wearables, [{
+    id: "wearable-player:0",
+    bodyPart: "rightHand",
+    mesh: "mesh/wooden-sword.vb",
+    offset: [0, -0.2, 0.5],
+    orientation: [0.5, 0, 0.5, 0],
+    scale: [0.5, 0.5, 0.5],
+    material: { color: [0.9, 0.4, 1.5], metalness: 1, emissive: 0, shininess: 0 },
+  }]);
+  assert.equal(snapshot.wearableRevision, 1);
+  wearable.metalness = 0.25;
+  snapshot = runtime.snapshot().players[0];
+  assert.equal(snapshot.wearables[0].material.metalness, 0.25);
+  assert.equal(snapshot.wearableRevision, 2);
+  wearable.remove();
+  snapshot = runtime.snapshot().players[0];
+  assert.deepEqual(snapshot.wearables, []);
+  assert.equal(snapshot.wearableRevision, 3);
+  runtime.stop();
+});
+
 test("player kick uses the targeted backend transport", async () => {
   const source = resolve(fileURLToPath(new URL("../project", import.meta.url)));
   const output = join(await mkdtemp(join(tmpdir(), "nea-runtime-player-kick-")), "project");

@@ -3,6 +3,8 @@
 
   const outbound = [];
   let uiPictureAssets = Object.create(null);
+  let clientDrawReady = false;
+  const pendingPointerLockEvents = [];
   const remoteEvents = createEmitter();
   const pointerLockEvents = createEmitter();
   const screenEvents = createEmitter();
@@ -46,6 +48,9 @@
   const uiRoot = document.createElement("div");
   uiRoot.id = "nea-client-ui";
   uiRoot.style.cssText = "position:fixed;inset:0;z-index:20;pointer-events:none;overflow:hidden";
+  const uiStyle = document.createElement("style");
+  uiStyle.textContent = "#nea-client-ui input::placeholder{color:var(--nea-placeholder-color,rgba(255,255,255,1));opacity:1}#nea-client-ui [data-nea-scroll]{scrollbar-color:var(--nea-scroll-thumb,rgba(153,153,153,1)) transparent;scrollbar-width:var(--nea-scroll-width,auto)}#nea-client-ui [data-nea-scroll]::-webkit-scrollbar{width:var(--nea-scroll-thickness,8px);height:var(--nea-scroll-thickness,8px)}#nea-client-ui [data-nea-scroll]::-webkit-scrollbar-thumb{background:var(--nea-scroll-thumb,rgba(153,153,153,1))}";
+  document.head.appendChild(uiStyle);
   function appendToBody(element) {
     if (document.body) document.body.appendChild(element);
     else document.addEventListener("DOMContentLoaded", () => document.body?.appendChild(element), { once: true });
@@ -57,6 +62,13 @@
   engineUiRoot.id = "nea-engine-ui";
   engineUiRoot.style.cssText = "position:fixed;inset:0;z-index:24;pointer-events:none;overflow:hidden";
   appendToBody(engineUiRoot);
+  // Input diagnostics belong to the browser console. Keeping them out of
+  // the game UI avoids obscuring recovered map HUDs and screens.
+  const logInput = (kind, detail) => console.debug(`[nea-input] ${kind}`, detail);
+  window.addEventListener("keydown", event => logInput("keydown", { code: event.code, repeat: event.repeat }), { capture: true });
+  window.addEventListener("keyup", event => logInput("keyup", { code: event.code }), { capture: true });
+  window.addEventListener("mousedown", event => logInput("mousedown", { button: event.button }), { capture: true });
+  window.addEventListener("mouseup", event => logInput("mouseup", { button: event.button }), { capture: true });
   window.addEventListener("nea-historical-ui-event", () => {
     const detail = window.__NEA_HISTORICAL_UI_EVENT;
     if (!detail || typeof detail !== "object") return;
@@ -71,6 +83,11 @@
     outbound.push(event);
   });
   const ui = createUiRoot();
+  let scriptUi = ui;
+  // Recovered maps that provide their own health_bar own the player HUD. The
+  // engine fallback remains available for maps without a historical HUD, but
+  // must not paint a second bar on top of the map's canonical one.
+  let engineHealthFallbackEnabled = true;
   const engineHost = { element: engineUiRoot };
   // 伤害反馈层：全屏，承载血条/死亡提示/伤害数字，全部用引擎 UI API 实现。
   const damageLayer = createUiNode("box");
@@ -82,6 +99,9 @@
   damageLayer.backgroundOpacity = 0;
   damageLayer.visible = true;
   damageLayer.zIndex = 19;
+  // This layer only paints HUD feedback. It must not consume the gameplay
+  // activation click, otherwise the canvas can never acquire pointer lock.
+  damageLayer.pointerEventBehavior = 1;
   damageLayer.parent = engineHost;
   // The historical Player uses two image nodes and swaps numbered frames;
   // keep that contract instead of inventing a CSS heart bar.
@@ -127,6 +147,7 @@
   deathOverlay.backgroundOpacity = 0.5;
   deathOverlay.visible = false;
   deathOverlay.zIndex = 2;
+  deathOverlay.pointerEventBehavior = 1;
   deathOverlay.parent = damageLayer;
   const deathTip = createUiNode("text");
   deathTip.name = "nea-death-tip";
@@ -207,7 +228,7 @@
   dialogLayer.backgroundOpacity = 0.35;
   dialogLayer.visible = false;
   dialogLayer.zIndex = 60;
-  dialogLayer.pointerEventBehavior = 1;
+  dialogLayer.pointerEventBehavior = 0;
   dialogLayer.parent = engineHost;
   let activeDialog = null;
   let dialogPanel = null;
@@ -236,7 +257,7 @@
       dialogPanel.backgroundOpacity = 1;
       dialogPanel.borderRadius = 6;
       dialogPanel.zIndex = 61;
-      dialogPanel.pointerEventBehavior = 1;
+      dialogPanel.pointerEventBehavior = 0;
       dialogPanel.parent = dialogLayer;
       dialogPanel._title = createUiNode("text");
       dialogPanel._title.name = "nea-dialog-title";
@@ -350,6 +371,9 @@
   particleLayer.size.ratio.copy({ x: 1, y: 1 });
   particleLayer.visible = true;
   particleLayer.zIndex = 18;
+  // Particle dots are visual-only and should never sit in front of the game
+  // canvas for input hit-testing.
+  particleLayer.pointerEventBehavior = 1;
   particleLayer.parent = engineHost;
   let particleConfig = null;
   let particleLastMs = performance.now();
@@ -378,11 +402,139 @@
     },
     unlockPointer: () => document.exitPointerLock(),
   };
+  let inventoryControls = null;
+  function installInventoryControls() {
+    // Bedwars' clientIndex.js creates and owns these controls. Installing the
+    // compatibility layer as well creates duplicate clones and competing
+    // pointer/close handlers, which can replay a window after it is closed.
+    if (typeof runtime?.modules?.["clientIndex.js"] === "string") {
+      inventoryControls = null;
+      return;
+    }
+    const bagButton = findDescendantByName(ui, "bagButton");
+    const cameraButton = findDescendantByName(ui, "cameraButton");
+    const inventoryImage = findDescendantByName(ui, "inventoryImage");
+    const inventoryCase = findDescendantByName(ui, "inventorycase");
+    const chooseCase = findDescendantByName(ui, ["choosecase", "chooseCase"]);
+    const shadow = findDescendantByName(ui, "shadow");
+    const quickTemplate = findDescendantByName(ui, "invQuickItem");
+    const itemTemplate = findDescendantByName(ui, "invItem");
+    if (!bagButton || !cameraButton || !inventoryImage || !shadow || !quickTemplate || !itemTemplate) {
+      inventoryControls = null;
+      return;
+    }
+    const items = [];
+    const counts = [];
+    let visible = false;
+    const setVisible = next => {
+      visible = Boolean(next);
+      inventoryImage.visible = visible;
+      if (inventoryCase) inventoryCase.visible = false;
+      shadow.visible = visible;
+      for (const item of items) item.visible = visible;
+      for (const count of counts) if (count) count.visible = visible;
+      if (visible) input.unlockPointer();
+      else input.lockPointer();
+    };
+    const setChooseCase = (rawPosition, oneBased) => {
+      if (!chooseCase) return;
+      const raw = Number(rawPosition);
+      if (!Number.isFinite(raw)) return;
+      const slot = Math.max(0, Math.min(8, Math.round(raw - (oneBased ? 1 : 0))));
+      // Both recovered map packages use the same 9-slot strip but disagree
+      // on whether the remote event is 0- or 1-based. Keep that compatibility
+      // at the engine boundary so the original scripts stay untouched.
+      chooseCase.position.offset.x = 40 * slot - 184;
+      chooseCase.visible = true;
+      chooseCase.element.dataset.neaSelectionFrame = "true";
+      if (!chooseCase.element.getAttribute("src") && !chooseCase.element.dataset.neaImage) {
+        chooseCase.element.style.backgroundImage = "none";
+        chooseCase.element.style.border = "2px solid rgba(255,255,255,.92)";
+        chooseCase.element.style.borderRadius = "3px";
+        chooseCase.element.style.boxShadow = "0 0 0 1px rgba(20,24,28,.7) inset";
+      }
+    };
+    const updateSlot = (index, image, number) => {
+      const item = items[index];
+      const count = counts[index];
+      if (!item) return;
+      const amount = Number(number) || 0;
+      if (count) {
+        count.textFontSize = amount === 1 ? 0 : 16;
+        count.textContent = String(amount);
+      }
+      item.imageOpacity = image ? 1 : 0;
+      item.image = image ? resolvePictureUrl(`picture/${image}.png`) : "";
+    };
+    for (let index = 0; index < 9; index++) {
+      const item = quickTemplate.clone();
+      item.position.offset.x += 30.7375 * index;
+      item.pointerEventBehavior = 2;
+      items.push(item);
+      counts.push(item.findChildByName("invQuickNum"));
+    }
+    for (let row = 0; row < 3; row++) {
+      for (let column = 0; column < 9; column++) {
+        const item = itemTemplate.clone();
+        item.position.offset.x += 30.7375 * column;
+        item.position.offset.y += 30.5 * row;
+        item.pointerEventBehavior = 2;
+        items.push(item);
+        counts.push(item.findChildByName("invNum"));
+      }
+    }
+    bagButton.visible = true;
+    cameraButton.visible = true;
+    bagButton.events.on("pointerdown", () => setVisible(!visible));
+    cameraButton.events.on("pointerdown", () => outbound.push({ type: "nea-revive:camera-toggle" }));
+    shadow.events.on("pointerdown", () => setVisible(false));
+    const onInventoryKey = event => {
+      if (event.code !== "KeyE" || event.repeat || event.target instanceof HTMLInputElement) return;
+      setVisible(!visible);
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    };
+    window.addEventListener("keydown", onInventoryKey, { capture: true });
+    setVisible(false);
+    inventoryControls = {
+      receive(event) {
+        if (event?.type === "draw") {
+          bagButton.visible = true;
+          cameraButton.visible = true;
+        } else if (event?.type === "setAllQI") {
+          const values = Object.values(event.args || {})[0];
+          if (Array.isArray(values)) values.forEach((slot, index) => updateSlot(index, slot?.[0], slot?.[1]));
+        } else if (event?.type === "setSingleQI") {
+          updateSlot(Number(event.args?.index), event.args?.image, event.args?.number);
+        } else if (event?.type === "setChooseCase") {
+          setChooseCase(event.args?.pos, false);
+        } else if (event?.type === "setchoosecase") {
+          setChooseCase(event.args?.pos, true);
+        } else if (event?.type === "toggleInventory") {
+          setVisible(event.visible === undefined ? !visible : event.visible);
+        }
+      },
+      dispose() { window.removeEventListener("keydown", onInventoryKey, { capture: true }); },
+    };
+  }
+  function emitPointerLockEvent(name, event) {
+    if (!clientDrawReady) {
+      pendingPointerLockEvents.push([name, event]);
+      return;
+    }
+    pointerLockEvents.emit(name, event);
+  }
+  function flushPointerLockEvents() {
+    if (!clientDrawReady) return;
+    for (const [name, event] of pendingPointerLockEvents.splice(0)) pointerLockEvents.emit(name, event);
+  }
   document.addEventListener("pointerlockchange", () => {
-    pointerLockEvents.emit("pointerlockchange", { isLocked: document.pointerLockElement !== null });
+    emitPointerLockEvent("pointerlockchange", { isLocked: document.pointerLockElement !== null });
   });
   document.addEventListener("pointerlockerror", () => {
-    pointerLockEvents.emit("pointerlockerror", undefined);
+    // DAO3 scripts commonly destructure pointer-lock event payloads even
+    // for errors. Keep the callback shape stable instead of passing undefined.
+    emitPointerLockEvent("pointerlockerror", { isLocked: document.pointerLockElement !== null });
   });
   window.addEventListener("resize", () => {
     screenEvents.emit("resize", { screenWidth: window.innerWidth, screenHeight: window.innerHeight });
@@ -398,6 +550,23 @@
         ? JSON.parse(modules.__nea_ui_state__)
         : null;
       delete modules.__nea_ui_state__;
+      // A project reload keeps the page alive. Clear every map-owned emitter
+      // subscription before evaluating the next module set so old maps cannot
+      // continue consuming pointer, keyboard, or remote-channel events.
+      for (const cached of Object.values(runtime.cache)) {
+        try { cached?.exports?.dispose?.(); } catch (error) { console.warn("[nea-ui] client module dispose failed", error); }
+      }
+      inventoryControls?.dispose();
+      inventoryControls = null;
+      remoteEvents.removeAll();
+      pointerLockEvents.removeAll();
+      screenEvents.removeAll();
+      clientWorld.events.removeAll();
+      // A project reload starts a fresh client draw lifecycle. Keeping the
+      // previous map's ready flag lets pointer-lock events reach the new
+      // script before its draw handler has created cloned UI nodes.
+      clientDrawReady = false;
+      pendingPointerLockEvents.length = 0;
       runtime.modules = Object.assign(Object.create(null), modules);
       runtime.cache = Object.create(null);
       uiPictureAssets = uiState?.pictureAssets && typeof uiState.pictureAssets === "object"
@@ -405,18 +574,23 @@
         : Object.create(null);
       if (typeof runtime.modules["clientIndex.js"] !== "string") throw new Error("Client modules are missing clientIndex.js");
       installUiState(uiState);
+      installInventoryControls();
       loadModule("clientIndex.js");
     },
     receive(json) {
       const event = JSON.parse(json);
+      if (event?.type === "draw") {
+        clientDrawReady = true;
+      }
       if (event?.type === "nea-revive:gui" || event?.type === "nea-historical-gui") applyGuiCommand(event.command);
       else if (event?.type === "nea-historical-dialog-open") openHistoricalDialog(event.dialog);
       else if (event?.type === "nea-historical-dialog-cancel") { activeDialog = null; dialogLayer.visible = false; if (dialogPanel) dialogPanel.visible = false; }
       else if (event?.type === "nea-revive:link") applyPlayerLink(event);
-      else if (event?.type === "nea-revive:entity-state" || event?.type === "nea-revive:camera-state") {
+      else if (event?.type === "nea-revive:entity-state") {
         // These states are projected by the native client. They still pass
         // through this ingress, but are not map remoteChannel payloads.
       }
+      else if (event?.type === "nea-revive:camera-state") logInput("camera-state", { mode: event.mode });
       else if (event?.type === "nea-revive:damage-state") applyDamageState(event);
       else if (event?.type === "nea-revive:player-gameplay") applyGameplayState(event);
       else if (event?.type === "nea-revive:sound") applySoundCommand(event.command);
@@ -428,7 +602,17 @@
         // maps do not lose directMessage feedback entirely.
         showEngineNotice(event.message);
       }
-      else remoteEvents.emit("client", event);
+      else {
+        // DAO3 remoteChannel payloads conventionally carry args. A few
+        // recovered maps rely on that shape even for marker events such as
+        // draw, so normalize at the engine boundary rather than patching maps.
+        const mapEvent = event && typeof event === "object" && !Array.isArray(event) && event.args === undefined
+          ? { ...event, args: {} }
+          : event;
+        remoteEvents.emit("client", mapEvent);
+        inventoryControls?.receive(mapEvent);
+        if (mapEvent?.type === "draw") flushPointerLockEvents();
+      }
     },
     drain() {
       return JSON.stringify(outbound.splice(0));
@@ -442,7 +626,10 @@
     const frame = Math.ceil(Math.max(hp, 0) + 1);
     const image = `picture/health_bar${frame}.png`;
     const imageUrl = resolvePictureUrl(image);
-    if (imageUrl) {
+    if (!engineHealthFallbackEnabled) {
+      healthBar.visible = false;
+      extraHpBar.visible = false;
+    } else if (imageUrl) {
       healthBar.image = imageUrl;
       extraHpBar.image = imageUrl;
       healthBar.visible = hp > 20 ? false : true;
@@ -482,7 +669,9 @@
   }
 
   function resolvePictureUrl(name) {
-    const asset = uiPictureAssets[String(name || "")];
+    const raw = String(name || "");
+    if (/^(?:https?:|data:|blob:)/i.test(raw)) return raw;
+    const asset = uiPictureAssets[raw];
     const hash = typeof asset?.hash === "string" ? asset.hash : "";
     if (!/^[A-Za-z0-9_-]{43}$/.test(hash)) return null;
     try {
@@ -579,7 +768,7 @@
       playerModal.backgroundOpacity = 0.55;
       playerModal.visible = false;
       playerModal.zIndex = 40;
-      playerModal.pointerEventBehavior = 1;
+      playerModal.pointerEventBehavior = 0;
       playerModal.parent = engineHost;
       playerModal._panel = createUiNode("box");
       playerModal._panel.position.ratio.copy({ x: 0.5, y: 0.5 });
@@ -588,7 +777,7 @@
       playerModal._panel.backgroundColor.copy({ r: 17, g: 24, b: 32 });
       playerModal._panel.backgroundOpacity = 1;
       playerModal._panel.zIndex = 41;
-      playerModal._panel.pointerEventBehavior = 1;
+      playerModal._panel.pointerEventBehavior = 0;
       playerModal._panel.parent = playerModal;
       playerModal._title = createUiNode("text");
       playerModal._title.textFontSize = 18;
@@ -747,14 +936,14 @@
       input,
       http: { fetch: (...args) => fetch(...args) },
       world: clientWorld,
-      ui,
+      ui: scriptUi,
       screen: { events: screenEvents },
       UiText: { create: () => createUiNode("text") },
       UiBox: { create: () => createUiNode("box") },
       UiImage: { create: () => createUiNode("image") },
       UiInput: { create: () => createUiNode("input") },
       UiScrollBox: { create: () => createUiNode("scroll") },
-      UiScale: { create: () => ({ scale: 1 }) },
+      UiScale: { create: () => createUiScale() },
       UiScreen: {
         getAllScreen: () => ui.children.filter(child => child.kind === "screen"),
         create: () => {
@@ -771,11 +960,12 @@
         BLOCK_PASS_THROUGH: 2,
         ENABLE: 3,
       },
+      ImageDisplayMode: Object.freeze({ Fill: 0, Contain: 1, Cover: 2, None: 3 }),
       UITextFontFamily: Object.freeze({ Default: "Default", BoldRound: "BoldRound", CodeNewRomanBold: "CodeNewRomanBold", ENSerif: "ENSerif" }),
       screenWidth: window.innerWidth || 1280,
       screenHeight: window.innerHeight || 720,
-      Vec2: { create: value => createVector(value) },
-      Vec3: { create: value => createVector(value) },
+      Vec2: { create: value => createVector({ x: 0, y: 0, ...(value || {}) }) },
+      Vec3: { create: value => createColorVector(value) },
     };
   }
 
@@ -783,6 +973,11 @@
     const listeners = new Map();
     return Object.freeze({
       on(name, handler) { add(name, handler); return () => remove(name, handler); },
+      once(name, handler) {
+        if (typeof handler !== "function") throw new TypeError("Event handler must be a function");
+        const onceHandler = event => { remove(name, onceHandler); handler(event); };
+        add(name, onceHandler);
+      },
       add(name, handler) { add(name, handler); },
       remove(name, handler) { remove(name, handler); },
       off(name, handler) { if (handler) remove(name, handler); else listeners.delete(name); },
@@ -795,11 +990,17 @@
     });
     function add(name, handler) {
       if (typeof handler !== "function") throw new TypeError("Event handler must be a function");
-      const bucket = listeners.get(name) || new Set();
-      bucket.add(handler);
+      const bucket = listeners.get(name) || [];
+      bucket.push(handler);
       listeners.set(name, bucket);
     }
-    function remove(name, handler) { listeners.get(name)?.delete(handler); }
+    function remove(name, handler) {
+      const bucket = listeners.get(name);
+      if (!bucket) return;
+      const index = bucket.indexOf(handler);
+      if (index !== -1) bucket.splice(index, 1);
+      if (!bucket.length) listeners.delete(name);
+    }
   }
 
   class CompatMediaError {
@@ -843,7 +1044,7 @@
         if (next && typeof next === "object") Object.assign(this, next);
         return this;
       } },
-      clone: { enumerable: false, value() { return createVector(this); } },
+      clone: { enumerable: false, value() { return Object.hasOwn(this, "r") ? createColorVector(this) : createVector(this); } },
     });
     return new Proxy(target, {
       set(object, key, next) {
@@ -854,24 +1055,65 @@
     });
   }
 
+  function createUiScale() {
+    let scale = 1;
+    const listeners = new Set();
+    const value = {};
+    Object.defineProperties(value, {
+      scale: {
+        enumerable: true,
+        get: () => scale,
+        set(next) {
+          const numeric = Number(next);
+          if (!Number.isFinite(numeric) || numeric < 0) return;
+          scale = numeric;
+          for (const listener of [...listeners]) listener();
+        },
+      },
+      clone: { enumerable: false, value: () => {
+        const copy = createUiScale();
+        copy.scale = scale;
+        return copy;
+      } },
+      _subscribe: { enumerable: false, value: listener => {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      } },
+    });
+    return value;
+  }
+
+  function createColorVector(value, changed) {
+    const source = value || {};
+    const vector = createVector({
+      r: Number(source.r ?? source.x) || 0,
+      g: Number(source.g ?? source.y) || 0,
+      b: Number(source.b ?? source.z) || 0,
+    }, changed);
+    Object.defineProperties(vector, {
+      x: { enumerable: true, get: () => vector.r, set(value) { vector.r = value; } },
+      y: { enumerable: true, get: () => vector.g, set(value) { vector.g = value; } },
+      z: { enumerable: true, get: () => vector.b, set(value) { vector.b = value; } },
+    });
+    return vector;
+  }
+
   function createUiRoot() {
-    let uiScale = { scale: 1 };
+    let uiScale;
     const root = {
       name: "screen",
       element: uiRoot,
       children: [],
+      events: createEmitter(),
+      event: null,
       findChildByName(name) { return findChildByName(this, name); },
     };
+    root.event = root.events;
     Object.defineProperty(root, "uiScale", {
       get: () => uiScale,
       set: value => {
-        uiScale = value && typeof value === "object" ? value : { scale: 1 };
-        const scale = Number(uiScale.scale) || 1;
-        const apply = node => {
-          if (node.uiScale?.copy) node.uiScale.copy({ scale });
-          for (const child of node.children || []) apply(child);
-        };
-        for (const child of root.children) apply(child);
+        uiScale = value && typeof value === "object" ? value : undefined;
+        for (const child of root.children) child.uiScale = uiScale;
       },
     });
     return root;
@@ -886,16 +1128,23 @@
       return null;
     }
     const wanted = String(name);
+    return (root.children || []).find(child => child.name === wanted) || null;
+  }
+
+  function findDescendantByName(root, name) {
+    const direct = findChildByName(root, name);
+    if (direct) return direct;
     for (const child of root.children || []) {
-      if (child.name === wanted) return child;
-      const nested = findChildByName(child, wanted);
+      const nested = findDescendantByName(child, name);
       if (nested) return nested;
     }
     return null;
   }
 
   function installUiState(state) {
+    engineHealthFallbackEnabled = true;
     for (const child of [...ui.children]) child.parent = null;
+    scriptUi = ui;
     if (!state?.uiTree || typeof state.uiTree !== "object") return;
     const nodes = new Map();
     for (const raw of Object.values(state.uiTree)) {
@@ -903,7 +1152,9 @@
       const valueType = raw.value?.type;
       const data = valueType === "screen" ? raw.value?.data || {} : raw.value?.data?.data || {};
       const kind = valueType === "screen" ? "screen" : raw.value?.data?.type || (valueType === "text" ? "text" : "box");
-      const node = createUiNode(kind === "image" ? "image" : kind === "text" ? "text" : kind === "screen" ? "screen" : "box");
+      const node = createUiNode(
+        kind === "image" ? "image" : kind === "text" ? "text" : kind === "input" ? "input" : kind === "scrollBox" ? "scroll" : kind === "screen" ? "screen" : "box",
+      );
       node.id = String(raw.id);
       node.name = String(raw.name || raw.id);
       if (kind === "screen") {
@@ -921,31 +1172,41 @@
     for (const { node, raw } of nodes.values()) {
       node.parent = nodes.get(String(raw.parentId))?.node || ui;
     }
+    scriptUi = nodes.get(String(state.defaultScreenId))?.node
+      || [...nodes.values()].map(entry => entry.node).find(node => node.kind === "screen")
+      || ui;
+    engineHealthFallbackEnabled = !findDescendantByName(ui, "health_bar");
     // Older dump Player packages carried chat children at screen scope while
     // clientIndex.js expects the historical scrollBox container. Reconstruct
     // that harmless structural wrapper so the original script can run.
-    if (!findChildByName(ui, "scrollBox")) {
-      const msg = findChildByName(ui, "msgContent");
-      const title = findChildByName(ui, "titleContent");
+    if (!findDescendantByName(ui, "scrollBox")) {
+      const msg = findDescendantByName(ui, "msgContent");
+      const title = findDescendantByName(ui, "titleContent");
       if (msg || title) {
         const scroll = createUiNode("scroll");
         scroll.name = "scrollBox";
         scroll.size.ratio.copy({ x: 1, y: 1 });
-        scroll.parent = ui;
+        scroll.parent = scriptUi;
         if (msg) msg.parent = scroll;
         if (title) title.parent = scroll;
+        else {
+          const titleTemplate = createUiNode("text");
+          titleTemplate.name = "titleContent";
+          titleTemplate.visible = false;
+          titleTemplate.parent = scroll;
+        }
       }
     }
     // Some archived Player UI snapshots omit optional gameplay containers
     // that the matching client script still probes at startup. Keep those
     // probes harmless without changing the script's public API.
-    if (findChildByName(ui, "health_bar")) {
+    if (findDescendantByName(ui, "health_bar")) {
       for (const name of ["inventoryImage", "shopImage", "chestImage", "shadow", "armor", "text", "invItem", "invQuickItem", "shopItem", "chestItem"]) {
-        if (!findChildByName(ui, name)) {
+        if (!findDescendantByName(ui, name)) {
           const placeholder = createUiNode("box");
           placeholder.name = name;
           placeholder.visible = false;
-          placeholder.parent = ui;
+          placeholder.parent = scriptUi;
         }
       }
     }
@@ -962,9 +1223,15 @@
 
   function applyPlayerLink(event) {
     const href = String(event?.href || "");
-    if (!/^https?:\/\//i.test(href)) return;
-    if (event?.options?.isConfirm !== false && !window.confirm(`Open ${href}?`)) return;
-    window.open(href, event?.options?.isNewTab === false ? "_self" : "_blank", "noopener");
+    const createSessionUrl = String(event?.createSessionUrl || "");
+    const target = /^https?:\/\//i.test(createSessionUrl)
+      ? new URL(window.location.href)
+      : null;
+    if (target) target.searchParams.set("nea", createSessionUrl);
+    const destination = target?.toString() || href;
+    if (!/^https?:\/\//i.test(destination)) return;
+    if (event?.options?.isConfirm !== false && !window.confirm(`Open ${destination}?`)) return;
+    window.open(destination, event?.options?.isNewTab === false ? "_self" : "_blank", "noopener");
   }
 
   function applyGuiCommand(command) {
@@ -1068,28 +1335,98 @@
     if (Array.isArray(data.backgroundColor)) node.backgroundColor.copy({ r: data.backgroundColor[0], g: data.backgroundColor[1], b: data.backgroundColor[2] });
     if (data.textContent !== undefined) node.textContent = data.textContent;
     if (data.textFontSize !== undefined) node.textFontSize = data.textFontSize;
+    if (data.textOpacity !== undefined) node.textOpacity = data.textOpacity;
+    if (data.textFontFamily !== undefined) node.textFontFamily = recoverFontFamily(data.textFontFamily);
+    if (data.textXAlignment !== undefined) node.textXAlignment = recoverTextXAlignment(data.textXAlignment);
+    if (data.textYAlignment !== undefined) node.textYAlignment = recoverTextYAlignment(data.textYAlignment);
+    if (data.textLineHeight !== undefined) node.textLineHeight = data.textLineHeight;
+    if (data.richText !== undefined) node.richText = data.richText;
+    if (data.autoWordWrap !== undefined) node.autoWordWrap = data.autoWordWrap;
+    if (Array.isArray(data.textStrokeColor)) node.textStrokeColor.copy({ r: data.textStrokeColor[0], g: data.textStrokeColor[1], b: data.textStrokeColor[2] });
+    if (data.textStrokeOpacity !== undefined) node.textStrokeOpacity = data.textStrokeOpacity;
+    if (data.textStrokeThickness !== undefined) node.textStrokeThickness = data.textStrokeThickness;
+    if (data.autoResize !== undefined) node.autoResize = recoverAutoResize(data.autoResize);
+    if (data.clipsDescendants !== undefined) node.clipsDescendants = data.clipsDescendants;
     if (data.backgroundOpacity !== undefined) node.backgroundOpacity = data.backgroundOpacity;
+    if (data.image !== undefined) node.image = data.image;
+    if (data.imageOpacity !== undefined) node.imageOpacity = data.imageOpacity;
+    if (data.imageDisplayMode !== undefined) node.imageDisplayMode = data.imageDisplayMode;
     if (data.visible !== undefined) node.visible = data.visible;
     if (data.textAlign !== undefined) node.textAlign = ["left", "center", "right"][Number(data.textAlign)] || data.textAlign;
-    node.zIndex = Number(data.zIndex) || 0;
+    if (data.placeholder !== undefined) node.placeholder = data.placeholder;
+    if (Array.isArray(data.placeholderColor)) node.placeholderColor.copy({ r: data.placeholderColor[0], g: data.placeholderColor[1], b: data.placeholderColor[2] });
+    if (data.placeholderOpacity !== undefined) node.placeholderOpacity = data.placeholderOpacity;
+    if (data.scrollPosition) node.scrollPosition.copy({ x: data.scrollPosition[0], y: data.scrollPosition[1] });
+    if (data.scrollDirection !== undefined) node.scrollDirection = data.scrollDirection;
+    if (data.scrollCanvasAutoResize !== undefined) node.scrollCanvasAutoResize = recoverAutoResize(data.scrollCanvasAutoResize);
+    if (data.scrollCanvasSize) node.scrollCanvasSize = data.scrollCanvasSize;
+    if (Array.isArray(data.scrollbarColor)) node.scrollbarColor.copy({ r: data.scrollbarColor[0], g: data.scrollbarColor[1], b: data.scrollbarColor[2] });
+    if (data.scrollbarOpacity !== undefined) node.scrollbarOpacity = data.scrollbarOpacity;
+    if (data.scrollbarThickness !== undefined) node.scrollbarThickness = data.scrollbarThickness;
+    if (data.scrollbarVisibility !== undefined) node.scrollbarVisibility = data.scrollbarVisibility;
+    if (data.scrollbarHorizontal !== undefined) node.scrollbarHorizontal = data.scrollbarHorizontal;
+    if (data.scrollbarVertical !== undefined) node.scrollbarVertical = data.scrollbarVertical;
+    // dao3-project exports serialize editor rotation in radians, while the
+    // public ClientUI runtime property is expressed in degrees.
+    if (data.rotation !== undefined) node.rotation = Number(data.rotation) * 180 / Math.PI;
+    node.zIndex = Number(data.zIndex) || 1;
+  }
+
+  function recoverAutoResize(value) {
+    return ["NONE", "X", "Y", "XY"][Number(value)] || String(value || "NONE").toUpperCase();
+  }
+
+  function recoverTextXAlignment(value) {
+    return ["Center", "Left", "Right"][Number(value)] || String(value || "Center");
+  }
+
+  function recoverTextYAlignment(value) {
+    return ["Center", "Top", "Bottom"][Number(value)] || String(value || "Center");
+  }
+
+  function recoverFontFamily(value) {
+    return ["Default", "BoldRound", "CodeNewRomanBold", "ENSerif"][Number(value)] || String(value || "Default");
   }
 
   function createUiNode(kind) {
-    const element = document.createElement(kind === "image" ? "img" : kind === "input" ? "input" : "div");
+    // Images can own child controls in recovered DAO3 UI trees (the Bedwars
+    // scoreboard background is one example). An <img> cannot render child
+    // elements, so use a positioned wrapper and keep the bitmap in a private
+    // layer underneath the script-owned descendants.
+    const element = document.createElement(kind === "input" ? "input" : "div");
+    const imageElement = kind === "image" ? document.createElement("img") : null;
+    const textElement = kind === "text" ? document.createElement("span") : null;
     element.style.cssText = "position:absolute;box-sizing:border-box;white-space:pre-wrap;color:white;font:16px/1.35 sans-serif;text-shadow:0 1px 2px #000;pointer-events:none";
+    element.style.zIndex = "1";
+    if (imageElement) {
+      imageElement.style.cssText = "position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0";
+      imageElement.setAttribute("aria-hidden", "true");
+      element.appendChild(imageElement);
+    }
+    if (textElement) {
+      textElement.style.cssText = "position:absolute;inset:0;box-sizing:border-box;pointer-events:none;display:flex";
+      element.appendChild(textElement);
+    }
+    const childHost = kind === "scroll" ? document.createElement("div") : element;
+    if (kind === "scroll") {
+      element.dataset.neaScroll = "true";
+      element.style.overflow = "auto";
+      childHost.style.cssText = "position:relative;box-sizing:border-box;min-width:100%;min-height:100%";
+      element.appendChild(childHost);
+    }
     const node = {
       element,
+      childHost,
       kind,
       name: "",
-      anchor: createVector({}, refresh),
-      position: { offset: createVector({}, refresh), ratio: createVector({}, refresh), scale: createVector({ x: 1, y: 1 }, refresh) },
-      size: { offset: createVector({}, refresh), ratio: createVector({}, refresh), scale: createVector({ x: 1, y: 1 }, refresh) },
-      textColor: createVector({ r: 255, g: 255, b: 255 }, refresh),
-      textStrokeColor: createVector({}, refresh),
-      backgroundColor: createVector({ r: 0, g: 0, b: 0 }, refresh),
+      anchor: createVector({ x: 0, y: 0 }, refresh),
+      position: { offset: createVector({ x: 0, y: 0 }, refresh), ratio: createVector({ x: 0, y: 0 }, refresh), scale: createVector({ x: 1, y: 1 }, refresh) },
+      size: { offset: createVector({ x: 0, y: 0 }, refresh), ratio: createVector({ x: 0, y: 0 }, refresh), scale: createVector({ x: 1, y: 1 }, refresh) },
+      textColor: createColorVector({ r: 255, g: 255, b: 255 }, refresh),
+      textStrokeColor: createColorVector({ r: 0, g: 0, b: 0 }, refresh),
+      backgroundColor: createColorVector({ r: 0, g: 0, b: 0 }, refresh),
       children: [],
       events: createEmitter(),
-      uiScale: createVector({ scale: 1 }, refresh),
       findChildByName(name) { return findChildByName(this, name); },
       clone() {
         const copy = createUiNode(kind);
@@ -1104,7 +1441,9 @@
         copy.textColor.copy(node.textColor);
         copy.textStrokeColor.copy(node.textStrokeColor);
         copy.backgroundColor.copy(node.backgroundColor);
-        copy.uiScale.copy(node.uiScale);
+        copy.placeholderColor.copy(node.placeholderColor);
+        copy.scrollbarColor.copy(node.scrollbarColor);
+        if (node.uiScale) copy.uiScale = node.uiScale.clone();
         copy.textContent = node.textContent;
         copy.textFontSize = node.textFontSize;
         copy.backgroundOpacity = node.backgroundOpacity;
@@ -1119,36 +1458,54 @@
         copy.textXAlignment = node.textXAlignment;
         copy.textYAlignment = node.textYAlignment;
         copy.autoResize = node.autoResize;
+        copy.clipsDescendants = node.clipsDescendants;
+        copy.textOpacity = node.textOpacity;
         copy.textStrokeOpacity = node.textStrokeOpacity;
         copy.textStrokeThickness = node.textStrokeThickness;
         copy.image = node.image;
         copy.imageOpacity = node.imageOpacity;
         copy.imageDisplayMode = node.imageDisplayMode;
         copy.placeholder = node.placeholder;
-        copy.placeholderColor.copy(node.placeholderColor);
         copy.placeholderOpacity = node.placeholderOpacity;
-        copy.pointerEventBehavior = node.pointerEventBehavior;
+        copy.scrollPosition.copy(node.scrollPosition);
+        copy.scrollDirection = node.scrollDirection;
+        copy.scrollCanvasAutoResize = node.scrollCanvasAutoResize;
+        copy.scrollCanvasSize = node.scrollCanvasSize;
+        copy.scrollbarOpacity = node.scrollbarOpacity;
+        copy.scrollbarThickness = node.scrollbarThickness;
+        copy.scrollbarVisibility = node.scrollbarVisibility;
+        copy.scrollbarHorizontal = node.scrollbarHorizontal;
+        copy.scrollbarVertical = node.scrollbarVertical;
+        // DAO3 clone() preserves render data but restores interactive event
+        // behaviour to ENABLE on the cloned node.
+        copy.pointerEventBehavior = 3;
         copy.zIndex = node.zIndex;
         copy.parent = node.parent;
         for (const child of node.children) child.clone().parent = copy;
         return copy;
       },
     };
+    element.__neaUiNode = node;
     const scrollPosition = createVector({ x: 0, y: 0 }, () => {
       element.scrollLeft = Math.max(0, Number(scrollPosition.x) || 0);
       element.scrollTop = Math.max(0, Number(scrollPosition.y) || 0);
     });
     node.scrollPosition = scrollPosition;
-    element.addEventListener("pointerdown", event => node.events.emit("pointerdown", { target: node, nativeEvent: event }));
-    element.addEventListener("pointerup", event => node.events.emit("pointerup", { target: node, nativeEvent: event }));
+    node.event = node.events;
+    element.addEventListener("pointerdown", event => dispatchUiPointer("pointerdown", event));
+    element.addEventListener("pointerup", event => dispatchUiPointer("pointerup", event));
     let parent = null;
+    let name = "";
     let textContent = "";
     let fontSize = 16;
     let backgroundOpacity = 0;
     let visible = true;
     let borderRadius = 0;
     let textAlign = "left";
-    let pointerEventBehavior = 0;
+    // Recovered HUD nodes are visual by default. DAO3 scripts opt into
+    // blocking or enabled input explicitly (0/2/3); defaulting to DISABLE
+    // keeps scoreboard panels from swallowing the gameplay click.
+    let pointerEventBehavior = 1;
     let rotation = 0;
     let richText = false;
     let autoWordWrap = false;
@@ -1159,35 +1516,71 @@
     let autoResize = "NONE";
     let textStrokeOpacity = 1;
     let textStrokeThickness = 0;
+    let textOpacity = 1;
+    let clipsDescendants = false;
     let imageOpacity = 1;
     let imageDisplayMode = 0;
+    let imageMissing = false;
     let placeholder = "Type something here";
     let placeholderOpacity = 1;
-    const placeholderColor = createVector({ r: 255, g: 255, b: 255 }, refresh);
+    const placeholderColor = createColorVector({ r: 255, g: 255, b: 255 }, refresh);
+    const scrollbarColor = createColorVector({ r: 153, g: 153, b: 153 }, refresh);
+    let scrollDirection = 0;
+    let scrollCanvasAutoResize = "NONE";
+    let scrollCanvasSize = { offset: createVector({ x: 0, y: 0 }, refresh), ratio: createVector({ x: 0, y: 0 }, refresh), scale: createVector({ x: 1, y: 1 }, refresh) };
+    let scrollbarOpacity = 1;
+    let scrollbarThickness = 8;
+    let scrollbarVisibility = 0;
+    let scrollbarHorizontal = true;
+    let scrollbarVertical = true;
+    let attachedUiScale;
+    let unsubscribeUiScale = null;
     Object.defineProperties(node, {
+      name: { get: () => name, set(value) {
+        name = String(value ?? "");
+        if (name) element.dataset.neaName = name;
+        else delete element.dataset.neaName;
+      } },
+      uiScale: {
+        get: () => attachedUiScale,
+        set(value) {
+          unsubscribeUiScale?.();
+          unsubscribeUiScale = null;
+          if (value === undefined || value === null) {
+            attachedUiScale = undefined;
+          } else if (typeof value._subscribe === "function" && Number.isFinite(Number(value.scale))) {
+            attachedUiScale = value;
+            unsubscribeUiScale = value._subscribe(refresh);
+          } else {
+            const scale = Number(value?.scale);
+            if (!Number.isFinite(scale) || scale < 0) return;
+            attachedUiScale = createUiScale();
+            attachedUiScale.scale = scale;
+            unsubscribeUiScale = attachedUiScale._subscribe(refresh);
+          }
+          refresh();
+        },
+      },
       parent: { get: () => parent, set(value) {
         if (parent?.children) parent.children = parent.children.filter(child => child !== node);
         parent = value;
-        const target = value?.element || uiRoot;
+        const target = value?.childHost || value?.element || uiRoot;
         if (value) {
           if (Array.isArray(value.children)) {
             if (!value.children.includes(node)) value.children.push(node);
           }
-          const inheritedScale = value.uiScale?.scale ?? (value === ui ? ui.uiScale?.scale : undefined);
-          if (Number.isFinite(Number(inheritedScale)) && Number(node.uiScale?.scale ?? 1) === 1) {
-            node.uiScale.copy({ scale: Number(inheritedScale) || 1 });
-          }
+          if (value === ui && ui.uiScale && !node.uiScale) node.uiScale = ui.uiScale;
           target.appendChild(element);
         } else element.remove();
         refresh();
       } },
       textContent: { get: () => textContent, set(value) { textContent = String(value ?? ""); refresh(); } },
-      textFontSize: { get: () => fontSize, set(value) { fontSize = Number(value) || 16; refresh(); } },
-      backgroundOpacity: { get: () => backgroundOpacity, set(value) { backgroundOpacity = clamp(Number(value) || 0, 0, 1); refresh(); } },
+      textFontSize: { get: () => fontSize, set(value) { fontSize = Math.max(0, Number(value) || 0); refresh(); } },
+      backgroundOpacity: { get: () => backgroundOpacity, set(value) { backgroundOpacity = clamp(Number(value), 0, 1); refresh(); } },
       visible: { get: () => visible, set(value) { visible = Boolean(value); refresh(); } },
       borderRadius: { get: () => borderRadius, set(value) { borderRadius = Math.max(0, Number(value) || 0); refresh(); } },
       textAlign: { get: () => textAlign, set(value) { textAlign = String(value || "left"); refresh(); } },
-      rotation: { get: () => rotation, set(value) { rotation = Number(value) || 0; refresh(); } },
+      rotation: { get: () => rotation, set(value) { rotation = clamp(Number(value) || 0, -179, 180); refresh(); } },
       richText: { get: () => richText, set(value) { richText = Boolean(value); refresh(); } },
       autoWordWrap: { get: () => autoWordWrap, set(value) { autoWordWrap = Boolean(value); refresh(); } },
       textLineHeight: { get: () => textLineHeight, set(value) { textLineHeight = Number(value) || 1.2; refresh(); } },
@@ -1195,16 +1588,19 @@
       textXAlignment: { get: () => textXAlignment, set(value) { textXAlignment = String(value || "Center"); refresh(); } },
       textYAlignment: { get: () => textYAlignment, set(value) { textYAlignment = String(value || "Center"); refresh(); } },
       autoResize: { get: () => autoResize, set(value) { autoResize = String(value || "NONE").toUpperCase(); refresh(); } },
+      clipsDescendants: { get: () => clipsDescendants, set(value) { clipsDescendants = Boolean(value); refresh(); } },
+      textOpacity: { get: () => textOpacity, set(value) { textOpacity = clamp(Number(value), 0, 1); refresh(); } },
       textStrokeOpacity: { get: () => textStrokeOpacity, set(value) { textStrokeOpacity = Number(value) || 0; refresh(); } },
-      textStrokeThickness: { get: () => textStrokeThickness, set(value) { textStrokeThickness = Math.max(0, Number(value) || 0); refresh(); } },
+      textStrokeThickness: { get: () => textStrokeThickness, set(value) { textStrokeThickness = clamp(Number(value) || 0, 0, 25); refresh(); } },
       image: {
-        get: () => kind === "image" ? (element.getAttribute("src") || "") : (element.dataset.neaImage || ""),
+        get: () => kind === "image" ? (imageElement?.getAttribute("src") || "") : (element.dataset.neaImage || ""),
         set(value) {
           const src = String(value || "");
           const resolved = resolvePictureUrl(src);
+          imageMissing = Boolean(src) && !resolved;
           if (kind === "image") {
-            if (resolved) element.src = resolved;
-            else element.removeAttribute("src");
+            if (resolved && imageElement) imageElement.src = resolved;
+            else imageElement?.removeAttribute("src");
           }
           else {
             // Dump Player UI declares health_bar as a text node, then the
@@ -1220,31 +1616,72 @@
       },
       imageOpacity: { get: () => imageOpacity, set(value) { imageOpacity = Number(value) || 0; refresh(); } },
       imageDisplayMode: { get: () => imageDisplayMode, set(value) { imageDisplayMode = Number(value) || 0; refresh(); } },
-      complete: { get: () => kind !== "image" || element.complete },
+      complete: { get: () => kind !== "image" || Boolean(imageElement?.complete) },
       placeholder: { get: () => placeholder, set(value) { placeholder = String(value ?? ""); refresh(); } },
       placeholderColor: { get: () => placeholderColor },
       placeholderOpacity: { get: () => placeholderOpacity, set(value) { placeholderOpacity = clamp(Number(value), 0, 1); refresh(); } },
+      scrollbarColor: { get: () => scrollbarColor },
+      scrollDirection: { get: () => scrollDirection, set(value) { scrollDirection = Number(value) || 0; refresh(); } },
+      scrollCanvasAutoResize: { get: () => scrollCanvasAutoResize, set(value) { scrollCanvasAutoResize = String(value || "NONE").toUpperCase(); refresh(); } },
+      scrollCanvasSize: { get: () => scrollCanvasSize, set(value) {
+        const source = value || {};
+        const copy = target => input => {
+          if (Array.isArray(input)) target.copy({ x: input[0], y: input[1] });
+          else if (input) target.copy(input);
+        };
+        copy(scrollCanvasSize.offset)(source.offset);
+        copy(scrollCanvasSize.ratio)(source.ratio);
+        copy(scrollCanvasSize.scale)(source.scale);
+        refresh();
+      } },
+      scrollbarOpacity: { get: () => scrollbarOpacity, set(value) { scrollbarOpacity = clamp(Number(value), 0, 1); refresh(); } },
+      scrollbarThickness: { get: () => scrollbarThickness, set(value) { scrollbarThickness = Math.max(0, Number(value) || 0); refresh(); } },
+      scrollbarVisibility: { get: () => scrollbarVisibility, set(value) { scrollbarVisibility = Number(value) || 0; refresh(); } },
+      scrollbarHorizontal: { get: () => scrollbarHorizontal, set(value) { scrollbarHorizontal = Boolean(value); refresh(); } },
+      scrollbarVertical: { get: () => scrollbarVertical, set(value) { scrollbarVertical = Boolean(value); refresh(); } },
       isFocus: { get: () => kind === "input" && document.activeElement === element },
       zIndex: { get: () => Number(element.style.zIndex) || 0, set(value) { element.style.zIndex = String(Number(value) || 0); } },
-      pointerEventBehavior: { get: () => pointerEventBehavior, set(value) { pointerEventBehavior = value; element.style.pointerEvents = Number(value) ? "auto" : "none"; } },
+      pointerEventBehavior: {
+        get: () => pointerEventBehavior,
+        set(value) {
+          pointerEventBehavior = Number(value);
+          const passThrough = pointerEventBehavior === 1;
+          element.style.pointerEvents = passThrough ? "none" : "auto";
+          if (!passThrough) element.dataset.neaInteractive = "true";
+          else delete element.dataset.neaInteractive;
+        }
+      },
     });
+    if (kind !== "screen") node.pointerEventBehavior = pointerEventBehavior;
     node.focus = () => { if (kind === "input") element.focus(); };
     node.blur = () => { if (kind === "input") element.blur(); return textContent; };
     if (kind === "input") {
-      element.addEventListener("input", () => { textContent = element.value; node.events.emit("input", node); });
-      element.addEventListener("focus", () => node.events.emit("focus", node));
-      element.addEventListener("blur", () => node.events.emit("blur", node));
+      element.addEventListener("input", () => { textContent = element.value; node.events.emit("input", { target: node }); });
+      element.addEventListener("focus", () => node.events.emit("focus", { target: node }));
+      element.addEventListener("blur", () => node.events.emit("blur", { target: node }));
+    }
+    if (imageElement) {
+      imageElement.addEventListener("load", () => node.events.emit("load", { target: node }));
+      imageElement.addEventListener("error", () => {
+        // Historical UI metadata can reference an omitted archive entry. Do
+        // not leave a broken-image glyph or a colored slot on screen.
+        imageMissing = true;
+        imageElement.removeAttribute("src");
+        element.style.backgroundColor = "transparent";
+        element.style.backgroundImage = "none";
+        element.style.opacity = "0";
+      });
     }
     if (kind === "scroll") {
       element.style.overflow = "auto";
       element.addEventListener("scroll", () => {
         scrollPosition.x = element.scrollLeft;
         scrollPosition.y = element.scrollTop;
-        node.events.emit("scroll", node);
+        node.events.emit("scroll", { target: node });
       });
     }
     function refresh() {
-      if (kind === "text") element.textContent = textContent;
+      if (textElement) renderRichText(textElement, textContent, richText);
       if (kind === "input") { element.value = textContent; element.placeholder = placeholder; }
       element.style.left = uiLength((node.position.ratio.x || 0) * (node.position.scale.x || 1), node.position.offset.x);
       element.style.top = uiLength((node.position.ratio.y || 0) * (node.position.scale.y || 1), node.position.offset.y);
@@ -1252,24 +1689,144 @@
       element.style.height = autoResize.includes("Y") ? "max-content" : uiLength((node.size.ratio.y || 0) * (node.size.scale.y || 1), node.size.offset.y);
       element.style.transform = `translate(${-(Number(node.anchor.x) || 0) * 100}%, ${-(Number(node.anchor.y) || 0) * 100}%)`;
       element.style.fontSize = `${fontSize}px`;
-      element.style.color = rgb(node.textColor);
+      element.style.color = rgba(node.textColor, textOpacity);
       element.style.backgroundColor = rgba(node.backgroundColor, backgroundOpacity);
       element.style.display = visible ? (kind === "text" ? "flex" : "block") : "none";
       element.style.borderRadius = `${borderRadius}px`;
       element.style.textAlign = textAlign;
       element.style.justifyContent = textXAlignment.toLowerCase() === "left" ? "flex-start" : textXAlignment.toLowerCase() === "right" ? "flex-end" : "center";
       element.style.alignItems = textYAlignment.toLowerCase() === "top" ? "flex-start" : textYAlignment.toLowerCase() === "bottom" ? "flex-end" : "center";
-      element.style.fontFamily = textFontFamily === "CodeNewRomanBold" ? "'Courier New',monospace" : textFontFamily === "ENSerif" ? "Georgia,serif" : textFontFamily === "BoldRound" ? "Arial Rounded MT Bold,Arial,sans-serif" : "Arial,sans-serif";
+      element.style.fontFamily = textFontFamily === "CodeNewRomanBold" ? "'Code New Roman Bold','Courier New',monospace" : textFontFamily === "ENSerif" ? "'EN-Serif',Georgia,serif" : textFontFamily === "BoldRound" ? "'ChillRoundGothic-Bold','Arial Rounded MT Bold',Arial,sans-serif" : "Rubik,Arial,sans-serif";
       element.style.lineHeight = String(textLineHeight);
       element.style.whiteSpace = autoWordWrap ? "pre-wrap" : "pre";
-      element.style.transform = `translate(${-(Number(node.anchor.x) || 0) * 100}%, ${-(Number(node.anchor.y) || 0) * 100}%) rotate(${rotation}deg) scale(${Math.max(0, Number(node.uiScale.scale) || 0)})`;
+      element.style.transform = `translate(${-(Number(node.anchor.x) || 0) * 100}%, ${-(Number(node.anchor.y) || 0) * 100}%) rotate(${rotation}deg) scale(${Math.max(0, Number(node.uiScale?.scale) || 1)})`;
       const rendersImage = kind === "image" || Boolean(element.dataset.neaImage);
-      element.style.opacity = rendersImage ? String(clamp(imageOpacity, 0, 1)) : "1";
-      if (kind === "image") element.style.objectFit = imageDisplayMode === 1 ? "contain" : imageDisplayMode === 2 ? "cover" : "fill";
-      if (kind === "text") element.style.webkitTextStroke = `${textStrokeThickness}px rgba(0,0,0,${clamp(textStrokeOpacity, 0, 1)})`;
+      // Missing project pictures are intentionally empty. Do not retain a
+      // recovered red debug/background color behind an unresolved image slot.
+      if (imageMissing) {
+        element.style.backgroundColor = "transparent";
+        element.style.backgroundImage = "none";
+      }
+      element.style.opacity = kind === "image" ? "1" : (rendersImage ? String(clamp(imageOpacity, 0, 1)) : "1");
+      if (textElement) {
+        textElement.style.font = element.style.font;
+        textElement.style.fontFamily = element.style.fontFamily;
+        textElement.style.fontSize = element.style.fontSize;
+        textElement.style.lineHeight = element.style.lineHeight;
+        textElement.style.color = element.style.color;
+        textElement.style.textAlign = element.style.textAlign;
+        textElement.style.justifyContent = element.style.justifyContent;
+        textElement.style.alignItems = element.style.alignItems;
+        textElement.style.whiteSpace = element.style.whiteSpace;
+        textElement.style.opacity = element.style.opacity;
+        textElement.style.webkitTextStroke = `${textStrokeThickness}px ${rgba(node.textStrokeColor, textStrokeOpacity)}`;
+        textElement.style.display = visible ? "flex" : "none";
+      }
+      if (imageElement) {
+        imageElement.style.display = imageMissing ? "none" : "block";
+        imageElement.style.opacity = String(clamp(imageOpacity, 0, 1));
+        imageElement.style.objectFit = imageDisplayMode === 1 ? "contain" : imageDisplayMode === 2 ? "cover" : imageDisplayMode === 3 ? "none" : "fill";
+      }
+      if (kind === "text") element.style.webkitTextStroke = `${textStrokeThickness}px ${rgba(node.textStrokeColor, textStrokeOpacity)}`;
       if (kind === "input") element.style.setProperty("--nea-placeholder-color", rgba(placeholderColor, placeholderOpacity));
+      if (kind === "scroll") {
+        childHost.style.width = scrollCanvasAutoResize.includes("X") ? "max-content" : uiLength((scrollCanvasSize.ratio.x || 0) * (scrollCanvasSize.scale.x || 1), scrollCanvasSize.offset.x);
+        childHost.style.height = scrollCanvasAutoResize.includes("Y") ? "max-content" : uiLength((scrollCanvasSize.ratio.y || 0) * (scrollCanvasSize.scale.y || 1), scrollCanvasSize.offset.y);
+        element.style.overflowX = scrollDirection === 1 ? "hidden" : scrollbarHorizontal ? "auto" : "hidden";
+        element.style.overflowY = scrollDirection === 2 ? "hidden" : scrollbarVertical ? "auto" : "hidden";
+        element.style.setProperty("--nea-scroll-thumb", rgba(scrollbarColor, scrollbarOpacity));
+        element.style.setProperty("--nea-scroll-thickness", `${scrollbarThickness}px`);
+        element.style.setProperty("--nea-scroll-width", scrollbarThickness <= 0 || scrollbarVisibility === 2 ? "none" : "auto");
+      } else {
+        element.style.overflow = clipsDescendants ? "hidden" : "visible";
+      }
     }
     return node;
+  }
+
+  function dispatchUiPointer(type, event) {
+    if (event.__neaUiPointerHandled) return;
+    event.__neaUiPointerHandled = true;
+    const nodes = [];
+    const seen = new Set();
+    const addNodeForElement = element => {
+      for (let current = element; current && current !== uiRoot.parentElement; current = current.parentElement) {
+        const node = current.__neaUiNode;
+        if (node && !seen.has(node)) {
+          seen.add(node);
+          nodes.push(node);
+          return;
+        }
+      }
+    };
+    if (event.isTrusted && Number.isFinite(event.clientX) && Number.isFinite(event.clientY)) {
+      for (const element of document.elementsFromPoint(event.clientX, event.clientY)) addNodeForElement(element);
+    }
+    if (!nodes.length) addNodeForElement(event.target);
+
+    for (const node of nodes) {
+      const behavior = Number(node.pointerEventBehavior);
+      if (![0, 1].includes(behavior)) {
+        const uiEvent = { target: node };
+        node.events.emit(type, uiEvent);
+        scriptUi.events?.emit(type, uiEvent);
+      }
+      if (behavior === 0 || behavior === 2) break;
+    }
+    // Reaching any UI hit target must never become a player action. This is
+    // independent from whether the node chooses to emit a script event.
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  function renderRichText(element, text, enabled) {
+    if (!enabled) {
+      if (element.textContent !== text || element.childElementCount) element.textContent = text;
+      return;
+    }
+    const parsed = new DOMParser().parseFromString(`<nea-root>${text}</nea-root>`, "application/xml");
+    if (parsed.querySelector("parsererror")) {
+      element.textContent = text;
+      return;
+    }
+    const fragment = document.createDocumentFragment();
+    const appendChildren = (source, target) => {
+      for (const child of source.childNodes) {
+        if (child.nodeType === Node.TEXT_NODE) {
+          target.appendChild(document.createTextNode(child.textContent || ""));
+          continue;
+        }
+        if (child.nodeType !== Node.ELEMENT_NODE || !["font", "stroke"].includes(child.nodeName)) return false;
+        const attributes = [...child.attributes];
+        const allowed = child.nodeName === "font" ? ["size", "color"] : ["thickness", "opacity", "color"];
+        if (attributes.some(attribute => !allowed.includes(attribute.name))) return false;
+        const span = document.createElement("span");
+        if (child.nodeName === "font") {
+          const size = child.getAttribute("size");
+          const color = child.getAttribute("color");
+          if (size !== null && (!Number.isFinite(Number(size)) || Number(size) < 0)) return false;
+          if (color !== null && !/^#[0-9a-f]{6}$/i.test(color)) return false;
+          if (size !== null) span.style.fontSize = `${Number(size)}px`;
+          if (color !== null) span.style.color = color;
+        } else {
+          const thickness = child.getAttribute("thickness");
+          const opacity = child.getAttribute("opacity");
+          const color = child.getAttribute("color");
+          if (thickness !== null && (!Number.isFinite(Number(thickness)) || Number(thickness) < 0)) return false;
+          if (opacity !== null && (!Number.isFinite(Number(opacity)) || Number(opacity) < 0 || Number(opacity) > 1)) return false;
+          if (color !== null && !/^#[0-9a-f]{6}$/i.test(color)) return false;
+          span.style.webkitTextStroke = `${thickness === null ? 0 : Number(thickness)}px ${hexRgba(color || "#000000", opacity === null ? 1 : Number(opacity))}`;
+        }
+        if (!appendChildren(child, span)) return false;
+        target.appendChild(span);
+      }
+      return true;
+    };
+    if (!appendChildren(parsed.documentElement, fragment)) {
+      element.textContent = text;
+      return;
+    }
+    element.replaceChildren(fragment);
   }
 
   function uiLength(ratioValue, offsetValue) {
@@ -1284,6 +1841,11 @@
 
   function rgba(value, alpha) {
     return `rgb(${Number(value.r) || 0} ${Number(value.g) || 0} ${Number(value.b) || 0} / ${clamp(alpha, 0, 1)})`;
+  }
+
+  function hexRgba(value, alpha) {
+    const normalized = String(value).replace(/^#/, "");
+    return `rgb(${parseInt(normalized.slice(0, 2), 16)} ${parseInt(normalized.slice(2, 4), 16)} ${parseInt(normalized.slice(4, 6), 16)} / ${clamp(alpha, 0, 1)})`;
   }
 
   function clamp(value, min, max) {

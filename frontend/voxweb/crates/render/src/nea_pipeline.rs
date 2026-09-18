@@ -4,7 +4,7 @@
 //! with the atlas texture. Surface/present wiring lives in the client.
 
 use crate::nea_environment::{apply_underwater_globals, recovered_default_globals};
-use crate::nea_mesh::MeshBuffers;
+use crate::nea_mesh::{FLOATS_PER_VERTEX, MeshBuffers};
 use crate::nea_shader::NEA_FRAGMENT_WGSL;
 use crate::nea_shadow::NeaShadowMap;
 use wgpu::util::DeviceExt;
@@ -29,6 +29,7 @@ pub const GLOBALS_ATLAS_OFFSET: usize = 64;
 pub const GLOBALS_DEBUG_MODE_OFFSET: usize = GLOBALS_ATLAS_OFFSET + 3;
 
 /// A full NEA terrain pipeline: atlas texture + mesh buffers + pipeline.
+#[derive(Clone)]
 pub struct NeaTerrainPipeline {
     pub pipeline: wgpu::RenderPipeline,
     pub vertex_buffer: wgpu::Buffer,
@@ -36,11 +37,74 @@ pub struct NeaTerrainPipeline {
     pub index_count: u32,
     bind_group: wgpu::BindGroup,
     uniform_buffer: wgpu::Buffer,
+    vertex_capacity: u32,
+    index_capacity: u32,
     /// The format the pipeline renders into (must match the surface).
     pub surface_format: wgpu::TextureFormat,
     /// Depth format used by the pipeline (None = no depth test).
     pub depth_format: Option<wgpu::TextureFormat>,
     entity_mode: bool,
+}
+
+impl NeaTerrainPipeline {
+    pub fn create_layout(
+        device: &wgpu::Device,
+        atlas: &crate::nea_atlas::AtlasTexture,
+        material_atlas: &crate::nea_atlas::AtlasTexture,
+        bump_atlas: &crate::nea_atlas::AtlasTexture,
+        shadow_map: &NeaShadowMap,
+        surface_format: wgpu::TextureFormat,
+        depth_format: Option<wgpu::TextureFormat>,
+    ) -> Self {
+        Self::new(
+            device,
+            atlas,
+            material_atlas,
+            bump_atlas,
+            shadow_map,
+            &MeshBuffers::default(),
+            surface_format,
+            depth_format,
+            "nea.terrain.shared",
+        )
+    }
+
+    pub fn update_mesh(
+        &mut self,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        mesh: &MeshBuffers,
+    ) -> bool {
+        let vertex_count = mesh.vertices.len() as u32;
+        let index_count = mesh.indices.len() as u32;
+        if vertex_count > self.vertex_capacity || index_count > self.index_capacity {
+            self.vertex_capacity = (self.vertex_capacity.max(vertex_count) * 2).max(1024);
+            self.index_capacity = (self.index_capacity.max(index_count) * 2).max(1536);
+            self.vertex_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("nea.terrain.vertices"),
+                size: self.vertex_capacity as u64 * FLOATS_PER_VERTEX as u64 * 4,
+                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            });
+            self.index_buffer = device.create_buffer(&wgpu::BufferDescriptor {
+                label: Some("nea.terrain.indices"),
+                size: self.index_capacity as u64 * 4,
+                usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
+                mapped_at_creation: false,
+            });
+            self.write_mesh(queue, mesh);
+            return true;
+        }
+
+        self.write_mesh(queue, mesh);
+        false
+    }
+
+    fn write_mesh(&mut self, queue: &wgpu::Queue, mesh: &MeshBuffers) {
+        queue.write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&mesh.vertices));
+        queue.write_buffer(&self.index_buffer, 0, bytemuck::cast_slice(&mesh.indices));
+        self.index_count = mesh.indices.len() as u32;
+    }
 }
 
 impl NeaTerrainPipeline {
@@ -217,12 +281,12 @@ impl NeaTerrainPipeline {
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some(&format!("{label}_vertices")),
             contents: bytemuck::cast_slice(&mesh.vertices),
-            usage: wgpu::BufferUsages::VERTEX,
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
         let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some(&format!("{label}_indices")),
             contents: bytemuck::cast_slice(&mesh.indices),
-            usage: wgpu::BufferUsages::INDEX,
+            usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
         });
 
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -271,6 +335,8 @@ impl NeaTerrainPipeline {
             surface_format,
             depth_format,
             entity_mode: label.contains("entities"),
+            vertex_capacity: mesh.vertices.len().max(1024) as u32,
+            index_capacity: mesh.indices.len().max(1536) as u32,
         }
     }
 

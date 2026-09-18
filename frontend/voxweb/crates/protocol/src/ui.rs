@@ -175,10 +175,7 @@ pub fn decode_dialog_open(value: &Value) -> Option<DialogOpen> {
     let config = match *type_index {
         // Union keys are sorted: input, select, text.
         0 => {
-            let (content, title) = parts
-                .first()
-                .map(dialog_common_text)
-                .unwrap_or_default();
+            let (content, title) = parts.first().map(dialog_common_text).unwrap_or_default();
             DialogConfig::Input {
                 content,
                 title,
@@ -190,27 +187,23 @@ pub fn decode_dialog_open(value: &Value) -> Option<DialogOpen> {
             }
         }
         1 => {
-            let (content, title) = parts
-                .first()
-                .map(dialog_common_text)
-                .unwrap_or_default();
+            let (content, title) = parts.first().map(dialog_common_text).unwrap_or_default();
             DialogConfig::Select {
                 content,
                 title,
                 options: parts
                     .get(1)
                     .and_then(|value| match value {
-                        Value::Array(items) => Some(items.iter().filter_map(value_string).collect()),
+                        Value::Array(items) => {
+                            Some(items.iter().filter_map(value_string).collect())
+                        }
                         _ => None,
                     })
                     .unwrap_or_default(),
             }
         }
         2 => {
-            let (content, title) = parts
-                .get(1)
-                .map(dialog_common_text)
-                .unwrap_or_default();
+            let (content, title) = parts.get(1).map(dialog_common_text).unwrap_or_default();
             DialogConfig::Text {
                 has_arrow: matches!(parts.first(), Some(Value::Bool(true))),
                 content,
@@ -717,12 +710,15 @@ mod tests {
             },
         ]))
         .unwrap();
-        assert_eq!(input.config, DialogConfig::Input {
-            content: "content".into(),
-            title: "title".into(),
-            confirm_text: "confirm".into(),
-            placeholder: "placeholder".into(),
-        });
+        assert_eq!(
+            input.config,
+            DialogConfig::Input {
+                content: "content".into(),
+                title: "title".into(),
+                confirm_text: "confirm".into(),
+                placeholder: "placeholder".into(),
+            }
+        );
 
         let select = decode_dialog_open(&Value::Struct(vec![
             Value::Varint(8),
@@ -730,16 +726,22 @@ mod tests {
                 type_index: 1,
                 data: Box::new(Value::Struct(vec![
                     make_dialog_common("content", "title"),
-                    Value::Array(vec![Value::UTF8("option-a".into()), Value::UTF8("option-b".into())]),
+                    Value::Array(vec![
+                        Value::UTF8("option-a".into()),
+                        Value::UTF8("option-b".into()),
+                    ]),
                 ])),
             },
         ]))
         .unwrap();
-        assert_eq!(select.config, DialogConfig::Select {
-            content: "content".into(),
-            title: "title".into(),
-            options: vec!["option-a".into(), "option-b".into()],
-        });
+        assert_eq!(
+            select.config,
+            DialogConfig::Select {
+                content: "content".into(),
+                title: "title".into(),
+                options: vec!["option-a".into(), "option-b".into()],
+            }
+        );
 
         let text = decode_dialog_open(&Value::Struct(vec![
             Value::Varint(9),
@@ -752,11 +754,14 @@ mod tests {
             },
         ]))
         .unwrap();
-        assert_eq!(text.config, DialogConfig::Text {
-            has_arrow: true,
-            content: "content".into(),
-            title: "title".into(),
-        });
+        assert_eq!(
+            text.config,
+            DialogConfig::Text {
+                has_arrow: true,
+                content: "content".into(),
+                title: "title".into(),
+            }
+        );
     }
 
     #[test]

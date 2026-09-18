@@ -16,6 +16,7 @@ import { importMapProject } from "../../demo-map/src/import-project.mjs"
 import { buildProjectAssetResolver, isSafeLogicalAssetName } from "../../demo-map/src/project-asset-resolver.mjs"
 import { loadPreservedBlockCatalog } from "../../local-player/src/block-info.mjs"
 import { encodeNetPublicPacket, LOCAL_AVATAR_SKIN_PART_IDS } from "./netstate"
+import type { NetPlayerState } from "./netstate"
 import { encodeEmptyAvatarPart, EMPTY_PARTS } from "./empty-avatar"
 import { readFileSync, existsSync, createReadStream } from "node:fs"
 import { join, resolve } from "node:path"
@@ -23,7 +24,7 @@ import { gzipSync } from "node:zlib"
 
 let decodeMeshAssetTool: ((bytes: Uint8Array) => any) | undefined
 let decodeMeshTextureTool: ((texture: any) => any) | undefined
-let staticEntitySceneGzip: Buffer | undefined
+const transparentPng = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL7wgAAAABJRU5ErkJggg==", "base64")
 
 export interface RuntimeServerOptions {
   host?: string
@@ -35,6 +36,8 @@ export interface RuntimeServerOptions {
   worldManifest?: string
   buildRoot?: string
   spawn?: [number, number, number]
+  storageDefaults?: Record<string, unknown>
+  localLinks?: Record<string, string>
 }
 
 export interface RuntimeServerHandle {
@@ -78,6 +81,29 @@ function buildRuntimeProjectAssetResolver(
   return buildProjectAssetResolver(declared) as { get(name: string): ResolvedProjectAsset | undefined }
 }
 
+function buildUiPictureFallbacks(
+  uiState: any,
+  projectAssets: { get(name: string): ResolvedProjectAsset | undefined },
+): ReadonlyMap<string, ResolvedProjectAsset | string> {
+  const fallbacks = new Map<string, ResolvedProjectAsset | string>()
+  const pictureAssets = uiState?.pictureAssets
+  if (!pictureAssets || typeof pictureAssets !== "object" || Array.isArray(pictureAssets)) return fallbacks
+  for (const [pictureName, metadata] of Object.entries(pictureAssets)) {
+    const hash = typeof (metadata as any)?.hash === "string" ? (metadata as any).hash : ""
+    if (!/^[A-Za-z0-9_-]{42,43}$/.test(hash) || !pictureName.startsWith("picture/")) continue
+    // Exported map packages retain the image bytes under image/<leaf>, while
+    // the recovered UI tree references the historical picture/<leaf> key.
+    // This is a format-level fallback, not a map-specific asset mapping.
+    const asset = projectAssets.get(`image/${pictureName.slice("picture/".length)}`)
+    if (asset) fallbacks.set(hash, asset)
+    else {
+      const previewHash = typeof (metadata as any)?.previewImage === "string" ? (metadata as any).previewImage : ""
+      if (/^[A-Za-z0-9_-]{42,43}$/.test(previewHash)) fallbacks.set(hash, previewHash)
+    }
+  }
+  return fallbacks
+}
+
 export async function startRuntimeServer(options: RuntimeServerOptions): Promise<RuntimeServerHandle> {
   if (!decodeMeshAssetTool) {
     const tool = await import("../tools/decode-engine-model.mjs") as any
@@ -96,6 +122,7 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   const wirePlayerIds = new Map<string, number>() // runtime player id -> net-state id
   let nextWirePlayerId = 1
   const pendingClientEvents = new Map<string, unknown[]>() // playerId -> pre-join RemoteChannel events
+  const pendingFlushTimers = new Map<string, { interval: NodeJS.Timeout, timeout: NodeJS.Timeout }>()
   const chatLogIds = new Map<string, number>() // sessionId -> chat log id
   let gameChatProtocolRef: any = null
   let gameTerrainProtocolRef: any = null
@@ -190,8 +217,10 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   const assetIndex = JSON.parse(readFileSync(resolve(buildRoot, "assets", "index.json"), "utf8"))
   if (!Array.isArray(assetIndex?.assets)) throw new Error("Imported project asset index is missing or invalid")
   const projectAssets = buildRuntimeProjectAssetResolver(buildRoot, assetIndex.assets)
+  const uiPictureFallbacks = buildUiPictureFallbacks(importedProject.clientUiState, projectAssets)
   const spawn = options.spawn ?? importedProject.manifest.world.spawn
   let staticEntitySceneJson: string | null = null
+  let staticEntitySceneGzip: Buffer | undefined
   // Decoding the recovered .vb assets is CPU-heavy and the browser requests
   // the same mesh hashes for every session. Keep serialized responses in a
   // bounded process-local cache so later players do not repeat that work.
@@ -211,6 +240,52 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   if (importedProject.clientUiState) {
     clientScriptModules["__nea_ui_state__"] = JSON.stringify(importedProject.clientUiState)
   }
+
+  function queuePendingClientEvent(playerId: string, event: unknown): void {
+    const events = pendingClientEvents.get(playerId) ?? []
+    const type = typeof event === "object" && event !== null && !Array.isArray(event)
+      ? String((event as { type?: unknown }).type ?? "")
+      : ""
+    // UI visibility is a state, not a replayable action. If a delayed
+    // RemoteChannel reconnects, replaying an obsolete open after a close leaves
+    // the inventory modal visible with no corresponding server state.
+    if (type === "showinventory") {
+      for (let index = events.length - 1; index >= 0; index -= 1) {
+        const previous = events[index]
+        if (typeof previous === "object" && previous !== null && !Array.isArray(previous)
+          && String((previous as { type?: unknown }).type ?? "") === type) {
+          events.splice(index, 1)
+        }
+      }
+    }
+    events.push(structuredClone(event))
+    pendingClientEvents.set(playerId, events.slice(-maxPendingClientEvents))
+  }
+
+  function schedulePendingClientEventFlush(playerId: string): void {
+    if (pendingFlushTimers.has(playerId)) return
+    const interval = setInterval(() => {
+      if (!pendingClientEvents.has(playerId)) {
+        const timer = pendingFlushTimers.get(playerId)
+        if (timer) {
+          clearInterval(timer.interval)
+          clearTimeout(timer.timeout)
+          pendingFlushTimers.delete(playerId)
+        }
+        return
+      }
+      flushPendingClientEvents(playerId)
+    }, 25)
+    const timeout = setTimeout(() => {
+      clearInterval(interval)
+      pendingFlushTimers.delete(playerId)
+    }, 2000)
+    interval.unref?.()
+    timeout.unref?.()
+    pendingFlushTimers.set(playerId, { interval, timeout })
+  }
+  const runtimeMeshNames = collectScriptMeshNames(importedProject.serverModules, importedProject.clientModules)
+  let nextRuntimeEntityId = 0x30000
 
   // ---- 1b. 人物模型 bootstrap（skin part hashes）----
   // 从恢复运行时的 bedwars bootstrap 读取 skinPartHashBatches，供 models.appendSkinPartHashes。
@@ -234,12 +309,14 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
     logger: options.quiet
       ? { info() {}, warn() {}, error() {} }
       : { info: (m: string) => log(`[script] ${m}`), warn: (m: string) => log(`[script] ${m}`), error: (m: string) => log(`[script] ${m}`) },
-    sendChatMessage: (_sessionId, message) => {
+    sendChatMessage: (_sessionId: unknown, message: any) => {
       const text = String(message?.text ?? "")
       if (!text) return
       // world.say 即时投递（sessionId undefined → 广播）；
       // 玩家 directMessage 的 sessionId 是 runtime playerId → 映射回 WS sessionId
-      const targetSession = _sessionId === undefined ? undefined : (playerSessions.get(_sessionId) ?? _sessionId)
+      const targetSession = _sessionId === undefined || typeof _sessionId !== "string"
+        ? undefined
+        : (playerSessions.get(_sessionId) ?? _sessionId)
       if (targetSession !== undefined) {
         sendChatLog(targetSession, text)
         // Some clients establish the entity-interact/remote-channel sockets
@@ -256,7 +333,7 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         for (const sessionId of Object.keys(gameChatClients())) sendChatLog(sessionId, text)
       }
     },
-    sendChatMessages: (deliveries) => {
+    sendChatMessages: (deliveries: any[]) => {
       for (const delivery of deliveries) {
         const text = String(delivery.message?.text ?? "")
         if (!text) continue
@@ -276,10 +353,14 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
       }
     },
     sendClientEvent: (playerId: string, event: unknown) => {
-      if (deliverClientEvent(playerId, event)) return
-      const events = pendingClientEvents.get(playerId) ?? []
-      events.push(structuredClone(event))
-      pendingClientEvents.set(playerId, events.slice(-maxPendingClientEvents))
+      // A channel can become usable after the game-net join. Flush any
+      // earlier bootstrap/UI events before delivering the new event so the
+      // client never observes a later close before an earlier open.
+      if (pendingClientEvents.has(playerId)) flushPendingClientEvents(playerId)
+      if (pendingClientEvents.has(playerId) || !deliverClientEvent(playerId, event)) {
+        queuePendingClientEvent(playerId, event)
+        schedulePendingClientEventFlush(playerId)
+      }
     },
     linkPlayer: async (playerId: string, href: string, linkOptions: unknown) => {
       // Historical maps commonly use javascript: links for DAO3 account
@@ -289,12 +370,16 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         log(`[player-link] ignored legacy javascript URL for ${playerId}`)
         return
       }
-      const sessionId = playerSessions.get(playerId)
-      const client = sessionId === undefined ? undefined : remoteChannelClients()[sessionId]
-      client?.message.sendClientEvent({
-        tick: remoteEventTick++,
-        args: JSON.stringify({ type: "nea-revive:link", href, options: linkOptions }),
-      })
+      const localCreateSessionUrl = options.localLinks?.[href]
+      const event = {
+        type: "nea-revive:link",
+        href,
+        options: linkOptions,
+        ...(typeof localCreateSessionUrl === "string" ? { createSessionUrl: localCreateSessionUrl } : {}),
+      }
+      if (deliverClientEvent(playerId, event)) return
+      queuePendingClientEvent(playerId, event)
+      schedulePendingClientEventFlush(playerId)
     },
     sendGuiCommand: async (command: any) => {
       if (command.operation === "getAttribute") {
@@ -309,6 +394,13 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         args: JSON.stringify({ type: "nea-revive:gui", command }),
       })
       return true
+    },
+    createEntity: async (projection: any) => {
+      const entityId = nextRuntimeEntityId++
+      for (const playerId of playerSessions.keys()) {
+        deliverClientEvent(playerId, { type: "nea-revive:entity-created", entityId, entity: projection })
+      }
+      return { entityId }
     },
     writeEntityState: async (entityId: number, state: unknown) => {
       for (const playerId of playerSessions.keys()) {
@@ -373,6 +465,15 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
       for (const p of pending) p.reject(new Error("dialog cancelled"))
     },
   })
+  const storageDefaults = options.storageDefaults
+  if (storageDefaults && typeof storageDefaults === "object" && !Array.isArray(storageDefaults)) {
+    const groupStorage = runtime.storage.getGroupStorage(importedProject.manifest.runtime.groupId)
+    if (groupStorage) {
+      for (const [key, value] of Object.entries(storageDefaults)) {
+        if (await groupStorage.get(key) === undefined) await groupStorage.set(key, value)
+      }
+    }
+  }
   await runtime.start()
   function netStateDisplays(snap: any): Array<{ id: number, name: string, avatarSkin: number[], dead?: boolean }> {
     return (snap.players ?? []).map((player: any) => ({
@@ -382,7 +483,7 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
       dead: Boolean(player.dead),
     }))
   }
-  function netStatePlayers(snap: any): Array<Record<string, unknown>> {
+  function netStatePlayers(snap: any): NetPlayerState[] {
     return (snap.players ?? []).map((player: any) => ({
       id: wirePlayerIdFor(String(player.id)),
       position: player.position,
@@ -411,24 +512,50 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
   // spectator 等 DAO3 player API）推送到前端本地物理。初始帧在 join 后发一次，
   // 之后每 200ms 按 runtime.snapshot() 的权威玩家状态补发。
   let netStateTick = 4
+  let lastWorldPhysics: unknown = null
+  const lastCameraState = new Map<string, unknown>()
+  const sentWearableStates = new Map<string, Map<string, string>>()
+  function syncWearableStates(snap: any): void {
+    const players = Array.isArray(snap.players) ? snap.players : []
+    for (const [recipientId, sessionId] of playerSessions) {
+      const sent = sentWearableStates.get(sessionId) ?? new Map<string, string>()
+      for (const player of players) {
+        const runtimePlayerId = String(player.id)
+        const event = {
+          type: "nea-revive:player-wearables",
+          playerId: wirePlayerIdFor(runtimePlayerId),
+          revision: Number(player.wearableRevision ?? 0),
+          wearables: Array.isArray(player.wearables) ? player.wearables : [],
+        }
+        const signature = JSON.stringify(event)
+        if (sent.get(runtimePlayerId) === signature) continue
+        if (deliverClientEvent(recipientId, event)) sent.set(runtimePlayerId, signature)
+      }
+      sentWearableStates.set(sessionId, sent)
+    }
+  }
   const netStateTimer = setInterval(() => {
     const snap: any = runtime.snapshot()
     const tick = netStateTick
     netStateTick += 2
     const displays = netStateDisplays(snap)
     const players = netStatePlayers(snap)
+    syncWearableStates(snap)
     for (const [playerId, sessionId] of playerSessions) {
       const player = snap.players.find((p: any) => p.id === playerId)
       const netClient = gameNetClients()[sessionId]
       if (!player || !netClient) continue
-      deliverClientEvent(playerId, {
-        type: "nea-revive:world-physics",
+      const worldPhysics = {
         gravity: snap.worldPhysics?.gravity,
         airFriction: snap.worldPhysics?.airFriction,
         tickRate: snap.worldPhysics?.tickRate,
         materials: snap.worldPhysics?.materials,
-      })
-      deliverClientEvent(playerId, {
+      }
+      if (JSON.stringify(lastWorldPhysics) !== JSON.stringify(worldPhysics)) {
+        lastWorldPhysics = structuredClone(worldPhysics)
+        deliverClientEvent(playerId, { type: "nea-revive:world-physics", ...worldPhysics })
+      }
+      const cameraState = {
         type: "nea-revive:camera-state",
         mode: player.cameraMode,
         fovY: player.cameraFovY,
@@ -443,7 +570,11 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         freezedAxis: player.cameraFreezedAxis,
         freezedForwardDirection: player.freezedForwardDirection,
         enable3DCursor: player.enable3DCursor,
-      })
+      }
+      if (JSON.stringify(lastCameraState.get(playerId)) !== JSON.stringify(cameraState)) {
+        lastCameraState.set(playerId, structuredClone(cameraState))
+        deliverClientEvent(playerId, cameraState)
+      }
       try {
         const packet = encodeNetPublicPacket({
           tick,
@@ -542,7 +673,16 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
           const interactionOverrides = new Map(
             runtime.entityInteractionStates().map((entry: any) => [Number(entry.entityId), entry]),
           )
-          const scene = buildStaticEntityScene(options.sourceRoot, importedProject.entities, options.assetRoot, interactionOverrides)
+          const projectMeshNames = importedProject.assets
+            .filter((asset: any) => asset?.kind === "mesh" && typeof asset?.name === "string")
+            .map((asset: any) => String(asset.name))
+          const scene = buildStaticEntityScene(
+            options.sourceRoot,
+            importedProject.entities,
+            options.assetRoot,
+            interactionOverrides,
+            [...new Set([...runtimeMeshNames, ...projectMeshNames])],
+          )
           staticEntityDiagnostics = scene.diagnostics
           staticEntitySceneJson = JSON.stringify(scene)
         }
@@ -604,13 +744,20 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         response.writeHead(400); response.end("invalid content hash"); return
       }
       const assetPath = resolve(options.assetRoot, "engine", "m", hash)
-      if (!existsSync(assetPath)) {
-        response.writeHead(404); response.end("picture asset not found"); return
+      const fallback = uiPictureFallbacks.get(hash)
+      const fallbackPath = typeof fallback === "string" ? resolve(options.assetRoot, "engine", "m", fallback) : fallback?.path
+      if (!existsSync(assetPath) && (!fallbackPath || !existsSync(fallbackPath))) {
+        // Some historical UI metadata references an asset omitted from the
+        // recovered export. Preserve layout while avoiding noisy browser 404s.
+        response.writeHead(200, { "content-type": "image/png", "access-control-allow-origin": "*", "cache-control": "no-store" })
+        response.end(transparentPng)
+        return
       }
-      const extension = assetPath.toLowerCase().split(".").pop()
+      const resolvedPath = existsSync(assetPath) ? assetPath : fallbackPath!
+      const extension = resolvedPath.toLowerCase().split(".").pop()
       const contentType = extension === "png" ? "image/png" : extension === "jpg" || extension === "jpeg" ? "image/jpeg" : "application/octet-stream"
       response.writeHead(200, { "content-type": contentType, "access-control-allow-origin": "*", "cache-control": "public,max-age=3600" })
-      createReadStream(assetPath).pipe(response)
+      createReadStream(resolvedPath).pipe(response)
       return
     }
     // Mesh assets use the same content-addressed store as pictures, but a
@@ -670,7 +817,9 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         const payload = {
           format: decoded.format,
           version: decoded.version,
-          bounds: decoded.value?.bounds ?? null,
+          bounds: decoded.value?.bounds
+            ?? readMeshMetadata(options.assetRoot, hash)?.bounds
+            ?? null,
           nodes: decoded.value?.nodes ?? [],
           meshes: decoded.value?.meshes ?? [],
           texture: texture ? { width: texture.width, height: texture.height, rgba: Array.from(texture.rgba) } : null,
@@ -836,11 +985,11 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
     return boxes
   }
 
-  function terrainResetPayload() {
+  function terrainResetPayload(position: [number, number, number] = VIEW_SPAWN) {
     return {
-      positionX: VIEW_SPAWN[0],
-      positionY: VIEW_SPAWN[1],
-      positionZ: VIEW_SPAWN[2],
+      positionX: position[0],
+      positionY: position[1],
+      positionZ: position[2],
       resetCounter: 1,
       nx: sourceShape[0],
       ny: sourceShape[1],
@@ -880,7 +1029,11 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         const entityId = Number(packet?.id)
         const tick = Number(packet?.tick)
         if (!Number.isSafeInteger(entityId) || entityId < 0 || !Number.isFinite(tick)) return
-        runtime.dispatchInteract(playerId, entityId, tick)
+        const dispatched = runtime.dispatchInteract(playerId, entityId, tick)
+        // The historical Player waits for this edge before releasing the
+        // interaction promise. Keep the acknowledgement on the same socket
+        // and only acknowledge a validated runtime target.
+        if (dispatched) client.message.acknowledgeInteract()
       }
     }
 
@@ -890,13 +1043,54 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         if (!playerId) return
         runtime.dispatchInputEvents(playerId, data)
       }
+      handlers.sendKeyBoardEvent = (client, data) => {
+        const playerId = sessions.get(client.sessionId)
+        if (!playerId) return
+        const packet = data as {
+          id?: unknown
+          tick?: unknown
+          keyDownState?: unknown
+          prevKeyDownState?: unknown
+        }
+        const tick = Number(packet?.tick)
+        if (!Number.isSafeInteger(tick) || tick < 0) return
+        const keyDownState = Array.isArray(packet?.keyDownState)
+          ? packet.keyDownState.filter((value): value is number => Number.isInteger(value) && value >= 0 && value <= 255)
+          : []
+        const prevKeyDownState = Array.isArray(packet?.prevKeyDownState)
+          ? packet.prevKeyDownState.filter((value): value is number => Number.isInteger(value) && value >= 0 && value <= 255)
+          : []
+        const previous = new Set(prevKeyDownState)
+        const current = new Set(keyDownState)
+        for (const keyCode of current) {
+          if (!previous.has(keyCode)) {
+            if (keyCode === 9) runtime.toggleCameraMode(playerId)
+            else runtime.dispatchKeyboardEvent("keyDown", playerId, tick, keyCode)
+          }
+        }
+        for (const keyCode of previous) {
+          if (!current.has(keyCode)) runtime.dispatchKeyboardEvent("keyUp", playerId, tick, keyCode)
+        }
+      }
       handlers.join = (client) => {
         const playerId = `p-${randomUUID().slice(0, 8)}`
         const wirePlayerId = wirePlayerIdFor(playerId)
         sessions.set(client.sessionId, playerId)
         playerSessions.set(playerId, client.sessionId)
         flushPendingClientEvents(playerId)
+        // Sync the recovered client modules before starting the map player.
+        // BedWars emits its draw/HUD bootstrap from onPlayerJoin; running it
+        // first would queue draw ahead of syncClientScriptModules, causing a
+        // subsequent install to discard the initialized scoreboard and input
+        // handlers.
+        if (Object.keys(clientScriptModules).length > 0
+          && typeof client.message?.syncClientScriptModules === "function") {
+          client.message.syncClientScriptModules(clientScriptModules)
+        }
         runtime.addPlayer({ id: playerId, name: sessionNames.get(client.sessionId) ?? "Player", position: spawn })
+        // Covers the opposite ordering where RemoteChannel was connected
+        // before game-net.join created the runtime player.
+        flushPendingClientEvents(playerId)
         for (const entity of runtime.entityInteractionStates()) {
           deliverClientEvent(playerId, {
             type: "nea-revive:entity-state",
@@ -905,13 +1099,15 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
               enableInteract: entity.enableInteract,
               interactHint: entity.interactHint,
               interactRadius: entity.interactRadius,
+              nameplate: entity.nameplate,
             },
           })
         }
         // The game-net join can race the RemoteChannel protocol's client
-        // registration across the three websocket transports.
-        setTimeout(() => flushPendingClientEvents(playerId), 0)
-        setTimeout(() => flushPendingClientEvents(playerId), 25)
+        // registration across the three websocket transports. Keep retrying
+        // briefly instead of replaying a stale UI burst much later.
+        schedulePendingClientEventFlush(playerId)
+        setTimeout(() => syncWearableStates(runtime.snapshot()), 145)
         // voxweb 握手：join 后立即发 secret 原始帧（game-net rawId=10）：
         // varint(10) varint(1) 'E' 0 varint(playerId) uint8(5) varint(playerId) uint8(1) varint(playerId)
         const secret = encodeAnonymousPlayerSecret(wirePlayerId)
@@ -926,15 +1122,10 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
             }
           }, 5)
         }
-        if (Object.keys(clientScriptModules).length > 0) {
-          setTimeout(() => {
-            const netClient = gameNetClients()[client.sessionId]
-            if (netClient && typeof netClient.message?.syncClientScriptModules === "function") {
-              netClient.message.syncClientScriptModules(clientScriptModules)
-            }
-          }, 7)
-        }
-        // net-state 帧：replica.players（avatarSkin）+ state.players（位置）
+        // net-state 帧：replica.players（avatarSkin）+ state.players（位置）。
+        // BedWars' playerJoin handler assigns the team spawn asynchronously;
+        // wait for that handler before publishing the bootstrap position so
+        // the client does not start on the map manifest's lobby spawn.
         setTimeout(() => {
           const netClient = gameNetClients()[client.sessionId]
           if (netClient) {
@@ -948,12 +1139,17 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
             netClient.sendRaw(packet, false)
             log(`[session] sent net-state frame to ${client.sessionId}`)
           }
-        }, 10)
-        // 延迟一拍发地形 reset（确保 secret 先到）
+        }, 110)
+        // 延迟发地形 reset（确保 secret 和 team assignment 先到）。
         setTimeout(() => {
           const terrainClient = gameTerrainClients()[client.sessionId]
-          if (terrainClient) terrainClient.message.reset(terrainResetPayload())
-        }, 20)
+          if (!terrainClient) return
+          const player = runtime.snapshot().players.find((entry: any) => entry.id === playerId)
+          const position = Array.isArray(player?.position) && player.position.length === 3
+            ? player.position as [number, number, number]
+            : VIEW_SPAWN
+          terrainClient.message.reset(terrainResetPayload(position))
+        }, 125)
       }
     }
 
@@ -1019,8 +1215,8 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         const rpcId = Number(data ?? 0)
         const index = pending.findIndex(entry => entry.rpcId === rpcId)
         if (index < 0) return
-        const [cancelled] = pending.splice(index, 1)
-        cancelled.reject(new Error("dialog cancelled"))
+        const cancelled = pending.splice(index, 1)[0]
+        if (cancelled) cancelled.reject(new Error("dialog cancelled"))
         if (pending.length === 0) pendingDialogs.delete(playerId)
         else pendingDialogs.set(playerId, pending)
       }
@@ -1041,6 +1237,8 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
           const event = JSON.parse(String((data as { args?: string })?.args ?? "null"))
           if (event?.type === "nea-revive:chat" && typeof event.message === "string") {
             runtime.dispatchChat(playerId, event.message)
+          } else if (event?.type === "nea-revive:camera-toggle") {
+            runtime.toggleCameraMode(playerId)
           } else {
             runtime.dispatchClientEvent(playerId, event)
           }
@@ -1054,6 +1252,13 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
       message: handlers as any,
       raw: () => undefined,
       connect: (client) => {
+        if (schema === remoteChannel) {
+          // Flush queued RemoteChannel events as soon as its websocket is
+          // registered; fixed-delay retries can otherwise replay UI in a
+          // burst after the player has already moved away.
+          const playerId = sessions.get(client.sessionId)
+          if (playerId) queueMicrotask(() => flushPendingClientEvents(playerId))
+        }
         if (schema === box3Protocols[0]) {
           log(`[session] connected ${client.sessionId}`)
           // voxweb 前端在收到第一个可解析 client 方向帧后才会发 gameNet.join
@@ -1077,6 +1282,14 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
             playerSessions.delete(playerId)
             wirePlayerIds.delete(playerId)
           }
+          const pendingTimer = playerId ? pendingFlushTimers.get(playerId) : undefined
+          if (pendingTimer) {
+            clearInterval(pendingTimer.interval)
+            clearTimeout(pendingTimer.timeout)
+            pendingFlushTimers.delete(playerId as string)
+          }
+          if (playerId) pendingClientEvents.delete(playerId)
+          sentWearableStates.delete(client.sessionId)
           sessions.delete(client.sessionId)
           sessionNames.delete(client.sessionId)
           chatLogIds.delete(client.sessionId)
@@ -1159,6 +1372,7 @@ function buildStaticEntityScene(
   entities: readonly any[],
   assetRoot: string,
   interactionOverrides: ReadonlyMap<number, any> = new Map(),
+  extraMeshNames: readonly string[] = [],
 ) {
   const meshes: Record<string, { positionsF32: string; uvsF32: string; indicesU32: string; texturePngBase64?: string; meshAssetHash?: string; renderBoxOffset?: number[] }> = {}
   const instances: Array<{
@@ -1183,11 +1397,18 @@ function buildStaticEntityScene(
     emissive: number
     metalness: number
     shininess: number
+    nameplate: { text: string; radius: number; color: number[] } | null
+    scriptInteractable: boolean
+    scriptInteractHint: string
   }> = []
   const skipped: Array<{ mesh: string; reason: string }> = []
   let nativeBindings = 0
   let nativeFailures = 0
-  for (const [sourceIndex, entity] of entities.entries()) {
+  const sceneEntities = [
+    ...entities,
+    ...extraMeshNames.map(mesh => ({ __meshOnly: true, position: [0, 0, 0], source: { mesh } })),
+  ]
+  for (const [sourceIndex, entity] of sceneEntities.entries()) {
     const mesh = String(entity.source?.mesh ?? entity.mesh ?? "")
     if (!mesh.endsWith(".vb")) continue
     const gltfName = mesh.slice(0, -3) + ".gltf"
@@ -1245,12 +1466,15 @@ function buildStaticEntityScene(
         - (bounds[axis] ?? 0) * 0.5
         + (renderBoxOffset[axis] ?? 0)) * (entityScale[axis] ?? 1),
     )
+    if (entity.__meshOnly) continue
+    // Source orientation is already XYZW; VoxWeb consumes it unchanged.
+    const rotation = (entity.source?.orientation ?? [0, 0, 0, 1]).map(Number)
     instances.push({
       id: sourceIndex + 0x10000,
       mesh,
       position: entity.position.map(Number),
       scale: entityScale,
-      rotation: (entity.source?.orientation ?? [0, 0, 0, 1]).map(Number),
+      rotation,
       meshOffset,
       collision: Boolean(entity.source?.collision ?? true),
       fixed: Boolean(entity.source?.fixed ?? false),
@@ -1272,9 +1496,28 @@ function buildStaticEntityScene(
       emissive: Math.max(0, Number(entity.source?.emissive ?? 0)),
       metalness: Math.max(0, Number(entity.source?.metalness ?? 0)),
       shininess: Math.max(0, Number(entity.source?.shininess ?? 0)),
+      nameplate: interactionOverrides.get(sourceIndex + 0x10000)?.nameplate ?? null,
+      // Recovered DAO3 maps mark their script-addressable named props with
+      // showName. They use game-net pointer rays rather than entity-interact,
+      // so retain this generic target signal for the client-side right-click
+      // affordance without interpreting any map script.
+      scriptInteractable: Array.isArray(entity.tags) && entity.tags.includes("showName"),
+      scriptInteractHint: String(interactionOverrides.get(sourceIndex + 0x10000)?.nameplate?.text ?? entity.id ?? ""),
     })
   }
   return { meshes, entities: instances, skipped, diagnostics: { nativeBindings, nativeFailures, skipped } }
+}
+
+function collectScriptMeshNames(serverModules: readonly any[], clientModules: readonly any[]) {
+  const names = new Set<string>()
+  const meshPattern = /mesh\s*:\s*["'`]([^"'`]+\.vb)["'`]/g
+  for (const module of [...serverModules, ...clientModules]) {
+    const source = typeof module?.source === "string"
+      ? module.source
+      : Buffer.from(module?.bytes ?? []).toString("utf8")
+    for (const match of source.matchAll(meshPattern)) names.add(match[1])
+  }
+  return [...names]
 }
 
 function encodeFloat32Base64(values: readonly number[]): string {
@@ -1297,9 +1540,10 @@ function readMeshMetadata(assetRoot: string, requestKey: string) {
   try {
     const path = resolve(assetRoot, "engine", "m", requestKey)
     const value = JSON.parse(readFileSync(path, "utf8"))
-    return Array.isArray(value.renderBoxOffset)
-      ? { renderBoxOffset: value.renderBoxOffset.map(Number) }
-      : null
+    return {
+      ...(Array.isArray(value.bounds) ? { bounds: value.bounds.map(Number) } : {}),
+      ...(Array.isArray(value.renderBoxOffset) ? { renderBoxOffset: value.renderBoxOffset.map(Number) } : {}),
+    }
   } catch {
     return null
   }

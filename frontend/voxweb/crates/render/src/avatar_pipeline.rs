@@ -301,7 +301,7 @@ impl NeaAvatarRenderer {
         vertical_velocity: f32,
         swimming: bool,
         roll_phase: Option<f32>,
-    ) {
+    ) -> [glam::Mat4; 18] {
         let configuration = crate::avatar_ik::recovered_configuration(crate::avatar_ik::IkSample {
             phase,
             movement: movement_amount,
@@ -326,6 +326,7 @@ impl NeaAvatarRenderer {
                 .to_cols_array();
             queue.write_buffer(&part.pose_buffer, 0, bytemuck::cast_slice(&pose));
         }
+        configuration
     }
 
     pub fn draw<'a>(&'a self, pass: &mut wgpu::RenderPass<'a>) {

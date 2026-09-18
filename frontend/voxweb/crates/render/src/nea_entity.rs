@@ -118,7 +118,7 @@ impl NeaEntityPipeline {
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         });
         let mut instance_storage =
-            vec![EntityInstance::zeroed(); instance_capacity.max(instances.len())];
+            vec![EntityInstance::zeroed(); instance_capacity.max(instances.len()).max(1)];
         instance_storage[..instances.len()].copy_from_slice(instances);
         let instance_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some(&format!("{label}.instances")),

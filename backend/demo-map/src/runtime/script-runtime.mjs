@@ -21,7 +21,7 @@ import { GameAnimation } from "./game-animation.mjs";
 import { normalizeEntitySound, normalizePlayerSound, normalizeWorldSound, Sound } from "./game-sound.mjs";
 import { GameBodyPart } from "./game-body-part.mjs";
 import { raycastWorld, RuntimeRaycastResult } from "./game-raycast.mjs";
-import { searchRuntimeEntities } from "./entity-bounds.mjs";
+import { runtimeEntityHalfExtents, searchRuntimeEntities } from "./entity-bounds.mjs";
 import { entityLookAtQuaternion, rotateEntityLocal, scaleEntityLocal } from "./entity-look-at.mjs";
 import { matchesGameSelector } from "./game-selector.mjs";
 import { EntityBackendBridge } from "./entity-backend-bridge.mjs";
@@ -129,6 +129,8 @@ export class ScriptRuntime {
   #worldPhysicsSnapshot;
   #initialWorldPhysics;
   #worldMaterials;
+  gameEntityPrototype = null;
+  gamePlayerPrototype = null;
   #seed = 0;
   #now;
   #prevTickMS;
@@ -267,6 +269,7 @@ export class ScriptRuntime {
         tags: [...new Set([...sourceTags, ...packageTags])],
         mesh: entity.mesh ?? entity.source?.mesh,
         bounds: entity.bounds ?? entity.source?.bounds,
+        _boundsModelSpace: true,
         meshScale: entity.meshScale ?? entity.source?.scale,
         meshOrientation: entity.meshOrientation ?? entity.source?.orientation,
         collides: entity.collides ?? entity.source?.collision,
@@ -443,7 +446,7 @@ export class ScriptRuntime {
       ];
       for (const entity of this.#entities.values()) {
         if (entity.destroyed || entity._collides !== true) continue;
-        const half = entity._bounds;
+        const half = runtimeEntityHalfExtents(entity);
         const entityMin = [
           entity._position.x - half.x,
           entity._position.y - half.y,
@@ -562,6 +565,13 @@ export class ScriptRuntime {
     const event = createGameKeyBoardEvent(tick, keyCode);
     this.#signals[type].emit(event, error => this.#reportError(type, error));
     player._signals[type].emit(event, error => this.#reportError(type, error));
+    return true;
+  }
+
+  toggleCameraMode(playerId) {
+    const player = this.#players.get(playerId);
+    if (!player) return false;
+    player.cameraMode = String(player.cameraMode).toLowerCase() === "fps" ? "follow" : "fps";
     return true;
   }
 
@@ -708,6 +718,13 @@ export class ScriptRuntime {
         enableInteract: Boolean(entity.enableInteract),
         interactHint: String(entity.interactHint),
         interactRadius: Math.max(0, Number(entity.interactRadius)),
+        nameplate: entity.showEntityName
+          ? Object.freeze({
+            text: String(entity.customName),
+            radius: Math.max(0, Number(entity.nameRadius)),
+            color: Object.freeze([entity.nameColor.r, entity.nameColor.g, entity.nameColor.b]),
+          })
+          : null,
       })));
   }
 
@@ -779,8 +796,10 @@ export class ScriptRuntime {
           this.logger.error("[script:world] entity limit exceeded");
           return null;
         }
-        const id = spec?.id ?? `runtime-entity-${this.#entities.size + 1}`;
-        if (this.#entities.has(id)) throw new Error(`Entity already exists: ${id}`);
+        const requestedId = spec?.id ?? `runtime-entity-${this.#entities.size + 1}`;
+        let id = requestedId;
+        let duplicateIndex = 2;
+        while (this.#entities.has(id)) id = `${requestedId}-${duplicateIndex++}`;
         const entity = createRuntimeEntity({
           id,
           name: spec?.name,
@@ -934,6 +953,12 @@ export class ScriptRuntime {
       },
     });
     const runtime = this;
+    class RuntimeGameEntity {}
+    class RuntimeGamePlayer extends RuntimeGameEntity {}
+    this.gameEntityPrototype = RuntimeGameEntity.prototype;
+    this.gamePlayerPrototype = RuntimeGamePlayer.prototype;
+    for (const entity of this.#entities.values()) Object.setPrototypeOf(entity, this.gameEntityPrototype);
+    for (const player of this.#players.values()) Object.setPrototypeOf(player, this.gamePlayerPrototype);
     const voxels = createCapabilityFacade(this.voxels, () => this.#require("server.world.voxels"));
     const gui = createCapabilityFacade(this.gui, () => this.#require("server.gui"), GUI_CAPABILITY_MEMBERS);
     const storage = createCapabilityFacade(this.storage, () => this.#require("server.storage"));
@@ -969,7 +994,8 @@ export class ScriptRuntime {
       GameButtonType,
       GameCameraMode,
       GameWorld,
-      GameEntity: class GameEntity {},
+      GameEntity: RuntimeGameEntity,
+      GamePlayer: RuntimeGamePlayer,
       GameSoundEffect,
       GameBodyPart,
       Vec3: Object.freeze({ create: value => Vector3.from(value) }),
@@ -1006,6 +1032,7 @@ export class ScriptRuntime {
       sleep: milliseconds => new Promise(resolveSleep => this.#schedule(resolveSleep, milliseconds, [])),
       // Recovered dialog enum used by real maps (parkour "帮助" command).
       Box3DialogType: Object.freeze({ TEXT: 0, RICH_TEXT: 1, PLAYER_LIST: 2, PLAYER: 3 }),
+      GameDialogType: Object.freeze({ INPUT: "input", SELECT: "select", TEXT: "text" }),
       structuredClone,
     };
   }
@@ -1611,7 +1638,7 @@ function quaternionFrom(value) {
 export function createRuntimeEntity(input, runtime = null) {
   const tags = new Set(input.tags ?? []);
   const position = Vector3.from(input.position ?? [0, 0, 0]);
-  return {
+  const entity = {
     _id: String(input.id),
     _kind: input.kind ?? "entity",
     _name: input.name ?? input.source?.name ?? String(input.id),
@@ -1625,6 +1652,7 @@ export function createRuntimeEntity(input, runtime = null) {
     _lastAttacker: null,
     _lastDamageType: "",
     _bounds: requirePositiveVector3(input.bounds ?? input.source?.bounds ?? [1, 1, 1], "entity bounds"),
+    _boundsModelSpace: input._boundsModelSpace === true,
     mesh: input.mesh ?? input.source?.mesh ?? "",
     _meshInvisible: Boolean(input.meshInvisible ?? false),
     _meshScale: requireBoundedVector3(input.meshScale ?? [1 / 64, 1 / 64, 1 / 64], "entity meshScale"),
@@ -1796,6 +1824,8 @@ export function createRuntimeEntity(input, runtime = null) {
       return Object.freeze({ id: this.id, name: this.name, kind: this.kind, position: this.position.toArray(), tags: [...this._tags].sort(), destroyed: this.destroyed, enableInteract: this.enableInteract, interactHint: this.interactHint, enableDamage: this.enableDamage, showHealthBar: this.showHealthBar, hp: this.hp, maxHp: this.maxHp, ...(this.dead ? { dead: true } : {}), ...(hasParticleState(this) ? { particles: particleSnapshot(this) } : {}) });
     },
   };
+  if (runtime?.gameEntityPrototype) Object.setPrototypeOf(entity, runtime.gameEntityPrototype);
+  return entity;
 }
 
 export function isLiveChatEntity(entity) {
@@ -1846,6 +1876,8 @@ function createRuntimePlayer(runtime, input) {
     _tags: new Set(),
     _signals: { click: new EventSignal(), destroy: new EventSignal(), voxelContact: new EventSignal(), voxelSeparate: new EventSignal(), fluidEnter: new EventSignal(), fluidLeave: new EventSignal(), press: new EventSignal(), release: new EventSignal(), keyDown: new EventSignal(), keyUp: new EventSignal(), respawn: new EventSignal(), takeDamage: new EventSignal(), die: new EventSignal() },
     _wearables: [],
+    _wearableRevision: 0,
+    _wearableSignature: "[]",
     _inventory: new Map(),
     _buffs: new Set(),
     _gameMode: 0,
@@ -1859,7 +1891,7 @@ function createRuntimePlayer(runtime, input) {
     _spawnPoint: Vector3.from(input.position ?? [0, 0, 0]),
     get spawnPoint() { return this._spawnPoint; },
     set spawnPoint(value) { this._spawnPoint = Vector3.from(value); },
-    movementBounds: new GameBounds3(new Vector3(-50, -50, -50), new Vector3(178, 178, 178)),
+    movementBounds: runtimeMovementBounds(runtime),
     color: new GameRGBColor(1, 1, 1),
     skin: Object.fromEntries(Object.values(GameBodyPart).map(part => [part, undefined])),
     // Recovered Player schema exposes one mutable boolean per body part.
@@ -1994,9 +2026,16 @@ function createRuntimePlayer(runtime, input) {
     Give(name, count) { return runtime._givePlayer(this, name, count); },
     BuffClear() { return runtime._clearPlayerBuffs(this); },
     get gamemode() { return { gamemode: mode => runtime._setPlayerGameMode(this, mode) }; },
-    wearables(bodyPart) { return this._wearables.filter(item => item.bodyPart === bodyPart); },
-    addWearable(spec) { const wearable = { ...structuredClone(spec) }; this._wearables.push(wearable); return wearable; },
-    removeWearable(wearable) { const index = this._wearables.indexOf(wearable); if (index >= 0) this._wearables.splice(index, 1); },
+    wearables(bodyPart) { return bodyPart === undefined ? [...this._wearables] : this._wearables.filter(item => item.bodyPart === bodyPart); },
+    addWearable(spec) {
+      const wearable = createRuntimeWearable(this, spec);
+      this._wearables.push(wearable);
+      return wearable;
+    },
+    removeWearable(wearable) {
+      const index = this._wearables.indexOf(wearable);
+      if (index >= 0) this._wearables.splice(index, 1);
+    },
     dialog(config) { return runtime._dialogPlayer(this, config); },
     cancelDialogs() { return runtime._cancelPlayerDialogs(this); },
     get name() { return this._name; },
@@ -2072,6 +2111,7 @@ function createRuntimePlayer(runtime, input) {
         gamemode: this._gameMode,
         inventory: Object.fromEntries(this._inventory),
         buffs: [...this._buffs],
+        ...wearableSnapshot(this),
         cameraMode: this.cameraMode,
         cameraFovY: this.cameraFovY,
         cameraYaw: this.cameraYaw,
@@ -2114,7 +2154,19 @@ function createRuntimePlayer(runtime, input) {
       });
     },
   };
+  if (runtime.gamePlayerPrototype) Object.setPrototypeOf(player, runtime.gamePlayerPrototype);
   return player;
+}
+
+function runtimeMovementBounds(runtime) {
+  const shape = runtime?.voxels?.shape;
+  const upper = [shape?.x, shape?.y, shape?.z].map(value =>
+    Number.isFinite(value) && value >= 1 ? Number(value) + 1 : 178,
+  );
+  return new GameBounds3(
+    new Vector3(-50, -50, -50),
+    new Vector3(upper[0], upper[1], upper[2]),
+  );
 }
 
 function createEntitySoundSlots() {
@@ -2157,6 +2209,65 @@ function stablePlayerUserKey(value) {
     hash = Math.imul(hash, 16777619) >>> 0;
   }
   return hash.toString(16).padStart(8, "0").repeat(2).slice(0, 16);
+}
+
+function createRuntimeWearable(player, spec) {
+  if (!spec || typeof spec !== "object" || Array.isArray(spec)) throw new TypeError("Wearable spec must be an object");
+  const wearable = {
+    orientation: new GameQuaternion(0, 1, 0, 0),
+    ...structuredClone(spec),
+  };
+  const remove = () => player.removeWearable(wearable);
+  Object.defineProperty(wearable, "remove", { value: remove, enumerable: false });
+  return wearable;
+}
+
+function wearableSnapshot(player) {
+  const wearables = player._wearables.map((wearable, index) => Object.freeze({
+    id: `${player.id}:${index}`,
+    bodyPart: String(wearable.bodyPart ?? ""),
+    mesh: String(wearable.mesh ?? ""),
+    offset: vectorSnapshot(wearable.offset, [0, 0, 0]),
+    orientation: quaternionSnapshot(wearable.orientation),
+    scale: vectorSnapshot(wearable.scale, [1, 1, 1]),
+    material: Object.freeze({
+      color: rgbSnapshot(wearable.color, [1, 1, 1]),
+      metalness: finiteSnapshot(wearable.metalness, 0),
+      emissive: finiteSnapshot(wearable.emissive, 0),
+      shininess: finiteSnapshot(wearable.shininess, 0),
+    }),
+  }));
+  const signature = JSON.stringify(wearables);
+  if (signature !== player._wearableSignature) {
+    player._wearableSignature = signature;
+    player._wearableRevision += 1;
+  }
+  return { wearableRevision: player._wearableRevision, wearables: Object.freeze(wearables) };
+}
+
+function vectorSnapshot(value, fallback) {
+  const components = Array.isArray(value) ? value : [value?.x, value?.y, value?.z];
+  return components.length === 3 && components.every(Number.isFinite)
+    ? [Number(components[0]), Number(components[1]), Number(components[2])]
+    : fallback;
+}
+
+function quaternionSnapshot(value) {
+  const components = Array.isArray(value) ? value : [value?.w, value?.x, value?.y, value?.z];
+  return components.length === 4 && components.every(Number.isFinite)
+    ? [Number(components[0]), Number(components[1]), Number(components[2]), Number(components[3])]
+    : [0, 1, 0, 0];
+}
+
+function rgbSnapshot(value, fallback) {
+  const components = Array.isArray(value) ? value : [value?.r, value?.g, value?.b];
+  return components.length === 3 && components.every(Number.isFinite)
+    ? [Number(components[0]), Number(components[1]), Number(components[2])]
+    : fallback;
+}
+
+function finiteSnapshot(value, fallback) {
+  return Number.isFinite(value) ? Number(value) : fallback;
 }
 
 function normalizePlayerUrl(value) {

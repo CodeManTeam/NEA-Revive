@@ -80,8 +80,8 @@ for (const schema of box3Protocols) {
       if (b.length >= 3 && b[0] === 1 && b[1] === 69 && b[2] === 0) {
         let i = 3
         let pid = 0
-        while (i < b.length && (b[i] & 0x80)) { pid = (pid << 7) | (b[i] & 0x7f); i++ }
-        if (i < b.length) pid = (pid << 7) | b[i]
+        while (i < b.length && ((b[i] ?? 0) & 0x80)) { pid = (pid << 7) | ((b[i] ?? 0) & 0x7f); i++ }
+        if (i < b.length) pid = (pid << 7) | (b[i] ?? 0)
         playerId = pid
         stage = Stage.Ready
         sentJoin = true

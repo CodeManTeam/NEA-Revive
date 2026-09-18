@@ -46,17 +46,20 @@ export class MuQuantizedVec3 implements MuSchema<Float64Array | Float32Array | n
   constructor(precision: number, identity?: number[]) {
     this.precision = precision
     this.invPrecision = 1 / precision
+    if (identity !== undefined && (!Array.isArray(identity) || identity.length < 3)) {
+      throw new TypeError("MuQuantizedVec3 identity must have three components")
+    }
     this.identity = identity
       ? [
-          Math.round((1 / precision) * identity[0]) * precision,
-          Math.round((1 / precision) * identity[1]) * precision,
-          Math.round((1 / precision) * identity[2]) * precision,
+          Math.round((1 / precision) * (identity[0] ?? 0)) * precision,
+          Math.round((1 / precision) * (identity[1] ?? 0)) * precision,
+          Math.round((1 / precision) * (identity[2] ?? 0)) * precision,
         ]
       : [0, 0, 0]
     this.muData = {
       type: "quantized-vec3",
       precision: this.precision,
-      identity: [this.identity[0], this.identity[1], this.identity[2]],
+      identity: [this.identity[0] ?? 0, this.identity[1] ?? 0, this.identity[2] ?? 0],
     }
     this.json = this.muData
   }
@@ -70,24 +73,24 @@ export class MuQuantizedVec3 implements MuSchema<Float64Array | Float32Array | n
   }
 
   clone(v: number[]): number[] {
-    return [v[0], v[1], v[2]]
+    return [v[0] ?? 0, v[1] ?? 0, v[2] ?? 0]
   }
 
   assign(dst: number[], src: number[]): number[] {
     const inv = this.invPrecision
     const prec = this.precision
-    dst[0] = (Math.round(inv * src[0]) >> 0) * prec
-    dst[1] = (Math.round(inv * src[1]) >> 0) * prec
-    dst[2] = (Math.round(inv * src[2]) >> 0) * prec
+    dst[0] = (Math.round(inv * (src[0] ?? 0)) >> 0) * prec
+    dst[1] = (Math.round(inv * (src[1] ?? 0)) >> 0) * prec
+    dst[2] = (Math.round(inv * (src[2] ?? 0)) >> 0) * prec
     return dst
   }
 
   equal(a: number[], b: number[]): boolean {
     const inv = this.invPrecision
     return (
-      (Math.round(inv * a[0]) >> 0) === (Math.round(inv * b[0]) >> 0) &&
-      (Math.round(inv * a[1]) >> 0) === (Math.round(inv * b[1]) >> 0) &&
-      (Math.round(inv * a[2]) >> 0) === (Math.round(inv * b[2]) >> 0)
+      (Math.round(inv * (a[0] ?? 0)) >> 0) === (Math.round(inv * (b[0] ?? 0)) >> 0) &&
+      (Math.round(inv * (a[1] ?? 0)) >> 0) === (Math.round(inv * (b[1] ?? 0)) >> 0) &&
+      (Math.round(inv * (a[2] ?? 0)) >> 0) === (Math.round(inv * (b[2] ?? 0)) >> 0)
     )
   }
 
@@ -95,9 +98,9 @@ export class MuQuantizedVec3 implements MuSchema<Float64Array | Float32Array | n
     const inv = this.invPrecision
     const prec = this.precision
     return [
-      (Math.round(inv * v[0]) >> 0) * prec,
-      (Math.round(inv * v[1]) >> 0) * prec,
-      (Math.round(inv * v[2]) >> 0) * prec,
+      (Math.round(inv * (v[0] ?? 0)) >> 0) * prec,
+      (Math.round(inv * (v[1] ?? 0)) >> 0) * prec,
+      (Math.round(inv * (v[2] ?? 0)) >> 0) * prec,
     ]
   }
 
@@ -110,12 +113,12 @@ export class MuQuantizedVec3 implements MuSchema<Float64Array | Float32Array | n
 
   diff(base: number[], target: number[], out: MuWriteStream): boolean {
     const inv = this.invPrecision
-    const qb0 = Math.round(inv * base[0]) >> 0
-    const qb1 = Math.round(inv * base[1]) >> 0
-    const qb2 = Math.round(inv * base[2]) >> 0
-    const qt0 = Math.round(inv * target[0]) >> 0
-    const qt1 = Math.round(inv * target[1]) >> 0
-    const qt2 = Math.round(inv * target[2]) >> 0
+    const qb0 = Math.round(inv * (base[0] ?? 0)) >> 0
+    const qb1 = Math.round(inv * (base[1] ?? 0)) >> 0
+    const qb2 = Math.round(inv * (base[2] ?? 0)) >> 0
+    const qt0 = Math.round(inv * (target[0] ?? 0)) >> 0
+    const qt1 = Math.round(inv * (target[1] ?? 0)) >> 0
+    const qt2 = Math.round(inv * (target[2] ?? 0)) >> 0
 
     if (qb0 === qt0 && qb1 === qt1 && qb2 === qt2) {
       return false
@@ -149,9 +152,9 @@ export class MuQuantizedVec3 implements MuSchema<Float64Array | Float32Array | n
 
     const inv = this.invPrecision
     const prec = this.precision
-    const qb0 = Math.round(inv * base[0]) >> 0
-    const qb1 = Math.round(inv * base[1]) >> 0
-    const qb2 = Math.round(inv * base[2]) >> 0
+    const qb0 = Math.round(inv * (base[0] ?? 0)) >> 0
+    const qb1 = Math.round(inv * (base[1] ?? 0)) >> 0
+    const qb2 = Math.round(inv * (base[2] ?? 0)) >> 0
 
     const result = this.alloc()
     result[0] = (qb0 + r) * prec
@@ -180,14 +183,14 @@ export class MuQuantizedVec2 implements MuSchema<number[]> {
     this.invPrecision = 1 / precision
     this.identity = identity
       ? [
-          Math.round((1 / precision) * identity[0]) * precision,
-          Math.round((1 / precision) * identity[1]) * precision,
+          Math.round((1 / precision) * (identity[0] ?? 0)) * precision,
+          Math.round((1 / precision) * (identity[1] ?? 0)) * precision,
         ]
       : [0, 0]
     this.muData = {
       type: "quantized-vec2",
       precision: this.precision,
-      identity: [this.identity[0], this.identity[1]],
+      identity: [this.identity[0] ?? 0, this.identity[1] ?? 0],
     }
     this.json = this.muData
   }
@@ -196,22 +199,22 @@ export class MuQuantizedVec2 implements MuSchema<number[]> {
   free(_v: number[]): void {}
 
   clone(v: number[]): number[] {
-    return [v[0], v[1]]
+    return [v[0] ?? 0, v[1] ?? 0]
   }
 
   assign(dst: number[], src: number[]): number[] {
     const inv = this.invPrecision
     const prec = this.precision
-    dst[0] = (Math.round(inv * src[0]) >> 0) * prec
-    dst[1] = (Math.round(inv * src[1]) >> 0) * prec
+    dst[0] = (Math.round(inv * (src[0] ?? 0)) >> 0) * prec
+    dst[1] = (Math.round(inv * (src[1] ?? 0)) >> 0) * prec
     return dst
   }
 
   equal(a: number[], b: number[]): boolean {
     const inv = this.invPrecision
     return (
-      (Math.round(inv * a[0]) >> 0) === (Math.round(inv * b[0]) >> 0) &&
-      (Math.round(inv * a[1]) >> 0) === (Math.round(inv * b[1]) >> 0)
+      (Math.round(inv * (a[0] ?? 0)) >> 0) === (Math.round(inv * (b[0] ?? 0)) >> 0) &&
+      (Math.round(inv * (a[1] ?? 0)) >> 0) === (Math.round(inv * (b[1] ?? 0)) >> 0)
     )
   }
 
@@ -219,8 +222,8 @@ export class MuQuantizedVec2 implements MuSchema<number[]> {
     const inv = this.invPrecision
     const prec = this.precision
     return [
-      (Math.round(inv * v[0]) >> 0) * prec,
-      (Math.round(inv * v[1]) >> 0) * prec,
+      (Math.round(inv * (v[0] ?? 0)) >> 0) * prec,
+      (Math.round(inv * (v[1] ?? 0)) >> 0) * prec,
     ]
   }
 
@@ -233,10 +236,10 @@ export class MuQuantizedVec2 implements MuSchema<number[]> {
 
   diff(base: number[], target: number[], out: MuWriteStream): boolean {
     const inv = this.invPrecision
-    const qb0 = Math.round(inv * base[0]) >> 0
-    const qb1 = Math.round(inv * base[1]) >> 0
-    const qt0 = Math.round(inv * target[0]) >> 0
-    const qt1 = Math.round(inv * target[1]) >> 0
+    const qb0 = Math.round(inv * (base[0] ?? 0)) >> 0
+    const qb1 = Math.round(inv * (base[1] ?? 0)) >> 0
+    const qt0 = Math.round(inv * (target[0] ?? 0)) >> 0
+    const qt1 = Math.round(inv * (target[1] ?? 0)) >> 0
 
     if (qb0 === qt0 && qb1 === qt1) return false
 
@@ -261,8 +264,8 @@ export class MuQuantizedVec2 implements MuSchema<number[]> {
 
     const inv = this.invPrecision
     const prec = this.precision
-    const qb0 = Math.round(inv * base[0]) >> 0
-    const qb1 = Math.round(inv * base[1]) >> 0
+    const qb0 = Math.round(inv * (base[0] ?? 0)) >> 0
+    const qb1 = Math.round(inv * (base[1] ?? 0)) >> 0
 
     const result = this.alloc()
     result[0] = (qb0 + r) * prec
@@ -296,8 +299,8 @@ const CUBE_AXIS: [number, number, number][] = [
 
 function axisToIndex(v: number[]): number {
   for (let i = 0; i < 6; i++) {
-    const a = CUBE_AXIS[i]
-    if (Math.round(v[0]) === a[0] && Math.round(v[1]) === a[1] && Math.round(v[2]) === a[2]) {
+    const a = CUBE_AXIS[i]!
+    if (Math.round(v[0] ?? 0) === a[0] && Math.round(v[1] ?? 0) === a[1] && Math.round(v[2] ?? 0) === a[2]) {
       return i
     }
   }
@@ -322,8 +325,8 @@ export class MuCubeAxis implements MuSchema<number[]> {
 
   private static axisToIndex(v: number[]): number {
     for (let i = 0; i < 6; i++) {
-      const a = MuCubeAxis.CUBE_AXIS[i]
-      if (Math.round(v[0]) === a[0] && Math.round(v[1]) === a[1] && Math.round(v[2]) === a[2]) return i
+      const a = MuCubeAxis.CUBE_AXIS[i]!
+      if (Math.round(v[0] ?? 0) === a[0] && Math.round(v[1] ?? 0) === a[1] && Math.round(v[2] ?? 0) === a[2]) return i
     }
     return 0
   }
@@ -379,17 +382,17 @@ export const MuFloat32Vec3: MuSchema<number[]> = {
   alloc: () => [0, 0, 0],
   free: (_v: number[]) => {},
 
-  clone: (v: number[]) => [v[0], v[1], v[2]],
+  clone: (v: number[]) => [v[0] ?? 0, v[1] ?? 0, v[2] ?? 0],
 
   assign: (dst: number[], src: number[]): number[] => {
-    dst[0] = src[0]
-    dst[1] = src[1]
-    dst[2] = src[2]
+    dst[0] = src[0] ?? 0
+    dst[1] = src[1] ?? 0
+    dst[2] = src[2] ?? 0
     return dst
   },
 
   equal: (a: number[], b: number[]): boolean =>
-    a[0] === b[0] && a[1] === b[1] && a[2] === b[2],
+    (a[0] ?? 0) === (b[0] ?? 0) && (a[1] ?? 0) === (b[1] ?? 0) && (a[2] ?? 0) === (b[2] ?? 0),
 
   diff: (base: number[], target: number[], out: MuWriteStream): boolean => {
     const bx = base[0] !== target[0] ? 1 : 0
