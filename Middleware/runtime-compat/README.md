@@ -1,40 +1,51 @@
-# NEA Runtime Compatibility
+# Runtime Compatibility
 
-Repository-wide progress and cleanup decisions live in `../Docs/project-progress.md` and `../Docs/repository-cleanup-plan.md`. This README is limited to ABI catalogs, evidence reports, fixtures, generators, and conformance validation.
+本目录是 ABI 目录、历史证据生成器、能力矩阵和一致性测试的分析层。它不直接启动地图，
+也不替代 backend/box-go 的 runtime-server。
 
-This subproject separates historical declarations, recovered evidence and current compatibility code for the client Script Runtime, server Script Runtime, MuDB transport and physics profiles.
+## 目录
 
-## Commands
+- tools/：从文档、历史 bundle、协议和本地实现提取/组合数据；
+- abi/：client/server runtime、MuDB protocol、contract 和 compatibility matrix；
+- generated/：生成的 gap report、audit 和 JSON/Markdown 分析；
+- conformance/、test/：可执行一致性 fixture；
+- evidence/：经过筛选的证据摘要；
+- docs/architecture.md：本分析层内部架构。
 
-```powershell
-npm run build
+## 命令
+
+~~~powershell
+cd Middleware\runtime-compat
+npm install
 npm test
-```
+npm run build
+~~~
 
-`npm run build` regenerates:
+npm run build 会从本机证据和文档镜像重新生成 abi/、generated/ 报告。生成文件不可手工
+编辑；要改变报告，修改 tools/ 中的生成器或输入证据后重新构建。需要私有证据时，路径由
+本地环境/映射提供，仓库不复制 dump。
 
-- `generated/docs-api-index.json` from the local developer documentation mirror.
-- `generated/origin-server-api.json` from the local origin API classes and ScriptShell globals.
-- `generated/player-client-script-runtime-analysis.json` from the archived Player SES client runtime and wrapper bindings.
-- `generated/local-server-runtime-analysis.json` and `abi/server-adapter-map.json` from the local Server Runtime, with exact versus partial canonical mappings kept separate.
-- `abi/protocols.json` from the recovered Player and ScriptShell MuDB schemas, including conformance metadata where available.
-- `generated/api-abi-completeness.json` validates every documented kind-qualified signature, runtime-catalog propagation, compatibility-matrix entry, and explicit direction-qualified MuDB message record.
-- `generated/posture-delta-corpus-inventory.json` safely inventories local captures, resource ZIP directories, decoded replay data and WebSocket discovery metadata without publishing payloads, URLs or session identifiers.
-- `abi/current-runtime.json` from executable Player and local Server Runtime analysis instead of a hand-maintained subset.
-- `abi/runtime-contracts.json` with the five runtime layers, versioned contracts, side-qualified capabilities and resolved Demo bindings.
-- `abi/client-runtime.json` and `abi/server-runtime.json` by merging declarations, recovered symbols and current implementation evidence.
-- `generated/gap-report.json` and `generated/gap-report.md` without treating declarations as implementations.
-- `generated/capability-gate-audit.json` and `.md` convert the anonymous script-corpus report through the compatibility matrix into launch-gate states. A requirement cannot be `ready` or `partial` without an executable local binding; script-owned assignments are excluded rather than promoted into DAO3 APIs.
+## 状态词汇
 
-## Status Meanings
+- declared：只有文档声明；
+- confirmed：在 Player、origin、协议或本地实现中直接找到；
+- native：历史 runtime 原生执行；
+- bridged：跨本地传输或后端边界翻译；
+- emulated：本地实现，但尚未证明历史等价；
+- missing：没有注册兼容实现。
 
-- `declared`: present in documentation only.
-- `confirmed`: directly present in Player, origin, protocol or local implementation evidence.
-- `native`: executed by the archived historical runtime.
-- `bridged`: translated across the local transport/backend boundary.
-- `emulated`: implemented locally without complete historical conformance.
-- `missing`: no compatible implementation is currently registered.
+声明不等于实现。每个新增能力结论都应有 conformance fixture；证据缺失时记录 gap，不能
+凭 API 名称推导行为。
 
-The player body ABI confirms body-center coordinates and upright default half extents `0.45 / 1.1 / 0.45` from archived Player evidence, with separate broadphase and shape half-extents fields. Historical crouch and flying shape fields are represented explicitly as `null` with status `evidence-deferred`. The local contract preserves the current collider when no complete authoritative shape is available; this policy is not a historical-value claim.
+## 与主运行时的关系
 
-The Demo binds `client.js` and `server.js` to separate runtime contracts and capability lists. A capability confirmed on one side never grants an API on the other side.
+runtime-compat 的输出供开发和审查使用；地图启动仍由：
+
+~~~text
+packages/<map>
+  -> backend/demo-map/src/import-project.mjs
+  -> backend/box-go/src/runtime-server.ts
+  -> frontend/voxweb
+~~~
+
+该目录不应引入地图名称分支，也不应把一侧确认的 capability 自动授予另一侧 runtime。

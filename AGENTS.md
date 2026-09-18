@@ -127,7 +127,8 @@ pong 协商 → join → secret → sync/unpause → reset → fetchChunk → �
 
 ## 六、注意事项
 
-- **不要**在 box-go 里硬编码 `NEA-Project` 路径——一律用新目录相对路径。
+- **不要**在 box-go 里硬编码本机项目或证据路径——一律使用显式的 sourceRoot、assetRoot、
+  buildRoot 或仓库相对路径。
 - 测试文件里 buildRoot 用 `.build/` 前缀，避免污染 packages。
 - 前端改动后必须 `trunk build --release` 才在 dist 生效；浏览器需硬刷新（Ctrl+Shift+R）
   绕过旧 wasm 缓存。
