@@ -1387,6 +1387,10 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                                                 &event.event,
                                                 &mut runtime_camera,
                                             );
+                                            consume_camera_orientation(
+                                                &mut runtime_camera,
+                                                &mut input.borrow_mut(),
+                                            );
                                         }
                                     }
                                     Err(error) => {
@@ -5111,10 +5115,10 @@ fn apply_runtime_camera_state(value: &serde_json::Value, camera: &mut RuntimeCam
         if let Some(number) = value.get(key).and_then(serde_json::Value::as_f64)
             && number.is_finite()
         {
-            *output = number as f32;
-            if (key == "yaw" || key == "pitch") && number.abs() > f64::EPSILON {
+            if (key == "yaw" || key == "pitch") && *output != number as f32 {
                 orientation_seen = true;
             }
+            *output = number as f32;
         }
     }
     camera.authoritative_orientation |= orientation_seen;
@@ -5128,6 +5132,19 @@ fn apply_runtime_camera_state(value: &serde_json::Value, camera: &mut RuntimeCam
         camera.up = up;
     }
     camera.entity_position = json_vec3(value.get("entityPosition"));
+}
+
+fn consume_camera_orientation(camera: &mut RuntimeCameraState, input: &mut InputState) {
+    if camera.authoritative_orientation {
+        // Recovered camera names use pitch for horizontal and yaw for vertical.
+        // A script turn updates the shared view/movement state, not a permanent override.
+        input.local_pitch = camera.pitch;
+        input.local_yaw = camera.yaw.clamp(
+            -crate::nea_input::PITCH_CLAMP,
+            crate::nea_input::PITCH_CLAMP,
+        );
+        camera.authoritative_orientation = false;
+    }
 }
 
 fn avatar_instance_from_body(
@@ -6434,6 +6451,33 @@ mod tests {
         input.right = true;
         assert_eq!(input.movement_vector_with_state(4), [0.0, -1.0]);
         assert_eq!(input.movement_vector_with_state(16), [0.0, 0.0]);
+    }
+
+    #[test]
+    fn scripted_turn_then_mouse_keeps_view_movement_and_wire_angles_aligned() {
+        let mut input = InputState::default();
+        let mut camera = RuntimeCameraState::default();
+        let event = serde_json::json!({"mode": "FPS", "pitch": 1.0, "yaw": 0.2});
+        apply_runtime_camera_state(&event, &mut camera);
+        super::consume_camera_orientation(&mut camera, &mut input);
+        assert!(!camera.authoritative_orientation);
+        assert_eq!(input.local_pitch, 1.0);
+        input.apply_mouse_delta(25.0, 0.0, 100.0);
+        input.update_orientation();
+        assert_eq!(input.local_pitch, 2.0);
+        assert_eq!(input.local_yaw, 0.2);
+        apply_runtime_camera_state(&event, &mut camera);
+        super::consume_camera_orientation(&mut camera, &mut input);
+        assert_eq!(
+            input.local_pitch, 2.0,
+            "unchanged camera snapshots must not undo mouse look"
+        );
+        let axis = voxweb_protocol::player::camera_axis(input.local_pitch, 0.0);
+        assert_eq!(input.forward(), [axis[0], axis[2]]);
+        assert_eq!(
+            input.wire_camera_angle(),
+            voxweb_protocol::player::wire_camera_angle(2.0)
+        );
     }
 
     #[test]
