@@ -2466,7 +2466,12 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                 let mut wearable_owners: HashMap<u32, AvatarInstance> = sampled_remote_players
                     .iter()
                     .filter(|player| !player.dead)
-                    .map(|player| (player.id, avatar_instance_from_body(&player.body, player.scale)))
+                    .map(|player| {
+                        (
+                            player.id,
+                            avatar_instance_from_body(&player.body, player.scale),
+                        )
+                    })
                     .collect();
                 let mut avatar_instances = other_players.clone();
                 if let Some(position) = camera_player_pos.filter(|_| !first_person) {
@@ -3082,9 +3087,11 @@ async fn prefetch_entity_mesh_assets(origin: &str, scene: &mut StaticEntityScene
                             "[nea] decoded mesh ready: {hash} format={format} v{version} texture={texture}px"
                         );
                         if let Ok(payload) = serde_json::from_value::<DecodedMeshPayload>(value) {
-                            for target in scene.meshes.values_mut().filter(|entry| {
-                                entry.mesh_asset_hash.as_deref() == Some(&hash)
-                            }) {
+                            for target in scene
+                                .meshes
+                                .values_mut()
+                                .filter(|entry| entry.mesh_asset_hash.as_deref() == Some(&hash))
+                            {
                                 target.decoded_bounds = payload.bounds;
                             }
                             if let Some(texture) = payload.texture.as_ref() {
@@ -3759,7 +3766,9 @@ fn wearable_mesh_center(mesh: &StaticEntityMesh) -> [f32; 3] {
     if let Some(bounds) = mesh.decoded_bounds {
         return bounds.map(|value| value * 0.5);
     }
-    let positions = mesh.decoded_geometry.as_ref()
+    let positions = mesh
+        .decoded_geometry
+        .as_ref()
         .map(|geometry| geometry.0.as_slice())
         .unwrap_or(&mesh.positions);
     let mut lo = glam::Vec3::splat(f32::INFINITY);
@@ -3816,9 +3825,8 @@ fn update_player_wearable_transforms(
         .normalize()
         .to_array();
         let next_scale = entity.wearable_scale.map(|value| value * scale);
-        let next_offset = std::array::from_fn(|axis| {
-            -entity.wearable_center[axis] * next_scale[axis]
-        });
+        let next_offset =
+            std::array::from_fn(|axis| -entity.wearable_center[axis] * next_scale[axis]);
         if !entity.visible
             || entity.position != next_position.to_array()
             || entity.rotation != next_rotation
@@ -5813,15 +5821,14 @@ fn yield_animation_frame() -> js_sys::Promise {
 mod tests {
     use super::{
         AvatarRollState, EntityInteractionIndex, InputState, LOCAL_MOVEMENT_BOUND_MIN,
-        LOCAL_VOID_RESPAWN_Y,
-        PLAYER_FLAG_SPECTATOR, RuntimeCameraState, StaticEntityScene, apply_entity_state_event,
-        apply_player_wearables_event, apply_runtime_camera_state, block_is_solid,
-        build_static_entity_collision_bodies, fluid_volume_fraction, make_camera,
-        network_tick_is_newer, normalize_player_collision_half_extents, raycast_static_entity,
-        recovered_avatar_yaw, recovered_fluid_height, recovered_fluid_info, recovered_player_state,
+        LOCAL_VOID_RESPAWN_Y, PLAYER_FLAG_SPECTATOR, RuntimeCameraState, StaticEntityScene,
+        apply_entity_state_event, apply_player_wearables_event, apply_runtime_camera_state,
+        block_is_solid, build_static_entity_collision_bodies, fluid_volume_fraction,
+        is_outside_runtime_movement_bounds, make_camera, network_tick_is_newer,
+        normalize_player_collision_half_extents, raycast_static_entity, recovered_avatar_yaw,
+        recovered_fluid_height, recovered_fluid_info, recovered_player_state,
         recovered_rotated_face_rects, recovered_voxel_face_visible, recovered_walk_phase_delta,
-        should_apply_authoritative_respawn, is_outside_runtime_movement_bounds,
-        wearable_body_part_pose,
+        should_apply_authoritative_respawn, wearable_body_part_pose,
         write_recovered_texture_rotation,
     };
     use std::collections::HashMap;
@@ -6111,7 +6118,8 @@ mod tests {
     fn wearable_scene_fixture() -> StaticEntityScene {
         let mut scene = serde_json::from_value(serde_json::json!({
             "meshes": {"mesh/sword.vb": {}}, "entities": []
-        })).unwrap();
+        }))
+        .unwrap();
         apply_player_wearables_event(
             &serde_json::json!({
                 "type": "nea-revive:player-wearables",
@@ -6141,32 +6149,62 @@ mod tests {
         let root = super::AvatarInstance::new([10.0, 20.0, 30.0], root_rotation.to_array(), 1.7);
         let owners = HashMap::from([(3, root)]);
         let root_matrix = glam::Mat4::from_scale_rotation_translation(
-            glam::Vec3::splat(root.scale), root_rotation, glam::Vec3::from_array(root.position),
+            glam::Vec3::splat(root.scale),
+            root_rotation,
+            glam::Vec3::from_array(root.position),
         );
         let mut previous_position = None;
         for sample in [
-            IkSample { grounded: true, ..Default::default() },
-            IkSample { grounded: true, movement: 1.0, phase: 0.35, ..Default::default() },
-            IkSample { grounded: true, crouching: true, ..Default::default() },
+            IkSample {
+                grounded: true,
+                ..Default::default()
+            },
+            IkSample {
+                grounded: true,
+                movement: 1.0,
+                phase: 0.35,
+                ..Default::default()
+            },
+            IkSample {
+                grounded: true,
+                crouching: true,
+                ..Default::default()
+            },
         ] {
             let configuration = recovered_configuration(sample);
-            assert!(super::update_player_wearable_transforms(&mut scene, &owners, &configuration));
+            assert!(super::update_player_wearable_transforms(
+                &mut scene,
+                &owners,
+                &configuration
+            ));
             let entity = &scene.entities[0];
-            let expected = root_matrix * configuration[11]
+            let expected = root_matrix
+                * configuration[11]
                 * glam::Mat4::from_translation(glam::Vec3::from_array(entity.wearable_offset));
             let actual = glam::Mat4::from_rotation_translation(
                 glam::Quat::from_array(entity.rotation),
                 glam::Vec3::from_array(entity.position),
             );
-            assert!(actual.w_axis.truncate().abs_diff_eq(expected.w_axis.truncate(), 1.0e-5));
-            assert!((actual.x_axis.truncate() * root.scale)
-                .abs_diff_eq(expected.x_axis.truncate(), 1.0e-5));
+            assert!(
+                actual
+                    .w_axis
+                    .truncate()
+                    .abs_diff_eq(expected.w_axis.truncate(), 1.0e-5)
+            );
+            assert!(
+                (actual.x_axis.truncate() * root.scale)
+                    .abs_diff_eq(expected.x_axis.truncate(), 1.0e-5)
+            );
             assert_eq!(entity.scale, entity.wearable_scale.map(|v| v * root.scale));
             if let Some(previous) = previous_position {
                 assert_ne!(entity.position, previous);
             }
             previous_position = Some(entity.position);
-            assert!(!super::update_player_wearable_transforms(&mut scene, &owners, &configuration));
+            assert!(!super::update_player_wearable_transforms(
+                &mut scene,
+                &owners,
+                &configuration
+            ));
         }
     }
 
@@ -6174,14 +6212,27 @@ mod tests {
     fn wearable_visibility_recovers_without_owner_movement() {
         let mut scene = wearable_scene_fixture();
         let owners = HashMap::from([(
-            3, super::AvatarInstance::new([0.0; 3], [0.0, 0.0, 0.0, 1.0], 1.0),
+            3,
+            super::AvatarInstance::new([0.0; 3], [0.0, 0.0, 0.0, 1.0], 1.0),
         )]);
         let pose = idle_wearable_configuration();
-        assert!(super::update_player_wearable_transforms(&mut scene, &owners, &pose));
-        assert!(super::update_player_wearable_transforms(&mut scene, &HashMap::new(), &pose));
+        assert!(super::update_player_wearable_transforms(
+            &mut scene, &owners, &pose
+        ));
+        assert!(super::update_player_wearable_transforms(
+            &mut scene,
+            &HashMap::new(),
+            &pose
+        ));
         assert!(!scene.entities[0].visible);
-        assert!(!super::update_player_wearable_transforms(&mut scene, &HashMap::new(), &pose));
-        assert!(super::update_player_wearable_transforms(&mut scene, &owners, &pose));
+        assert!(!super::update_player_wearable_transforms(
+            &mut scene,
+            &HashMap::new(),
+            &pose
+        ));
+        assert!(super::update_player_wearable_transforms(
+            &mut scene, &owners, &pose
+        ));
         assert!(scene.entities[0].visible);
     }
 
@@ -6276,13 +6327,18 @@ mod tests {
 
     #[test]
     fn local_movement_bounds_match_runtime_safety_bounds() {
-        let upper = voxweb_protocol::adapter::nea_chunk_grid().map(|value| value as f32 * 32.0 + 1.0);
+        let upper =
+            voxweb_protocol::adapter::nea_chunk_grid().map(|value| value as f32 * 32.0 + 1.0);
         assert!(is_outside_runtime_movement_bounds([
             LOCAL_MOVEMENT_BOUND_MIN - 0.1,
             40.0,
             127.0
         ]));
-        assert!(is_outside_runtime_movement_bounds([127.0, 40.0, upper[2] + 0.1]));
+        assert!(is_outside_runtime_movement_bounds([
+            127.0,
+            40.0,
+            upper[2] + 0.1
+        ]));
         assert!(!is_outside_runtime_movement_bounds([127.0, 40.0, 127.0]));
     }
 

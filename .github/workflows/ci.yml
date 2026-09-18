@@ -36,6 +36,9 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Build MuDB runtime modules
+        run: node ../../tools/build-mudb.mjs
+
       - name: Tests
         run: npx tsx --test src/*.test.ts
 
@@ -69,9 +72,6 @@ jobs:
         run: cargo check --target wasm32-unknown-unknown
 
       - name: Build WASM bundle
-        shell: pwsh
-        env:
-          NO_COLOR: '0'
         run: trunk build --release --color auto
 
       - name: Upload dist artifact
