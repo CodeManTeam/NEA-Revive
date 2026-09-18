@@ -1773,18 +1773,6 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
             }
             Err(error) => jslog!("[nea] client script drain failed: {error}"),
         }
-        let wearable_local_id = driver.borrow().player_id;
-        let wearable_local_yaw = input.borrow().local_yaw;
-        entity_instances_dirty |= update_player_wearable_transforms(
-            &mut entity_scene,
-            wearable_local_id,
-            player_pos,
-            local_body_half_extents[1],
-            local_avatar_scale,
-            wearable_local_yaw,
-            &mut remote_players,
-            now_ms(),
-        );
         if avatar_renderer.is_none()
             && !avatar_load_attempted
             && let Some(part_ids) = local_avatar_part_ids.as_ref()
@@ -1828,7 +1816,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
         // Render once per browser animation frame. Network polling, physics,
         // and presentation share the display cadence instead of busy-spinning
         // whenever the WebSocket queue remains non-empty.
-        if let Some(t) = terrain.as_ref() {
+        if let Some(t) = terrain.as_mut() {
             // The preserved Player advances a fractional deltaTick on every
             // render frame, splitting only when a step crosses a full tick.
             let dt_ms = now_ms() - last_physics_ms;
@@ -2436,7 +2424,7 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                             * movement_amount)
                         % 1.0;
                 }
-                renderer.update_locomotion(
+                let configuration = renderer.update_locomotion(
                     &dc.queue,
                     avatar_walk_phase,
                     movement_amount,
@@ -2448,10 +2436,15 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                     physics.is_swimming(),
                     avatar_roll_phase,
                 );
+                let mut wearable_owners: HashMap<u32, AvatarInstance> = sampled_remote_players
+                    .iter()
+                    .filter(|player| !player.dead)
+                    .map(|player| (player.id, avatar_instance_from_body(&player.body, player.scale)))
+                    .collect();
                 let mut avatar_instances = other_players.clone();
                 if let Some(position) = camera_player_pos.filter(|_| !first_person) {
                     let half_angle = recovered_avatar_yaw(movement, inp_pitch) * 0.5;
-                    avatar_instances.push(AvatarInstance::new(
+                    let instance = AvatarInstance::new(
                         [
                             position[0],
                             position[1] - local_body_half_extents[1],
@@ -2459,7 +2452,18 @@ pub async fn run(create_session_url: &str) -> Result<(), JsValue> {
                         ],
                         [0.0, half_angle.sin(), 0.0, half_angle.cos()],
                         local_avatar_scale,
-                    ));
+                    );
+                    wearable_owners.insert(local_player_id as u32, instance);
+                    avatar_instances.push(instance);
+                }
+                // Use the same smoothed root and current skeleton as the skin,
+                // after physics and before either pass draws the equipment.
+                if update_player_wearable_transforms(
+                    &mut entity_scene,
+                    &wearable_owners,
+                    &configuration,
+                ) {
+                    t.update_entity_instances(&dc.device, &dc.queue, &entity_scene);
                 }
                 for instance in &mut avatar_instances {
                     instance.ambient = t.voxel_light.sample_continuous(
@@ -3722,15 +3726,9 @@ fn apply_player_wearables_event(
 
 fn update_player_wearable_transforms(
     scene: &mut StaticEntityScene,
-    local_player_id: u32,
-    local_position: Option<[f32; 3]>,
-    local_half_height: f32,
-    local_scale: f32,
-    local_yaw: f32,
-    remote_players: &mut crate::remote_players::RemotePlayers,
-    now_ms: u32,
+    owners: &HashMap<u32, AvatarInstance>,
+    configuration: &[glam::Mat4; 18],
 ) -> bool {
-    let samples = remote_players.sample(now_ms);
     let mut changed = false;
     for entity in scene
         .entities
@@ -3738,38 +3736,22 @@ fn update_player_wearable_transforms(
         .filter(|entity| entity.wearable_owner.is_some())
     {
         let owner = entity.wearable_owner.unwrap_or_default();
-        let (position, half_height, scale, yaw) = if owner == local_player_id {
-            let Some(position) = local_position else {
-                continue;
-            };
-            (position, local_half_height, local_scale, local_yaw)
-        } else {
-            let Some(player) = samples.iter().find(|player| player.id == owner) else {
-                if entity.visible {
-                    entity.visible = false;
-                    changed = true;
-                }
-                continue;
-            };
-            let yaw = if player.body.vx.hypot(player.body.vz) > 1.0e-4 {
-                recovered_avatar_yaw([player.body.vx, player.body.vz], 0.0)
-            } else {
-                0.0
-            };
-            (
-                [player.body.px, player.body.py, player.body.pz],
-                player.body.hsy,
-                player.scale,
-                yaw,
-            )
+        let Some(instance) = owners.get(&owner) else {
+            if entity.visible {
+                entity.visible = false;
+                changed = true;
+            }
+            continue;
         };
-        let (anchor, body_rotation) = wearable_body_part_pose(&entity.wearable_body_part);
-        let yaw_rotation = glam::Quat::from_rotation_y(yaw);
-        let feet = glam::Vec3::new(position[0], position[1] - half_height, position[2]);
+        let (anchor, body_rotation) =
+            wearable_body_part_pose(&entity.wearable_body_part, configuration);
+        let root_rotation = glam::Quat::from_array(instance.rotation).normalize();
+        let feet = glam::Vec3::from_array(instance.position);
+        let scale = instance.scale;
         let local_position = glam::Vec3::from_array(anchor)
             + body_rotation * glam::Vec3::from_array(entity.wearable_offset);
-        let next_position = feet + yaw_rotation * (local_position * scale.max(0.01));
-        let next_rotation = (yaw_rotation
+        let next_position = feet + root_rotation * (local_position * scale);
+        let next_rotation = (root_rotation
             * body_rotation
             * glam::Quat::from_xyzw(
                 entity.wearable_rotation[0],
@@ -3779,8 +3761,9 @@ fn update_player_wearable_transforms(
             ))
         .normalize()
         .to_array();
-        let next_scale = entity.wearable_scale.map(|value| value * scale.max(0.01));
-        if entity.position != next_position.to_array()
+        let next_scale = entity.wearable_scale.map(|value| value * scale);
+        if !entity.visible
+            || entity.position != next_position.to_array()
             || entity.rotation != next_rotation
             || entity.scale != next_scale
         {
@@ -3794,10 +3777,17 @@ fn update_player_wearable_transforms(
     changed
 }
 
-fn wearable_body_part_pose(body_part: &str) -> ([f32; 3], glam::Quat) {
+fn wearable_body_part_pose(
+    body_part: &str,
+    configuration: &[glam::Mat4; 18],
+) -> ([f32; 3], glam::Quat) {
     let canonical = match body_part {
         "left_upper_arm" => "leftUpperArm",
         "right_upper_arm" => "rightUpperArm",
+        "left_lower_arm" => "leftLowerArm",
+        "right_lower_arm" => "rightLowerArm",
+        "left_shoulder" => "leftShoulder",
+        "right_shoulder" => "rightShoulder",
         "left_hand" => "leftHand",
         "right_hand" => "rightHand",
         "left_foot" => "leftFoot",
@@ -3808,10 +3798,11 @@ fn wearable_body_part_pose(body_part: &str) -> ([f32; 3], glam::Quat) {
         "right_upper_leg" => "rightUpperLeg",
         value => value,
     };
-    let matrix = voxweb_render::avatar_idle_pose::recovered_idle_pose(canonical)
-        .unwrap_or_else(|| voxweb_render::avatar_idle_pose::recovered_idle_pose("torso").unwrap());
-    let (_, rotation, translation) =
-        glam::Mat4::from_cols_array(&matrix).to_scale_rotation_translation();
+    let index = voxweb_render::avatar_ik::PART_NAMES
+        .iter()
+        .position(|name| *name == canonical)
+        .unwrap_or(1);
+    let (_, rotation, translation) = configuration[index].to_scale_rotation_translation();
     (translation.to_array(), rotation.normalize())
 }
 
@@ -6039,10 +6030,96 @@ mod tests {
 
     #[test]
     fn wearable_body_part_pose_uses_avatar_skeleton() {
-        let (right_hand, _) = super::wearable_body_part_pose("rightHand");
-        let (head, _) = super::wearable_body_part_pose("head");
+        let configuration = idle_wearable_configuration();
+        let (right_hand, _) = super::wearable_body_part_pose("rightHand", &configuration);
+        let (head, _) = super::wearable_body_part_pose("head", &configuration);
         assert!(right_hand[0] < -0.4);
         assert!((head[1] - 1.26339031).abs() < 1.0e-5);
+    }
+
+    fn idle_wearable_configuration() -> [glam::Mat4; 18] {
+        voxweb_render::avatar_ik::PART_NAMES.map(|name| {
+            glam::Mat4::from_cols_array(
+                &voxweb_render::avatar_idle_pose::recovered_idle_pose(name).unwrap(),
+            )
+        })
+    }
+
+    fn wearable_scene_fixture() -> StaticEntityScene {
+        let mut scene = serde_json::from_value(serde_json::json!({
+            "meshes": {"mesh/sword.vb": {}}, "entities": []
+        })).unwrap();
+        apply_player_wearables_event(
+            &serde_json::json!({
+                "type": "nea-revive:player-wearables",
+                "playerId": 3, "revision": 1,
+                "wearables": [{
+                    "id": "p-3:0", "bodyPart": "right_hand", "mesh": "mesh/sword.vb",
+                    "offset": [0.0, -0.2, 0.5], "scale": [1.0, 2.0, 3.0],
+                    "orientation": [1.0, 0.0, 0.0, 0.0],
+                    "material": {
+                        "color": [1.0, 1.0, 1.0],
+                        "metalness": 0.0, "emissive": 0.0, "shininess": 0.0
+                    }
+                }]
+            }),
+            &mut scene,
+            &mut HashMap::new(),
+        );
+        assert_eq!(scene.entities.len(), 1);
+        scene
+    }
+
+    #[test]
+    fn wearables_share_avatar_root_and_animated_bone_transform() {
+        use voxweb_render::avatar_ik::{IkSample, recovered_configuration};
+        let mut scene = wearable_scene_fixture();
+        let root_rotation = glam::Quat::from_rotation_y(1.2);
+        let root = super::AvatarInstance::new([10.0, 20.0, 30.0], root_rotation.to_array(), 1.7);
+        let owners = HashMap::from([(3, root)]);
+        let root_matrix = glam::Mat4::from_scale_rotation_translation(
+            glam::Vec3::splat(root.scale), root_rotation, glam::Vec3::from_array(root.position),
+        );
+        let mut previous_position = None;
+        for sample in [
+            IkSample { grounded: true, ..Default::default() },
+            IkSample { grounded: true, movement: 1.0, phase: 0.35, ..Default::default() },
+            IkSample { grounded: true, crouching: true, ..Default::default() },
+        ] {
+            let configuration = recovered_configuration(sample);
+            assert!(super::update_player_wearable_transforms(&mut scene, &owners, &configuration));
+            let entity = &scene.entities[0];
+            let expected = root_matrix * configuration[11]
+                * glam::Mat4::from_translation(glam::Vec3::from_array(entity.wearable_offset));
+            let actual = glam::Mat4::from_rotation_translation(
+                glam::Quat::from_array(entity.rotation),
+                glam::Vec3::from_array(entity.position),
+            );
+            assert!(actual.w_axis.truncate().abs_diff_eq(expected.w_axis.truncate(), 1.0e-5));
+            assert!((actual.x_axis.truncate() * root.scale)
+                .abs_diff_eq(expected.x_axis.truncate(), 1.0e-5));
+            assert_eq!(entity.scale, entity.wearable_scale.map(|v| v * root.scale));
+            if let Some(previous) = previous_position {
+                assert_ne!(entity.position, previous);
+            }
+            previous_position = Some(entity.position);
+            assert!(!super::update_player_wearable_transforms(&mut scene, &owners, &configuration));
+        }
+    }
+
+    #[test]
+    fn wearable_visibility_recovers_without_owner_movement() {
+        let mut scene = wearable_scene_fixture();
+        let owners = HashMap::from([(
+            3, super::AvatarInstance::new([0.0; 3], [0.0, 0.0, 0.0, 1.0], 1.0),
+        )]);
+        let pose = idle_wearable_configuration();
+        assert!(super::update_player_wearable_transforms(&mut scene, &owners, &pose));
+        assert!(super::update_player_wearable_transforms(&mut scene, &HashMap::new(), &pose));
+        assert!(!scene.entities[0].visible);
+        assert!(!super::update_player_wearable_transforms(&mut scene, &HashMap::new(), &pose));
+        assert!(super::update_player_wearable_transforms(&mut scene, &owners, &pose));
+        assert!(scene.entities[0].visible);
     }
 
     #[test]
@@ -6152,14 +6229,20 @@ mod tests {
 
     #[test]
     fn wearable_anchors_accept_recovered_snake_case_body_parts() {
-        assert_eq!(
-            wearable_body_part_pose("left_upper_arm").0,
-            wearable_body_part_pose("leftUpperArm").0,
-        );
-        assert_eq!(
-            wearable_body_part_pose("right_foot").0,
-            wearable_body_part_pose("rightFoot").0,
-        );
+        let pose = idle_wearable_configuration();
+        for (alias, canonical) in [
+            ("left_upper_arm", "leftUpperArm"),
+            ("right_foot", "rightFoot"),
+            ("left_lower_arm", "leftLowerArm"),
+            ("right_lower_arm", "rightLowerArm"),
+            ("left_shoulder", "leftShoulder"),
+            ("right_shoulder", "rightShoulder"),
+        ] {
+            assert_eq!(
+                wearable_body_part_pose(alias, &pose),
+                wearable_body_part_pose(canonical, &pose),
+            );
+        }
     }
 
     #[test]
