@@ -817,7 +817,9 @@ export async function startRuntimeServer(options: RuntimeServerOptions): Promise
         const payload = {
           format: decoded.format,
           version: decoded.version,
-          bounds: decoded.value?.bounds ?? null,
+          bounds: decoded.value?.bounds
+            ?? readMeshMetadata(options.assetRoot, hash)?.bounds
+            ?? null,
           nodes: decoded.value?.nodes ?? [],
           meshes: decoded.value?.meshes ?? [],
           texture: texture ? { width: texture.width, height: texture.height, rgba: Array.from(texture.rgba) } : null,
@@ -1538,9 +1540,10 @@ function readMeshMetadata(assetRoot: string, requestKey: string) {
   try {
     const path = resolve(assetRoot, "engine", "m", requestKey)
     const value = JSON.parse(readFileSync(path, "utf8"))
-    return Array.isArray(value.renderBoxOffset)
-      ? { renderBoxOffset: value.renderBoxOffset.map(Number) }
-      : null
+    return {
+      ...(Array.isArray(value.bounds) ? { bounds: value.bounds.map(Number) } : {}),
+      ...(Array.isArray(value.renderBoxOffset) ? { renderBoxOffset: value.renderBoxOffset.map(Number) } : {}),
+    }
   } catch {
     return null
   }

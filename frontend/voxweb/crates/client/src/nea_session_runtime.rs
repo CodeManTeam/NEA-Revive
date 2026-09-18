@@ -63,6 +63,8 @@ struct StaticEntityScene {
 
 #[derive(serde::Deserialize)]
 struct StaticEntityMesh {
+    #[serde(skip)]
+    decoded_bounds: Option<[f32; 3]>,
     #[serde(default)]
     positions: Vec<f32>,
     #[serde(default)]
@@ -112,6 +114,8 @@ struct DecodedMeshFace {
 
 #[derive(serde::Deserialize)]
 struct DecodedMeshPayload {
+    #[serde(default)]
+    bounds: Option<[f32; 3]>,
     #[serde(default)]
     meshes: Vec<Vec<DecodedMeshFace>>,
     #[serde(default)]
@@ -173,6 +177,8 @@ struct StaticEntityInstance {
     wearable_rotation: [f32; 4],
     #[serde(skip)]
     wearable_scale: [f32; 3],
+    #[serde(skip)]
+    wearable_center: [f32; 3],
     #[serde(skip)]
     wearable_offset: [f32; 3],
     #[serde(skip)]
@@ -3055,6 +3061,11 @@ async fn prefetch_entity_mesh_assets(origin: &str, scene: &mut StaticEntityScene
                             "[nea] decoded mesh ready: {hash} format={format} v{version} texture={texture}px"
                         );
                         if let Ok(payload) = serde_json::from_value::<DecodedMeshPayload>(value) {
+                            for target in scene.meshes.values_mut().filter(|entry| {
+                                entry.mesh_asset_hash.as_deref() == Some(&hash)
+                            }) {
+                                target.decoded_bounds = payload.bounds;
+                            }
                             if let Some(texture) = payload.texture.as_ref() {
                                 if let Some(target) = scene
                                     .meshes
@@ -3659,10 +3670,11 @@ fn apply_player_wearables_event(
         .entities
         .retain(|entity| entity.wearable_owner != Some(player_id));
     for (slot, wearable) in wearables.iter().enumerate() {
-        if !scene.meshes.contains_key(&wearable.mesh) {
+        let Some(mesh) = scene.meshes.get(&wearable.mesh) else {
             jslog!("[nea] wearable mesh unavailable: {}", wearable.mesh);
             continue;
-        }
+        };
+        let center = wearable_mesh_center(mesh);
         let id = 0xe000_0000u32
             .wrapping_add(player_id.wrapping_mul(64))
             .wrapping_add(slot as u32);
@@ -3672,23 +3684,23 @@ fn apply_player_wearables_event(
             wearable.material.color[2].clamp(0.0, 1.0),
             1.0,
         ];
-        // Wearable .vb meshes use the same 16-unit model space as static
-        // entities; DAO3's implicit wearable scale is 1/64 before the
-        // per-item WearDatas scale is applied.
+        // Recovered Player module 989: attachments use scale / 16 and a
+        // centered mesh, unlike static entity scales. See the evidence note.
+        let scale = wearable.scale.map(|value| value / 16.0);
+        // ScriptEntityWrapper copies [w,x,y,z] directly into the engine's
+        // XYZW array. Preserve that historical convention, without reordering.
+        let rotation = glam::Quat::from_array(wearable.orientation);
+        let rotation = if rotation.is_finite() && rotation.length_squared() > 1.0e-12 {
+            rotation.normalize().to_array()
+        } else {
+            [0.0, 1.0, 0.0, 0.0]
+        };
         scene.entities.push(StaticEntityInstance {
             id,
             mesh: wearable.mesh.clone(),
             position: [0.0; 3],
-            scale: wearable
-                .scale
-                .map(|value| (value.abs() * (1.0 / 64.0)).max(0.0001)),
-            // Backend wearable snapshots preserve DAO3's [w, x, y, z] order.
-            rotation: [
-                wearable.orientation[1],
-                wearable.orientation[2],
-                wearable.orientation[3],
-                wearable.orientation[0],
-            ],
+            scale,
+            rotation,
             collision: false,
             fixed: true,
             half_extents: [0.5; 3],
@@ -3698,8 +3710,8 @@ fn apply_player_wearables_event(
             enable_interact: false,
             interact_hint: String::new(),
             interact_radius: 0.0,
-            visible: true,
-            mesh_offset: [0.0; 3],
+            visible: false,
+            mesh_offset: std::array::from_fn(|axis| -center[axis] * scale[axis]),
             static_shadow: false,
             tint: color,
             emissive: wearable.material.emissive.max(0.0),
@@ -3709,19 +3721,40 @@ fn apply_player_wearables_event(
             script_interactable: false,
             script_interact_hint: String::new(),
             wearable_owner: Some(player_id),
-            wearable_rotation: [
-                wearable.orientation[1],
-                wearable.orientation[2],
-                wearable.orientation[3],
-                wearable.orientation[0],
-            ],
-            wearable_scale: wearable.scale.map(|value| value.abs() * (1.0 / 64.0)),
+            wearable_rotation: rotation,
+            wearable_scale: scale,
+            wearable_center: center,
             wearable_offset: wearable.offset,
             wearable_body_part: wearable.body_part.clone(),
         });
     }
     states.insert(player_id, PlayerWearableState { revision });
     true
+}
+
+fn wearable_mesh_center(mesh: &StaticEntityMesh) -> [f32; 3] {
+    // New native meshes declare [0,bounds]; legacy six-face meshes and glTF
+    // exports expose their actual min/max. Neither uses renderBoxOffset here.
+    if let Some(bounds) = mesh.decoded_bounds {
+        return bounds.map(|value| value * 0.5);
+    }
+    let positions = mesh.decoded_geometry.as_ref()
+        .map(|geometry| geometry.0.as_slice())
+        .unwrap_or(&mesh.positions);
+    let mut lo = glam::Vec3::splat(f32::INFINITY);
+    let mut hi = glam::Vec3::splat(f32::NEG_INFINITY);
+    for vertex in positions.chunks_exact(3) {
+        let point = glam::Vec3::from_slice(vertex);
+        if point.is_finite() {
+            lo = lo.min(point);
+            hi = hi.max(point);
+        }
+    }
+    if lo.is_finite() && hi.is_finite() {
+        ((lo + hi) * 0.5).to_array()
+    } else {
+        [0.0; 3]
+    }
 }
 
 fn update_player_wearable_transforms(
@@ -3762,14 +3795,19 @@ fn update_player_wearable_transforms(
         .normalize()
         .to_array();
         let next_scale = entity.wearable_scale.map(|value| value * scale);
+        let next_offset = std::array::from_fn(|axis| {
+            -entity.wearable_center[axis] * next_scale[axis]
+        });
         if !entity.visible
             || entity.position != next_position.to_array()
             || entity.rotation != next_rotation
             || entity.scale != next_scale
+            || entity.mesh_offset != next_offset
         {
             entity.position = next_position.to_array();
             entity.rotation = next_rotation;
             entity.scale = next_scale;
+            entity.mesh_offset = next_offset;
             entity.visible = true;
             changed = true;
         }
@@ -6010,9 +6048,11 @@ mod tests {
         assert_eq!(scene.entities[0].wearable_owner, Some(3));
         assert_eq!(scene.entities[0].wearable_body_part, "rightHand");
         assert_eq!(scene.entities[0].mesh, "mesh/wooden-sword.vb");
-        // Snapshot [w,x,y,z]=[1,0,0,0] becomes glam's identity [x,y,z,w].
-        assert_eq!(scene.entities[0].rotation, [0.0, 0.0, 0.0, 1.0]);
-        assert_eq!(scene.entities[0].wearable_rotation, [0.0, 0.0, 0.0, 1.0]);
+        // The recovered engine copies [w,x,y,z] into its quaternion array
+        // without reordering; its renderer consumes that historical layout.
+        assert_eq!(scene.entities[0].rotation, [1.0, 0.0, 0.0, 0.0]);
+        assert_eq!(scene.entities[0].wearable_rotation, [1.0, 0.0, 0.0, 0.0]);
+        assert_eq!(scene.entities[0].scale, [0.03125, 0.03125, 0.03125]);
         assert_eq!(states.get(&3).map(|state| state.revision), Some(1));
         assert!(!apply_player_wearables_event(
             &serde_json::json!({"type": "nea-revive:player-wearables", "playerId": 3, "revision": 0, "wearables": []}),

@@ -2213,7 +2213,10 @@ function stablePlayerUserKey(value) {
 
 function createRuntimeWearable(player, spec) {
   if (!spec || typeof spec !== "object" || Array.isArray(spec)) throw new TypeError("Wearable spec must be an object");
-  const wearable = structuredClone(spec);
+  const wearable = {
+    orientation: new GameQuaternion(0, 1, 0, 0),
+    ...structuredClone(spec),
+  };
   const remove = () => player.removeWearable(wearable);
   Object.defineProperty(wearable, "remove", { value: remove, enumerable: false });
   return wearable;
@@ -2253,7 +2256,7 @@ function quaternionSnapshot(value) {
   const components = Array.isArray(value) ? value : [value?.w, value?.x, value?.y, value?.z];
   return components.length === 4 && components.every(Number.isFinite)
     ? [Number(components[0]), Number(components[1]), Number(components[2]), Number(components[3])]
-    : [1, 0, 0, 0];
+    : [0, 1, 0, 0];
 }
 
 function rgbSnapshot(value, fallback) {
